@@ -15,5 +15,21 @@ namespace NoteLiner.App
         {
             InitializeComponent();
         }
+
+        private void mnuFileExit_Click(object sender, EventArgs e)
+        {
+            this.ExitApplication();
+        }
+
+        private void ExitApplication()
+        {
+            //
+            // TODO: wait for any save threads to complete...
+            //
+            // TODO: stop the document watch thread...
+            //
+            Application.Exit();
+        }
+
     }
 }
