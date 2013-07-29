@@ -117,33 +117,4 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <metadata name="mnu.TrayLocation" type="System.Drawing.Point, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
-    <value>17, 17</value>
-  </metadata>
-  <metadata name="sts.TrayLocation" type="System.Drawing.Point, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
-    <value>90, 17</value>
-  </metadata>
-  <assembly alias="System.Drawing" name="System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a" />
-  <data name="$this.Icon" type="System.Drawing.Icon, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
-    <value>
-        AAABAAIAEBAQAAAABAAoAQAAJgAAACAgEAAAAAQA6AIAAE4BAAAoAAAAEAAAACAAAAABAAQAAAAAAIAA
-        AAAAAAAAAAAAABAAAAAQAAAAAAAAAAAAgAAAgAAAAICAAIAAAACAAIAAgIAAAICAgADAwMAAAAD/AAD/
-        AAAA//8A/wAAAP8A/wD//wAA////ABERERERERERH/////////EfERERERER8R8RERERERHxHxH/ER//
-        EfEfEf8RH/8R8R8R/xHx/xHxHxH/EfH/EfEfEf8fEf8R8R8R/x8R/xHxHxH/8RH/EfEfEf/xEf8R8R8R
-        ERERERHxHxEREREREfEf////////8RERERERERERAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-        AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACgAAAAgAAAAQAAAAAEABAAAAAAAAAIAAAAA
-        AAAAAAAAEAAAABAAAAAAAAAAAACAAACAAAAAgIAAgAAAAIAAgACAgAAAwMDAAICAgAAAAP8AAP8AAAD/
-        /wD/AAAA/wD/AP//AAD///8AERERERERERERERERERERERERERERERERERERERERERER////////////
-        //////8REf//////////////////ERH/ERERERERERERERER/xER/xEREREREREREREREf8REf8RERER
-        ERERERERERH/ERH/ERERERERERERERER/xER/xER//8RERH///8REf8REf8REf//ERER////ERH/ERH/
-        ERH//xEREf///xER/xER/xER//8RERH///8REf8REf8REf//ERH/Ef//ERH/ERH/ERH//xER/xH//xER
-        /xER/xER//8REf8R//8REf8REf8REf//ERH/Ef//ERH/ERH/ERH//xH/ERH//xER/xER/xER//8R/xER
-        //8REf8REf8REf//Ef8REf//ERH/ERH/ERH//xH/ERH//xER/xER/xER////ERER//8REf8REf8REf//
-        /xEREf//ERH/ERH/ERH///8RERH//xER/xER/xER////ERER//8REf8REf8RERERERERERERERH/ERH/
-        ERERERERERERERER/xER/xEREREREREREREREf8REf8RERERERERERERERH/ERH/////////////////
-        /xER//////////////////8REREREREREREREREREREREREREREREREREREREREREREAAAAAAAAAAAAA
-        AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-        AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==
-</value>
-  </data>
 </root>
