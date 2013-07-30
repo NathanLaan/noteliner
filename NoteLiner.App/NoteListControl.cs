@@ -12,7 +12,7 @@ namespace NoteLiner.App
     public partial class NoteListControl : UserControl
     {
 
-        public List<Note> NoteList { get; private set; }
+        internal List<Note> NoteList { get; private set; }
 
         public NoteListControl()
         {
@@ -30,6 +30,11 @@ namespace NoteLiner.App
         {
             // NOTE: Update DateTime as well...
             // NOTE: Mark as Dirty...
+        }
+
+        private void lstMenuDelete_Click(object sender, EventArgs e)
+        {
+            MessageBox.Show("Delete");
         }
 
     }

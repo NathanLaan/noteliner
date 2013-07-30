@@ -28,8 +28,12 @@
         /// </summary>
         private void InitializeComponent()
         {
+            this.components = new System.ComponentModel.Container();
             this.txt = new System.Windows.Forms.TextBox();
             this.lst = new System.Windows.Forms.ListBox();
+            this.lstMenu = new System.Windows.Forms.ContextMenuStrip(this.components);
+            this.lstMenuDelete = new System.Windows.Forms.ToolStripMenuItem();
+            this.lstMenu.SuspendLayout();
             this.SuspendLayout();
             // 
             // txt
@@ -46,11 +50,27 @@
             this.lst.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
             | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
+            this.lst.ContextMenuStrip = this.lstMenu;
             this.lst.FormattingEnabled = true;
+            this.lst.IntegralHeight = false;
             this.lst.Location = new System.Drawing.Point(4, 30);
             this.lst.Name = "lst";
-            this.lst.Size = new System.Drawing.Size(193, 264);
+            this.lst.Size = new System.Drawing.Size(193, 267);
             this.lst.TabIndex = 1;
+            // 
+            // lstMenu
+            // 
+            this.lstMenu.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.lstMenuDelete});
+            this.lstMenu.Name = "lstMenu";
+            this.lstMenu.Size = new System.Drawing.Size(106, 26);
+            // 
+            // lstMenuDelete
+            // 
+            this.lstMenuDelete.Name = "lstMenuDelete";
+            this.lstMenuDelete.Size = new System.Drawing.Size(152, 22);
+            this.lstMenuDelete.Text = "&Delete";
+            this.lstMenuDelete.Click += new System.EventHandler(this.lstMenuDelete_Click);
             // 
             // NoteListControl
             // 
@@ -60,6 +80,7 @@
             this.Controls.Add(this.txt);
             this.Name = "NoteListControl";
             this.Size = new System.Drawing.Size(200, 300);
+            this.lstMenu.ResumeLayout(false);
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -69,5 +90,7 @@
 
         private System.Windows.Forms.TextBox txt;
         private System.Windows.Forms.ListBox lst;
+        private System.Windows.Forms.ContextMenuStrip lstMenu;
+        private System.Windows.Forms.ToolStripMenuItem lstMenuDelete;
     }
 }

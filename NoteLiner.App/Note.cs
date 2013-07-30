@@ -5,7 +5,7 @@ using System.Text;
 
 namespace NoteLiner.App
 {
-    class Note
+    internal class Note
     {
 
         public bool Dirty { get; set; }
