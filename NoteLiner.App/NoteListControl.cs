@@ -37,5 +37,20 @@ namespace NoteLiner.App
             MessageBox.Show("Delete");
         }
 
+        private void txt_TextChanged(object sender, EventArgs e)
+        {
+            // TODO: filter the list
+
+            // TODO: change list selection if no longer valid
+
+            // TODO: fire selected changed event if needed
+        }
+
+        private void txt_KeyPress(object sender, KeyPressEventArgs e)
+        {
+            // TODO: check for ENTER key and create new entry. fire event 
+            // so that main form can set focus to text entry field.
+        }
+
     }
 }
