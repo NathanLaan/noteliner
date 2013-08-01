@@ -52,5 +52,10 @@ namespace NoteLiner.App
             // so that main form can set focus to text entry field.
         }
 
+        private void txt_Leave(object sender, EventArgs e)
+        {
+            // create new entry. fire event so that main form can set focus to text entry field.
+        }
+
     }
 }
