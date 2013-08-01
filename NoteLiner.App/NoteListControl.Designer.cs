@@ -41,12 +41,12 @@
             this.lstMenu.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.lstMenuDelete});
             this.lstMenu.Name = "lstMenu";
-            this.lstMenu.Size = new System.Drawing.Size(123, 28);
+            this.lstMenu.Size = new System.Drawing.Size(106, 26);
             // 
             // lstMenuDelete
             // 
             this.lstMenuDelete.Name = "lstMenuDelete";
-            this.lstMenuDelete.Size = new System.Drawing.Size(122, 24);
+            this.lstMenuDelete.Size = new System.Drawing.Size(105, 22);
             this.lstMenuDelete.Text = "&Delete";
             this.lstMenuDelete.Click += new System.EventHandler(this.lstMenuDelete_Click);
             // 
@@ -55,33 +55,35 @@
             this.txt.Dock = System.Windows.Forms.DockStyle.Top;
             this.txt.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.txt.Location = new System.Drawing.Point(0, 0);
-            this.txt.Margin = new System.Windows.Forms.Padding(4);
             this.txt.Name = "txt";
-            this.txt.Size = new System.Drawing.Size(100, 30);
+            this.txt.Size = new System.Drawing.Size(75, 26);
             this.txt.TabIndex = 3;
+            this.txt.KeyUp += new System.Windows.Forms.KeyEventHandler(this.txt_KeyUp);
+            this.txt.Leave += new System.EventHandler(this.txt_Leave);
             // 
             // lst
             // 
+            this.lst.ContextMenuStrip = this.lstMenu;
             this.lst.Dock = System.Windows.Forms.DockStyle.Fill;
             this.lst.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.lst.FormattingEnabled = true;
             this.lst.IntegralHeight = false;
-            this.lst.ItemHeight = 20;
-            this.lst.Location = new System.Drawing.Point(0, 30);
+            this.lst.ItemHeight = 16;
+            this.lst.Location = new System.Drawing.Point(0, 26);
+            this.lst.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
             this.lst.Name = "lst";
-            this.lst.Size = new System.Drawing.Size(100, 270);
+            this.lst.Size = new System.Drawing.Size(75, 218);
             this.lst.TabIndex = 5;
             // 
             // NoteListControl
             // 
-            this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
+            this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.BackColor = System.Drawing.SystemColors.Control;
             this.Controls.Add(this.lst);
             this.Controls.Add(this.txt);
-            this.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
             this.Name = "NoteListControl";
-            this.Size = new System.Drawing.Size(100, 300);
+            this.Size = new System.Drawing.Size(75, 244);
             this.lstMenu.ResumeLayout(false);
             this.ResumeLayout(false);
             this.PerformLayout();

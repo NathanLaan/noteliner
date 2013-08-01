@@ -46,15 +46,21 @@ namespace NoteLiner.App
             // TODO: fire selected changed event if needed
         }
 
-        private void txt_KeyPress(object sender, KeyPressEventArgs e)
-        {
-            // TODO: check for ENTER key and create new entry. fire event 
-            // so that main form can set focus to text entry field.
-        }
-
         private void txt_Leave(object sender, EventArgs e)
         {
             // create new entry. fire event so that main form can set focus to text entry field.
+            MessageBox.Show("txt_Leave");
+        }
+
+        private void txt_KeyUp(object sender, KeyEventArgs e)
+        {
+            // TODO: check for ENTER key and create new entry. fire event 
+            // so that main form can set focus to text entry field.
+
+            if (Keys.Enter == e.KeyCode)
+            {
+                MessageBox.Show("txt_KeyUp");
+            }
         }
 
     }
