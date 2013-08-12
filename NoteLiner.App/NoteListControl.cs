@@ -59,9 +59,13 @@ namespace NoteLiner.App
 
             if (Keys.Enter == e.KeyCode)
             {
-                MessageBox.Show("txt_KeyUp");
+                MessageBox.Show("txt_KeyUp: Keys.Enter");
             }
         }
+
+
+        internal delegate void CreateNoteEvent(string title);
+
 
     }
 }

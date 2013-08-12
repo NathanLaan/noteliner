@@ -31,5 +31,10 @@ namespace NoteLiner.App
             Application.Exit();
         }
 
+        private void noteList_Load(object sender, EventArgs e)
+        {
+
+        }
+
     }
 }
