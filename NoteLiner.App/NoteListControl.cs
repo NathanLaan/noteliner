@@ -60,11 +60,29 @@ namespace NoteLiner.App
             if (Keys.Enter == e.KeyCode)
             {
                 MessageBox.Show("txt_KeyUp: Keys.Enter");
+                if (this.txt.Text.Length > 0)
+                {
+                    this.FireCreateNoteEvent();
+                }
+                else
+                {
+                    MessageBox.Show("txt_KeyUp: Must specify title");
+                }
             }
         }
 
 
-        internal delegate void CreateNoteEvent(string title);
+        public delegate void NoteEvent(string title);
+
+        public event NoteEvent NoteCreated;
+
+        private void FireCreateNoteEvent()
+        {
+            if (this.NoteCreated != null)
+            {
+                this.NoteCreated(this.txt.Text);
+            }
+        }
 
 
     }

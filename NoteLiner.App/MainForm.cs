@@ -46,5 +46,10 @@ namespace NoteLiner.App
             }
         }
 
+        private void noteList_NoteCreated(string title)
+        {
+            this.txt.Focus();
+        }
+
     }
 }
