@@ -38,7 +38,12 @@ namespace NoteLiner.App
             //
             // TODO: Check file name
             //
-            Settings.Default.FilePath
+            if (string.IsNullOrEmpty(Settings.Default.FilePath))
+            {
+            }
+            else
+            {
+            }
         }
 
     }
