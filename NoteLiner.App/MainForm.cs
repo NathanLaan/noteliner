@@ -1,11 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Data;
-using System.Drawing;
-using System.Linq;
-using System.Text;
 using System.Windows.Forms;
+using NoteLiner.App.Properties;
 
 namespace NoteLiner.App
 {
@@ -34,6 +31,14 @@ namespace NoteLiner.App
         private void noteList_Load(object sender, EventArgs e)
         {
 
+        }
+
+        private void MainForm_Load(object sender, EventArgs e)
+        {
+            //
+            // TODO: Check file name
+            //
+            Settings.Default.FilePath
         }
 
     }
