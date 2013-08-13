@@ -59,7 +59,6 @@ namespace NoteLiner.App
 
             if (Keys.Enter == e.KeyCode)
             {
-                MessageBox.Show("txt_KeyUp: Keys.Enter");
                 if (this.txt.Text.Length > 0)
                 {
                     this.FireCreateNoteEvent();

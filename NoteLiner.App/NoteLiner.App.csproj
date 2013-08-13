@@ -58,6 +58,7 @@
       <DependentUpon>MainForm.cs</DependentUpon>
     </Compile>
     <Compile Include="Note.cs" />
+    <Compile Include="NoteList.cs" />
     <Compile Include="NoteListControl.cs">
       <SubType>UserControl</SubType>
     </Compile>
