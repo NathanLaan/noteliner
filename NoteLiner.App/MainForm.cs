@@ -28,11 +28,6 @@ namespace NoteLiner.App
             Application.Exit();
         }
 
-        private void noteList_Load(object sender, EventArgs e)
-        {
-
-        }
-
         private void MainForm_Load(object sender, EventArgs e)
         {
             //
@@ -48,7 +43,25 @@ namespace NoteLiner.App
 
         private void noteList_NoteCreated(string title)
         {
-            this.txt.Focus();
+            this.txtEdit.Focus();
+        }
+
+        private void mnuToolsViewDebugInfo_Click(object sender, EventArgs e)
+        {
+            this.spcHorizontal.Panel2Collapsed = !this.mnuToolsViewDebugInfo.Checked;
+        }
+
+        private void noteList_SearchTextboxLeave(string title)
+        {
+            this.txtDebug.AppendText("SearchTextboxLeave");
+            this.txtDebug.AppendText(Environment.NewLine);
+        }
+
+        private void noteList_NoteCreated_1(string title)
+        {
+            this.txtDebug.AppendText("NoteCreated");
+            this.txtDebug.AppendText(Environment.NewLine);
+            this.txtEdit.Focus();
         }
 
     }

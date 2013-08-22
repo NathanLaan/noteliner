@@ -37,14 +37,21 @@
             this.mnuHelp = new System.Windows.Forms.ToolStripMenuItem();
             this.mnuHelpAbout = new System.Windows.Forms.ToolStripMenuItem();
             this.sts = new System.Windows.Forms.StatusStrip();
-            this.spc = new System.Windows.Forms.SplitContainer();
-            this.txt = new System.Windows.Forms.TextBox();
+            this.spcHorizontal = new System.Windows.Forms.SplitContainer();
+            this.spcVertical = new System.Windows.Forms.SplitContainer();
+            this.txtEdit = new System.Windows.Forms.TextBox();
+            this.txtDebug = new System.Windows.Forms.TextBox();
+            this.mnuToolsViewDebugInfo = new System.Windows.Forms.ToolStripMenuItem();
             this.noteList = new NoteLiner.App.NoteListControl();
             this.mnu.SuspendLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.spc)).BeginInit();
-            this.spc.Panel1.SuspendLayout();
-            this.spc.Panel2.SuspendLayout();
-            this.spc.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.spcHorizontal)).BeginInit();
+            this.spcHorizontal.Panel1.SuspendLayout();
+            this.spcHorizontal.Panel2.SuspendLayout();
+            this.spcHorizontal.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.spcVertical)).BeginInit();
+            this.spcVertical.Panel1.SuspendLayout();
+            this.spcVertical.Panel2.SuspendLayout();
+            this.spcVertical.SuspendLayout();
             this.SuspendLayout();
             // 
             // mnu
@@ -55,8 +62,8 @@
             this.mnuHelp});
             this.mnu.Location = new System.Drawing.Point(0, 0);
             this.mnu.Name = "mnu";
-            this.mnu.Padding = new System.Windows.Forms.Padding(5, 2, 0, 2);
-            this.mnu.Size = new System.Drawing.Size(621, 28);
+            this.mnu.Padding = new System.Windows.Forms.Padding(4, 2, 0, 2);
+            this.mnu.Size = new System.Drawing.Size(466, 24);
             this.mnu.TabIndex = 0;
             this.mnu.Text = "menuStrip1";
             // 
@@ -65,28 +72,29 @@
             this.mnuFile.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.mnuFileExit});
             this.mnuFile.Name = "mnuFile";
-            this.mnuFile.Size = new System.Drawing.Size(44, 24);
+            this.mnuFile.Size = new System.Drawing.Size(35, 20);
             this.mnuFile.Text = "&File";
             // 
             // mnuFileExit
             // 
             this.mnuFileExit.Name = "mnuFileExit";
-            this.mnuFileExit.Size = new System.Drawing.Size(102, 24);
+            this.mnuFileExit.Size = new System.Drawing.Size(92, 22);
             this.mnuFileExit.Text = "E&xit";
             this.mnuFileExit.Click += new System.EventHandler(this.mnuFileExit_Click);
             // 
             // mnuTools
             // 
             this.mnuTools.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.mnuToolsOptions});
+            this.mnuToolsOptions,
+            this.mnuToolsViewDebugInfo});
             this.mnuTools.Name = "mnuTools";
-            this.mnuTools.Size = new System.Drawing.Size(57, 24);
+            this.mnuTools.Size = new System.Drawing.Size(44, 20);
             this.mnuTools.Text = "&Tools";
             // 
             // mnuToolsOptions
             // 
             this.mnuToolsOptions.Name = "mnuToolsOptions";
-            this.mnuToolsOptions.Size = new System.Drawing.Size(130, 24);
+            this.mnuToolsOptions.Size = new System.Drawing.Size(153, 22);
             this.mnuToolsOptions.Text = "&Options";
             // 
             // mnuHelp
@@ -94,53 +102,92 @@
             this.mnuHelp.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.mnuHelpAbout});
             this.mnuHelp.Name = "mnuHelp";
-            this.mnuHelp.Size = new System.Drawing.Size(53, 24);
+            this.mnuHelp.Size = new System.Drawing.Size(40, 20);
             this.mnuHelp.Text = "&Help";
             // 
             // mnuHelpAbout
             // 
             this.mnuHelpAbout.Name = "mnuHelpAbout";
-            this.mnuHelpAbout.Size = new System.Drawing.Size(119, 24);
+            this.mnuHelpAbout.Size = new System.Drawing.Size(103, 22);
             this.mnuHelpAbout.Text = "&About";
             // 
             // sts
             // 
-            this.sts.Location = new System.Drawing.Point(0, 411);
+            this.sts.Location = new System.Drawing.Point(0, 330);
             this.sts.Name = "sts";
-            this.sts.Padding = new System.Windows.Forms.Padding(1, 0, 19, 0);
-            this.sts.Size = new System.Drawing.Size(621, 22);
+            this.sts.Size = new System.Drawing.Size(466, 22);
             this.sts.TabIndex = 1;
             this.sts.Text = "statusStrip1";
             // 
-            // spc
+            // spcHorizontal
             // 
-            this.spc.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.spc.Location = new System.Drawing.Point(0, 28);
-            this.spc.Margin = new System.Windows.Forms.Padding(4);
-            this.spc.Name = "spc";
+            this.spcHorizontal.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.spcHorizontal.Location = new System.Drawing.Point(0, 24);
+            this.spcHorizontal.Name = "spcHorizontal";
+            this.spcHorizontal.Orientation = System.Windows.Forms.Orientation.Horizontal;
             // 
-            // spc.Panel1
+            // spcHorizontal.Panel1
             // 
-            this.spc.Panel1.Controls.Add(this.noteList);
+            this.spcHorizontal.Panel1.Controls.Add(this.spcVertical);
             // 
-            // spc.Panel2
+            // spcHorizontal.Panel2
             // 
-            this.spc.Panel2.Controls.Add(this.txt);
-            this.spc.Size = new System.Drawing.Size(621, 383);
-            this.spc.SplitterDistance = 198;
-            this.spc.SplitterWidth = 7;
-            this.spc.TabIndex = 2;
+            this.spcHorizontal.Panel2.Controls.Add(this.txtDebug);
+            this.spcHorizontal.Panel2Collapsed = true;
+            this.spcHorizontal.Size = new System.Drawing.Size(466, 306);
+            this.spcHorizontal.SplitterDistance = 153;
+            this.spcHorizontal.TabIndex = 3;
             // 
-            // txt
+            // spcVertical
             // 
-            this.txt.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.txt.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.txt.Location = new System.Drawing.Point(0, 0);
-            this.txt.Margin = new System.Windows.Forms.Padding(4, 4, 4, 7);
-            this.txt.Multiline = true;
-            this.txt.Name = "txt";
-            this.txt.Size = new System.Drawing.Size(416, 383);
-            this.txt.TabIndex = 0;
+            this.spcVertical.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.spcVertical.Location = new System.Drawing.Point(0, 0);
+            this.spcVertical.Name = "spcVertical";
+            // 
+            // spcVertical.Panel1
+            // 
+            this.spcVertical.Panel1.Controls.Add(this.noteList);
+            // 
+            // spcVertical.Panel2
+            // 
+            this.spcVertical.Panel2.Controls.Add(this.txtEdit);
+            this.spcVertical.Size = new System.Drawing.Size(466, 306);
+            this.spcVertical.SplitterDistance = 147;
+            this.spcVertical.SplitterWidth = 5;
+            this.spcVertical.TabIndex = 3;
+            // 
+            // txtEdit
+            // 
+            this.txtEdit.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.txtEdit.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.txtEdit.Location = new System.Drawing.Point(0, 0);
+            this.txtEdit.Margin = new System.Windows.Forms.Padding(3, 3, 3, 6);
+            this.txtEdit.Multiline = true;
+            this.txtEdit.Name = "txtEdit";
+            this.txtEdit.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
+            this.txtEdit.Size = new System.Drawing.Size(314, 306);
+            this.txtEdit.TabIndex = 0;
+            // 
+            // txtDebug
+            // 
+            this.txtDebug.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.txtDebug.Enabled = false;
+            this.txtDebug.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.txtDebug.Location = new System.Drawing.Point(0, 0);
+            this.txtDebug.Margin = new System.Windows.Forms.Padding(3, 3, 3, 6);
+            this.txtDebug.Multiline = true;
+            this.txtDebug.Name = "txtDebug";
+            this.txtDebug.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
+            this.txtDebug.Size = new System.Drawing.Size(466, 149);
+            this.txtDebug.TabIndex = 1;
+            // 
+            // mnuToolsViewDebugInfo
+            // 
+            this.mnuToolsViewDebugInfo.CheckOnClick = true;
+            this.mnuToolsViewDebugInfo.Name = "mnuToolsViewDebugInfo";
+            this.mnuToolsViewDebugInfo.Size = new System.Drawing.Size(153, 22);
+            this.mnuToolsViewDebugInfo.Text = "&View Debug Info";
+            this.mnuToolsViewDebugInfo.Click += new System.EventHandler(this.mnuToolsViewDebugInfo_Click);
             // 
             // noteList
             // 
@@ -149,32 +196,38 @@
             this.noteList.Location = new System.Drawing.Point(0, 0);
             this.noteList.Margin = new System.Windows.Forms.Padding(0);
             this.noteList.Name = "noteList";
-            this.noteList.Size = new System.Drawing.Size(198, 383);
+            this.noteList.Size = new System.Drawing.Size(147, 306);
             this.noteList.TabIndex = 0;
-            this.noteList.NoteCreated += new NoteLiner.App.NoteListControl.NoteEvent(this.noteList_NoteCreated);
+            this.noteList.SearchTextboxLeave += new NoteLiner.App.NoteListControl.NoteEvent(this.noteList_SearchTextboxLeave);
+            this.noteList.NoteCreated += new NoteLiner.App.NoteListControl.NoteEvent(this.noteList_NoteCreated_1);
             // 
             // MainForm
             // 
-            this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
+            this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(621, 433);
-            this.Controls.Add(this.spc);
+            this.ClientSize = new System.Drawing.Size(466, 352);
+            this.Controls.Add(this.spcHorizontal);
             this.Controls.Add(this.sts);
             this.Controls.Add(this.mnu);
             this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.MainMenuStrip = this.mnu;
-            this.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
-            this.MinimumSize = new System.Drawing.Size(311, 165);
+            this.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.MinimumSize = new System.Drawing.Size(235, 139);
             this.Name = "MainForm";
             this.Text = "NoteLiner";
             this.Load += new System.EventHandler(this.MainForm_Load);
             this.mnu.ResumeLayout(false);
             this.mnu.PerformLayout();
-            this.spc.Panel1.ResumeLayout(false);
-            this.spc.Panel2.ResumeLayout(false);
-            this.spc.Panel2.PerformLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.spc)).EndInit();
-            this.spc.ResumeLayout(false);
+            this.spcHorizontal.Panel1.ResumeLayout(false);
+            this.spcHorizontal.Panel2.ResumeLayout(false);
+            this.spcHorizontal.Panel2.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.spcHorizontal)).EndInit();
+            this.spcHorizontal.ResumeLayout(false);
+            this.spcVertical.Panel1.ResumeLayout(false);
+            this.spcVertical.Panel2.ResumeLayout(false);
+            this.spcVertical.Panel2.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.spcVertical)).EndInit();
+            this.spcVertical.ResumeLayout(false);
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -186,13 +239,16 @@
         private System.Windows.Forms.ToolStripMenuItem mnuFile;
         private System.Windows.Forms.ToolStripMenuItem mnuFileExit;
         private System.Windows.Forms.StatusStrip sts;
-        private System.Windows.Forms.SplitContainer spc;
-        private NoteListControl noteList;
-        private System.Windows.Forms.TextBox txt;
         private System.Windows.Forms.ToolStripMenuItem mnuTools;
         private System.Windows.Forms.ToolStripMenuItem mnuToolsOptions;
         private System.Windows.Forms.ToolStripMenuItem mnuHelp;
         private System.Windows.Forms.ToolStripMenuItem mnuHelpAbout;
+        private System.Windows.Forms.SplitContainer spcHorizontal;
+        private System.Windows.Forms.SplitContainer spcVertical;
+        private NoteListControl noteList;
+        private System.Windows.Forms.TextBox txtEdit;
+        private System.Windows.Forms.TextBox txtDebug;
+        private System.Windows.Forms.ToolStripMenuItem mnuToolsViewDebugInfo;
     }
 }
 

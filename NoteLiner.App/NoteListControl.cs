@@ -49,7 +49,8 @@ namespace NoteLiner.App
         private void txt_Leave(object sender, EventArgs e)
         {
             // create new entry. fire event so that main form can set focus to text entry field.
-            MessageBox.Show("txt_Leave");
+            //MessageBox.Show("txt_Leave");
+            this.FireSearchTextboxLeave();
         }
 
         private void txt_KeyUp(object sender, KeyEventArgs e)
@@ -67,6 +68,17 @@ namespace NoteLiner.App
                 {
                     MessageBox.Show("txt_KeyUp: Must specify title");
                 }
+            }
+        }
+
+
+        public event NoteEvent SearchTextboxLeave;
+
+        private void FireSearchTextboxLeave()
+        {
+            if (this.SearchTextboxLeave != null)
+            {
+                this.SearchTextboxLeave(this.txt.Text);
             }
         }
 
