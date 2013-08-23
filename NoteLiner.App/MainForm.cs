@@ -35,6 +35,14 @@ namespace NoteLiner.App
             //
             if (string.IsNullOrEmpty(Settings.Default.FilePath))
             {
+                FileForm fileForm = new FileForm();
+                if (DialogResult.OK == fileForm.ShowDialog(this))
+                {
+                }
+                else
+                {
+                    // TODO: Close application???
+                }
             }
             else
             {
