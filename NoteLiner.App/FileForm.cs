@@ -28,11 +28,24 @@ namespace NoteLiner.App
         private void btnOK_Click(object sender, EventArgs e)
         {
             this.DialogResult = DialogResult.OK;
+            this.Close();
         }
 
         private void btnCancel_Click(object sender, EventArgs e)
         {
             this.DialogResult = DialogResult.Cancel;
+            this.Close();
+        }
+
+        private void btnBrowse_Click(object sender, EventArgs e)
+        {
+            this.saveFileDialog.AddExtension = true;
+            this.saveFileDialog.Filter = "Noteliner File (.note)|*.note";
+            this.saveFileDialog.DefaultExt = "note";
+            if (DialogResult.OK == this.saveFileDialog.ShowDialog(this))
+            {
+                this.txtFilePath.Text = this.saveFileDialog.FileName;
+            }
         }
     }
 }
