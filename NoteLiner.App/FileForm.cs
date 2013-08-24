@@ -11,9 +11,28 @@ namespace NoteLiner.App
 {
     public partial class FileForm : Form
     {
+
+        public string FilePath
+        {
+            get
+            {
+                return this.txtFilePath.Text;
+            }
+        }
+
         public FileForm()
         {
             InitializeComponent();
+        }
+
+        private void btnOK_Click(object sender, EventArgs e)
+        {
+            this.DialogResult = DialogResult.OK;
+        }
+
+        private void btnCancel_Click(object sender, EventArgs e)
+        {
+            this.DialogResult = DialogResult.Cancel;
         }
     }
 }
