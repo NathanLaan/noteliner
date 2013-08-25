@@ -30,12 +30,8 @@ namespace NoteLiner.App
 
         public void Save()
         {
-
-            // TODO: open DB connection
-
             using (SQLiteConnection sqliteConnection = new SQLiteConnection(this.ConnectionString))
             {
-
                 foreach (Note note in this.List)
                 {
                     if (note.Dirty)
@@ -45,6 +41,16 @@ namespace NoteLiner.App
                         //
                     }
                 }
+            }
+        }
+
+        public void Create()
+        {
+            using (SQLiteConnection sqliteConnection = new SQLiteConnection(this.ConnectionString))
+            {
+                sqliteConnection.Open();
+                SQLiteCommand sqlCommand = new SQLiteCommand(this.CreateTableSQL_Note(), sqliteConnection);
+                sqlCommand.ExecuteNonQuery();
             }
         }
 

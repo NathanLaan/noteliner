@@ -8,9 +8,13 @@ namespace NoteLiner.App
 {
     public partial class MainForm : Form
     {
+
+        private NoteList list;
+
         public MainForm()
         {
             InitializeComponent();
+            this.list = new NoteList();
         }
 
         private void mnuFileExit_Click(object sender, EventArgs e)
@@ -30,22 +34,41 @@ namespace NoteLiner.App
 
         private void MainForm_Load(object sender, EventArgs e)
         {
-            //
-            // TODO: Check file name
-            //
-            if (string.IsNullOrEmpty(Settings.Default.FilePath))
+            try
             {
-                FileForm fileForm = new FileForm();
-                if (DialogResult.OK == fileForm.ShowDialog(this))
+                //
+                // TODO: Check file name
+                //
+                if (string.IsNullOrEmpty(Settings.Default.FilePath))
                 {
+                    FileForm fileForm = new FileForm();
+                    if (DialogResult.OK == fileForm.ShowDialog(this))
+                    {
+                        Settings.Default.FilePath = fileForm.FilePath;
+                        Settings.Default.Save();
+                        //
+                        // TODO: save file
+                        //
+                        this.list.FilePath = Settings.Default.FilePath;
+                        this.list.Create();
+                    }
+                    else
+                    {
+                        // TODO: Close application???
+                        Application.Exit();
+                    }
                 }
                 else
                 {
-                    // TODO: Close application???
+                    // TODO: Open file
                 }
             }
-            else
+            catch (Exception ex)
             {
+                //
+                // TODO: Error handling
+                //
+                MessageBox.Show(ex.ToString());
             }
         }
 
