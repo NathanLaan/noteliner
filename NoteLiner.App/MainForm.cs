@@ -32,6 +32,12 @@ namespace NoteLiner.App
             Application.Exit();
         }
 
+        private void DEBUG(string s)
+        {
+            this.txtDebug.AppendText(s);
+            this.txtDebug.AppendText(Environment.NewLine);
+        }
+
         private void MainForm_Load(object sender, EventArgs e)
         {
             try
@@ -61,6 +67,7 @@ namespace NoteLiner.App
                 else
                 {
                     // TODO: Open file
+                    DEBUG(Settings.Default.FilePath);
                 }
             }
             catch (Exception ex)
@@ -84,14 +91,12 @@ namespace NoteLiner.App
 
         private void noteList_SearchTextboxLeave(string title)
         {
-            this.txtDebug.AppendText("SearchTextboxLeave");
-            this.txtDebug.AppendText(Environment.NewLine);
+            DEBUG("SearchTextboxLeave");
         }
 
         private void noteList_NoteCreated_1(string title)
         {
-            this.txtDebug.AppendText("NoteCreated");
-            this.txtDebug.AppendText(Environment.NewLine);
+            DEBUG("NoteCreated");
             this.txtEdit.Focus();
         }
 

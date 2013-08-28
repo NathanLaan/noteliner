@@ -34,15 +34,15 @@
             this.mnuFileExit = new System.Windows.Forms.ToolStripMenuItem();
             this.mnuTools = new System.Windows.Forms.ToolStripMenuItem();
             this.mnuToolsOptions = new System.Windows.Forms.ToolStripMenuItem();
+            this.mnuToolsViewDebugInfo = new System.Windows.Forms.ToolStripMenuItem();
             this.mnuHelp = new System.Windows.Forms.ToolStripMenuItem();
             this.mnuHelpAbout = new System.Windows.Forms.ToolStripMenuItem();
             this.sts = new System.Windows.Forms.StatusStrip();
             this.spcHorizontal = new System.Windows.Forms.SplitContainer();
             this.spcVertical = new System.Windows.Forms.SplitContainer();
+            this.noteList = new NoteLiner.App.NoteListControl();
             this.txtEdit = new System.Windows.Forms.TextBox();
             this.txtDebug = new System.Windows.Forms.TextBox();
-            this.mnuToolsViewDebugInfo = new System.Windows.Forms.ToolStripMenuItem();
-            this.noteList = new NoteLiner.App.NoteListControl();
             this.mnu.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.spcHorizontal)).BeginInit();
             this.spcHorizontal.Panel1.SuspendLayout();
@@ -94,8 +94,20 @@
             // mnuToolsOptions
             // 
             this.mnuToolsOptions.Name = "mnuToolsOptions";
-            this.mnuToolsOptions.Size = new System.Drawing.Size(153, 22);
+            this.mnuToolsOptions.ShortcutKeys = ((System.Windows.Forms.Keys)(((System.Windows.Forms.Keys.Control | System.Windows.Forms.Keys.Shift) 
+            | System.Windows.Forms.Keys.O)));
+            this.mnuToolsOptions.Size = new System.Drawing.Size(222, 22);
             this.mnuToolsOptions.Text = "&Options";
+            // 
+            // mnuToolsViewDebugInfo
+            // 
+            this.mnuToolsViewDebugInfo.CheckOnClick = true;
+            this.mnuToolsViewDebugInfo.Name = "mnuToolsViewDebugInfo";
+            this.mnuToolsViewDebugInfo.ShortcutKeys = ((System.Windows.Forms.Keys)(((System.Windows.Forms.Keys.Control | System.Windows.Forms.Keys.Shift) 
+            | System.Windows.Forms.Keys.D)));
+            this.mnuToolsViewDebugInfo.Size = new System.Drawing.Size(222, 22);
+            this.mnuToolsViewDebugInfo.Text = "&View Debug Info";
+            this.mnuToolsViewDebugInfo.Click += new System.EventHandler(this.mnuToolsViewDebugInfo_Click);
             // 
             // mnuHelp
             // 
@@ -108,7 +120,9 @@
             // mnuHelpAbout
             // 
             this.mnuHelpAbout.Name = "mnuHelpAbout";
-            this.mnuHelpAbout.Size = new System.Drawing.Size(103, 22);
+            this.mnuHelpAbout.ShortcutKeys = ((System.Windows.Forms.Keys)(((System.Windows.Forms.Keys.Control | System.Windows.Forms.Keys.Shift) 
+            | System.Windows.Forms.Keys.A)));
+            this.mnuHelpAbout.Size = new System.Drawing.Size(172, 22);
             this.mnuHelpAbout.Text = "&About";
             // 
             // sts
@@ -156,6 +170,18 @@
             this.spcVertical.SplitterWidth = 5;
             this.spcVertical.TabIndex = 3;
             // 
+            // noteList
+            // 
+            this.noteList.BackColor = System.Drawing.SystemColors.Control;
+            this.noteList.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.noteList.Location = new System.Drawing.Point(0, 0);
+            this.noteList.Margin = new System.Windows.Forms.Padding(0);
+            this.noteList.Name = "noteList";
+            this.noteList.Size = new System.Drawing.Size(147, 306);
+            this.noteList.TabIndex = 0;
+            this.noteList.SearchTextboxLeave += new NoteLiner.App.NoteListControl.NoteEvent(this.noteList_SearchTextboxLeave);
+            this.noteList.NoteCreated += new NoteLiner.App.NoteListControl.NoteEvent(this.noteList_NoteCreated_1);
+            // 
             // txtEdit
             // 
             this.txtEdit.Dock = System.Windows.Forms.DockStyle.Fill;
@@ -178,28 +204,8 @@
             this.txtDebug.Multiline = true;
             this.txtDebug.Name = "txtDebug";
             this.txtDebug.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
-            this.txtDebug.Size = new System.Drawing.Size(466, 149);
+            this.txtDebug.Size = new System.Drawing.Size(150, 46);
             this.txtDebug.TabIndex = 1;
-            // 
-            // mnuToolsViewDebugInfo
-            // 
-            this.mnuToolsViewDebugInfo.CheckOnClick = true;
-            this.mnuToolsViewDebugInfo.Name = "mnuToolsViewDebugInfo";
-            this.mnuToolsViewDebugInfo.Size = new System.Drawing.Size(153, 22);
-            this.mnuToolsViewDebugInfo.Text = "&View Debug Info";
-            this.mnuToolsViewDebugInfo.Click += new System.EventHandler(this.mnuToolsViewDebugInfo_Click);
-            // 
-            // noteList
-            // 
-            this.noteList.BackColor = System.Drawing.SystemColors.Control;
-            this.noteList.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.noteList.Location = new System.Drawing.Point(0, 0);
-            this.noteList.Margin = new System.Windows.Forms.Padding(0);
-            this.noteList.Name = "noteList";
-            this.noteList.Size = new System.Drawing.Size(147, 306);
-            this.noteList.TabIndex = 0;
-            this.noteList.SearchTextboxLeave += new NoteLiner.App.NoteListControl.NoteEvent(this.noteList_SearchTextboxLeave);
-            this.noteList.NoteCreated += new NoteLiner.App.NoteListControl.NoteEvent(this.noteList_NoteCreated_1);
             // 
             // MainForm
             // 
@@ -211,7 +217,7 @@
             this.Controls.Add(this.mnu);
             this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.MainMenuStrip = this.mnu;
-            this.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.Margin = new System.Windows.Forms.Padding(2);
             this.MinimumSize = new System.Drawing.Size(235, 139);
             this.Name = "MainForm";
             this.Text = "NoteLiner";
