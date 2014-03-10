@@ -50,7 +50,11 @@
       <DependentUpon>TextEditControl.cs</DependentUpon>
     </Compile>
     <Compile Include="TextLine.cs" />
+    <Compile Include="TextLocation.cs" />
     <Compile Include="TextStyle.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Notes.txt" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

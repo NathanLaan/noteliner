@@ -1,0 +1,17 @@
+﻿- UI
+    - Undo/Redo command support
+    - Outline
+    - Implement left-hand side Gutter
+        - Show current line (caret) position (option to disable?)
+        - Show line numbers (option to disable?)
+    - Bookmarks?
+        - Line Update event to update bookmark positions?
+        - Where store bookmark data? Database?
+    - Outliner mode
+        - Collapsible sections
+    - Text highlighting
+        - Selection
+        - Current line
+    - Syntax Highlighting
+        - Syntax descriptors, rules, and styles.
+    - Find, Search & Replace
