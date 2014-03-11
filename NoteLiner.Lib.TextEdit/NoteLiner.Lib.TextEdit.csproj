@@ -51,6 +51,7 @@
     </Compile>
     <Compile Include="TextFile.cs" />
     <Compile Include="TextLine.cs" />
+    <Compile Include="TextLineState.cs" />
     <Compile Include="TextLocation.cs" />
     <Compile Include="TextStyle.cs" />
   </ItemGroup>
