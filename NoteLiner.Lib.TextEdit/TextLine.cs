@@ -15,6 +15,10 @@ namespace NoteLiner.Lib.TextEdit
 
         public bool IsChanged { get; set; }
 
+        public TextLineState State { get; set; }
+
+        public int Y { get; set; }
+
 
         
         public TextLine(int id)
