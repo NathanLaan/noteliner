@@ -20,3 +20,6 @@
     - Color themes
 
     - Word wrap!
+
+- NoteLiner UI
+    - Tabs!
