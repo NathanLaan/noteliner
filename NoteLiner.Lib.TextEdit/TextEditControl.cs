@@ -18,6 +18,10 @@ namespace NoteLiner.Lib.TextEdit
         private Rectangle GutterRectangle { get; set; }
         private Rectangle TextRectangle { get; set; }
 
+        // selection
+
+        private Color selectionColor;
+
         private Keys modifiers;
 
         public TextEditControl()
