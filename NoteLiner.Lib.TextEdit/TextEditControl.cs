@@ -15,8 +15,32 @@ namespace NoteLiner.Lib.TextEdit
 
         // Note: this could be set via a "theme"
         public Color GutterColor { get; set; }
-        private Rectangle GutterRectangle { get; set; }
-        private Rectangle TextRectangle { get; set; }
+
+        private int minLeft = 20;
+
+        private Rectangle GutterRectangle {
+            get
+            {
+                Rectangle rectangle = new Rectangle();
+                rectangle.X = 0;
+                rectangle.Y = 0;
+                rectangle.Height = this.Height;
+                rectangle.Width = this.minLeft;
+                return rectangle;
+            }
+        }
+        private Rectangle TextRectangle {
+            get
+            {
+                Rectangle gutter = this.GutterRectangle;
+                Rectangle rectangle = new Rectangle();
+                rectangle.X = gutter.Width;
+                rectangle.Y = 0;
+                rectangle.Height = this.Height;
+                rectangle.Width = this.Width - gutter.Width;
+                return rectangle;
+            }
+        }
 
         // selection
 

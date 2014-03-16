@@ -18,3 +18,8 @@
     - Zoomable text (Ctrl + mousewheel?)
     - Configurable font
     - Color themes
+
+    - Word wrap!
+
+- NoteLiner UI
+    - Tabs!
