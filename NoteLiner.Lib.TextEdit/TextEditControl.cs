@@ -43,10 +43,13 @@ namespace NoteLiner.Lib.TextEdit
         }
 
         // selection
-
         private Color selectionColor;
 
+        //
         private Keys modifiers;
+
+        // Shortcut keys
+        private List<ShortcutKeyCommand> shortcutKeyList;
 
         public TextEditControl()
         {
@@ -61,6 +64,7 @@ namespace NoteLiner.Lib.TextEdit
             this.Cursor = Cursors.IBeam;
             this.BackColor = Color.White;
             base.AutoScroll = true;
+            this.shortcutKeyList = new List<ShortcutKeyCommand>();
         }
 
 
@@ -80,14 +84,19 @@ namespace NoteLiner.Lib.TextEdit
                 this.modifiers = e.Modifiers;
                 this.keyEventHandled = false;
             }
-            this.ProcessKeyEvent(e.KeyData);
+            this.ProcessKeyEvent(e);
             e.Handled = true;
             Invalidate();
         }
 
 
-        private void ProcessKeyEvent(Keys keyData)
+        private void ProcessKeyEvent(KeyEventArgs e)
         {
+            if (e.KeyCode == Keys.Tab)
+            {
+                return;
+            }
+
         }
 
 
