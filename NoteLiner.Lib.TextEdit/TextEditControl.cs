@@ -97,6 +97,16 @@ namespace NoteLiner.Lib.TextEdit
                 return;
             }
 
+            // loop through shortcut keys
+            foreach (ShortcutKeyCommand shortcutKeyCommand in this.shortcutKeyList)
+            {
+            }
+
+            //
+        }
+
+        private void InsertKeyChar(char c)
+        {
         }
 
 
