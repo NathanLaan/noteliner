@@ -81,7 +81,7 @@ namespace NoteLiner.App
 
         private void noteList_NoteCreated(string title)
         {
-            this.txtEdit.Focus();
+            //this.txtEdit.Focus();
         }
 
         private void mnuToolsViewDebugInfo_Click(object sender, EventArgs e)
@@ -97,7 +97,7 @@ namespace NoteLiner.App
         private void noteList_NoteCreated_1(string title)
         {
             DEBUG("NoteCreated");
-            this.txtEdit.Focus();
+            //this.txtEdit.Focus();
         }
 
     }

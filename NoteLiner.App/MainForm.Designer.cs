@@ -40,9 +40,9 @@
             this.sts = new System.Windows.Forms.StatusStrip();
             this.spcHorizontal = new System.Windows.Forms.SplitContainer();
             this.spcVertical = new System.Windows.Forms.SplitContainer();
-            this.noteList = new NoteLiner.App.NoteListControl();
-            this.txtEdit = new System.Windows.Forms.TextBox();
             this.txtDebug = new System.Windows.Forms.TextBox();
+            this.noteList = new NoteLiner.App.NoteListControl();
+            this.textEditControl1 = new NoteLiner.Lib.TextEdit.TextEditControl();
             this.mnu.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.spcHorizontal)).BeginInit();
             this.spcHorizontal.Panel1.SuspendLayout();
@@ -72,7 +72,7 @@
             this.mnuFile.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.mnuFileExit});
             this.mnuFile.Name = "mnuFile";
-            this.mnuFile.Size = new System.Drawing.Size(35, 20);
+            this.mnuFile.Size = new System.Drawing.Size(37, 20);
             this.mnuFile.Text = "&File";
             // 
             // mnuFileExit
@@ -88,7 +88,7 @@
             this.mnuToolsOptions,
             this.mnuToolsViewDebugInfo});
             this.mnuTools.Name = "mnuTools";
-            this.mnuTools.Size = new System.Drawing.Size(44, 20);
+            this.mnuTools.Size = new System.Drawing.Size(48, 20);
             this.mnuTools.Text = "&Tools";
             // 
             // mnuToolsOptions
@@ -96,7 +96,7 @@
             this.mnuToolsOptions.Name = "mnuToolsOptions";
             this.mnuToolsOptions.ShortcutKeys = ((System.Windows.Forms.Keys)(((System.Windows.Forms.Keys.Control | System.Windows.Forms.Keys.Shift) 
             | System.Windows.Forms.Keys.O)));
-            this.mnuToolsOptions.Size = new System.Drawing.Size(222, 22);
+            this.mnuToolsOptions.Size = new System.Drawing.Size(235, 22);
             this.mnuToolsOptions.Text = "&Options";
             // 
             // mnuToolsViewDebugInfo
@@ -105,7 +105,7 @@
             this.mnuToolsViewDebugInfo.Name = "mnuToolsViewDebugInfo";
             this.mnuToolsViewDebugInfo.ShortcutKeys = ((System.Windows.Forms.Keys)(((System.Windows.Forms.Keys.Control | System.Windows.Forms.Keys.Shift) 
             | System.Windows.Forms.Keys.D)));
-            this.mnuToolsViewDebugInfo.Size = new System.Drawing.Size(222, 22);
+            this.mnuToolsViewDebugInfo.Size = new System.Drawing.Size(235, 22);
             this.mnuToolsViewDebugInfo.Text = "&View Debug Info";
             this.mnuToolsViewDebugInfo.Click += new System.EventHandler(this.mnuToolsViewDebugInfo_Click);
             // 
@@ -114,7 +114,7 @@
             this.mnuHelp.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.mnuHelpAbout});
             this.mnuHelp.Name = "mnuHelp";
-            this.mnuHelp.Size = new System.Drawing.Size(40, 20);
+            this.mnuHelp.Size = new System.Drawing.Size(44, 20);
             this.mnuHelp.Text = "&Help";
             // 
             // mnuHelpAbout
@@ -122,7 +122,7 @@
             this.mnuHelpAbout.Name = "mnuHelpAbout";
             this.mnuHelpAbout.ShortcutKeys = ((System.Windows.Forms.Keys)(((System.Windows.Forms.Keys.Control | System.Windows.Forms.Keys.Shift) 
             | System.Windows.Forms.Keys.A)));
-            this.mnuHelpAbout.Size = new System.Drawing.Size(172, 22);
+            this.mnuHelpAbout.Size = new System.Drawing.Size(181, 22);
             this.mnuHelpAbout.Text = "&About";
             // 
             // sts
@@ -164,35 +164,11 @@
             // 
             // spcVertical.Panel2
             // 
-            this.spcVertical.Panel2.Controls.Add(this.txtEdit);
+            this.spcVertical.Panel2.Controls.Add(this.textEditControl1);
             this.spcVertical.Size = new System.Drawing.Size(466, 306);
             this.spcVertical.SplitterDistance = 147;
             this.spcVertical.SplitterWidth = 5;
             this.spcVertical.TabIndex = 3;
-            // 
-            // noteList
-            // 
-            this.noteList.BackColor = System.Drawing.SystemColors.Control;
-            this.noteList.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.noteList.Location = new System.Drawing.Point(0, 0);
-            this.noteList.Margin = new System.Windows.Forms.Padding(0);
-            this.noteList.Name = "noteList";
-            this.noteList.Size = new System.Drawing.Size(147, 306);
-            this.noteList.TabIndex = 0;
-            this.noteList.SearchTextboxLeave += new NoteLiner.App.NoteListControl.NoteEvent(this.noteList_SearchTextboxLeave);
-            this.noteList.NoteCreated += new NoteLiner.App.NoteListControl.NoteEvent(this.noteList_NoteCreated_1);
-            // 
-            // txtEdit
-            // 
-            this.txtEdit.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.txtEdit.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.txtEdit.Location = new System.Drawing.Point(0, 0);
-            this.txtEdit.Margin = new System.Windows.Forms.Padding(3, 3, 3, 6);
-            this.txtEdit.Multiline = true;
-            this.txtEdit.Name = "txtEdit";
-            this.txtEdit.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
-            this.txtEdit.Size = new System.Drawing.Size(314, 306);
-            this.txtEdit.TabIndex = 0;
             // 
             // txtDebug
             // 
@@ -206,6 +182,30 @@
             this.txtDebug.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
             this.txtDebug.Size = new System.Drawing.Size(150, 46);
             this.txtDebug.TabIndex = 1;
+            // 
+            // noteList
+            // 
+            this.noteList.BackColor = System.Drawing.SystemColors.Control;
+            this.noteList.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.noteList.Location = new System.Drawing.Point(0, 0);
+            this.noteList.Margin = new System.Windows.Forms.Padding(0);
+            this.noteList.Name = "noteList";
+            this.noteList.Size = new System.Drawing.Size(147, 306);
+            this.noteList.TabIndex = 0;
+            this.noteList.SearchTextboxLeave += new NoteLiner.App.NoteListControl.NoteEvent(this.noteList_SearchTextboxLeave);
+            this.noteList.NoteCreated += new NoteLiner.App.NoteListControl.NoteEvent(this.noteList_NoteCreated_1);
+            // 
+            // textEditControl1
+            // 
+            this.textEditControl1.AutoScroll = true;
+            this.textEditControl1.BackColor = System.Drawing.Color.White;
+            this.textEditControl1.Cursor = System.Windows.Forms.Cursors.IBeam;
+            this.textEditControl1.Font = new System.Drawing.Font("Consolas", 10F);
+            this.textEditControl1.GutterColor = System.Drawing.Color.Empty;
+            this.textEditControl1.Location = new System.Drawing.Point(3, 3);
+            this.textEditControl1.Name = "textEditControl1";
+            this.textEditControl1.Size = new System.Drawing.Size(175, 173);
+            this.textEditControl1.TabIndex = 0;
             // 
             // MainForm
             // 
@@ -231,7 +231,6 @@
             this.spcHorizontal.ResumeLayout(false);
             this.spcVertical.Panel1.ResumeLayout(false);
             this.spcVertical.Panel2.ResumeLayout(false);
-            this.spcVertical.Panel2.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)(this.spcVertical)).EndInit();
             this.spcVertical.ResumeLayout(false);
             this.ResumeLayout(false);
@@ -252,9 +251,9 @@
         private System.Windows.Forms.SplitContainer spcHorizontal;
         private System.Windows.Forms.SplitContainer spcVertical;
         private NoteListControl noteList;
-        private System.Windows.Forms.TextBox txtEdit;
         private System.Windows.Forms.TextBox txtDebug;
         private System.Windows.Forms.ToolStripMenuItem mnuToolsViewDebugInfo;
+        private Lib.TextEdit.TextEditControl textEditControl1;
     }
 }
 
