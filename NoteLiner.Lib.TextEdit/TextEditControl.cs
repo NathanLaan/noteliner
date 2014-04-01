@@ -19,8 +19,7 @@ namespace NoteLiner.Lib.TextEdit
         private int minLeft = 20;
 
         private Rectangle GutterRectangle {
-            get
-            {
+            get {
                 Rectangle rectangle = new Rectangle();
                 rectangle.X = 0;
                 rectangle.Y = 0;
@@ -30,8 +29,7 @@ namespace NoteLiner.Lib.TextEdit
             }
         }
         private Rectangle TextRectangle {
-            get
-            {
+            get {
                 Rectangle gutter = this.GutterRectangle;
                 Rectangle rectangle = new Rectangle();
                 rectangle.X = gutter.Width;
@@ -51,6 +49,8 @@ namespace NoteLiner.Lib.TextEdit
         // Shortcut keys
         private List<ShortcutKeyCommand> shortcutKeyList;
 
+        private List<TextLine> textLineList;
+
         public TextEditControl()
         {
             InitializeComponent();
@@ -60,6 +60,7 @@ namespace NoteLiner.Lib.TextEdit
             SetStyle(ControlStyles.OptimizedDoubleBuffer, true);
             SetStyle(ControlStyles.ResizeRedraw, true);
             //
+            this.textLineList = new List<TextLine>();
             this.Font = new Font("Consolas", 10.0f, FontStyle.Regular, GraphicsUnit.Point);
             this.Cursor = Cursors.IBeam;
             this.BackColor = Color.White;
@@ -113,6 +114,9 @@ namespace NoteLiner.Lib.TextEdit
         protected override void OnPaint(PaintEventArgs e)
         {
             base.OnPaint(e);
+            this.DrawBorder(e.Graphics);
+            this.DrawGutter(e.Graphics);
+            this.DrawTextLines(e.Graphics);
 
 
         }
@@ -124,6 +128,13 @@ namespace NoteLiner.Lib.TextEdit
 
         private void DrawGutter(Graphics graphics)
         {
+        }
+
+        private void DrawTextLines(Graphics graphics)
+        {
+            for (int i = 0; i < this.textLineList.length; i++)
+            {
+            }
         }
 
     }
