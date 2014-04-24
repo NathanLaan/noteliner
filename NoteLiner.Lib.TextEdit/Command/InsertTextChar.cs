@@ -7,5 +7,9 @@ namespace NoteLiner.Lib.TextEdit.Command
 {
     public class InsertTextChar : CommandBase
     {
+        public override void Execute()
+        {
+            throw new NotImplementedException();
+        }
     }
 }

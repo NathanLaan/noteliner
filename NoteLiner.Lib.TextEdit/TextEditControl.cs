@@ -7,6 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using NoteLiner.Lib.TextEdit.Command;
 
 namespace NoteLiner.Lib.TextEdit
 {
@@ -132,7 +133,7 @@ namespace NoteLiner.Lib.TextEdit
 
         private void DrawTextLines(Graphics graphics)
         {
-            for (int i = 0; i < this.textLineList.length; i++)
+            for (int i = 0; i < this.textLineList.Count; i++)
             {
             }
         }

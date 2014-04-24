@@ -6,7 +6,10 @@ using System.Threading.Tasks;
 
 namespace NoteLiner.Lib.TextEdit.Command
 {
-    public class CommandBase
+    public abstract class CommandBase
     {
+
+        public abstract void Execute();
+
     }
 }
