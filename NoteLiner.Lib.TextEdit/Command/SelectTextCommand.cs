@@ -11,5 +11,9 @@ namespace NoteLiner.Lib.TextEdit.Command
         {
             throw new NotImplementedException();
         }
+        public override void Undo()
+        {
+            throw new NotImplementedException();
+        }
     }
 }

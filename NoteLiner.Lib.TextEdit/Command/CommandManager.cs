@@ -19,8 +19,10 @@ namespace NoteLiner.Lib.TextEdit.Command
         public void ExecuteCommand(CommandBase command)
         {
             this.undoStack.Push(command);
-
+            command.Execute();
         }
+
+
 
     }
 }

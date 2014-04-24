@@ -3,13 +3,12 @@ using System.Windows.Forms;
 
 namespace NoteLiner.Lib.TextEdit.Command
 {
-    public abstract class ShortcutKeyCommand : CommandBase
+    public abstract class ShortcutKeyCommand
     {
 
         public Keys ShortcutKeys { get; set; }
 
-        // Action!
-        public abstract void Execute(KeyEventArgs e);
+        public CommandBase Command { get; set; }
 
     }
 }

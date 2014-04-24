@@ -11,5 +11,7 @@ namespace NoteLiner.Lib.TextEdit.Command
 
         public abstract void Execute();
 
+        public abstract void Undo();
+
     }
 }
