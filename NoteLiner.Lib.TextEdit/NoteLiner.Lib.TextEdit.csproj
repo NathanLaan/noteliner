@@ -42,7 +42,10 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Command.cs" />
+    <Compile Include="Command\CommandBase.cs" />
+    <Compile Include="Command\InsertText.cs" />
+    <Compile Include="Command\InsertTextChar.cs" />
+    <Compile Include="Command\SelectTextCommand.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="ShortcutKeyCommand.cs" />
     <Compile Include="TextChar.cs" />

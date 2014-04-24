@@ -2,11 +2,10 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 
-namespace NoteLiner.Lib.TextEdit
+namespace NoteLiner.Lib.TextEdit.Command
 {
-    public class Command
+    public class InsertText : CommandBase
     {
     }
 }

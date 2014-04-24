@@ -3,7 +3,7 @@ using System.Windows.Forms;
 
 namespace NoteLiner.Lib.TextEdit
 {
-    public abstract class ShortcutKeyCommand : Command
+    public abstract class ShortcutKeyCommand : CommandBase
     {
 
         public Keys ShortcutKeys { get; set; }
