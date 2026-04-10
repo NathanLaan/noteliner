@@ -1,5 +1,6 @@
 <script>
   import { onMount } from 'svelte';
+  import { projectState } from '../stores/project.svelte.js';
 
   let { onClose, required = false } = $props();
 
@@ -51,6 +52,11 @@
       {#if required}
         <p class="info-msg">Git requires a name and email to save changes. These are stored in the local repository config.</p>
       {/if}
+
+      <div class="setting-group">
+        <span class="setting-label">Project Location</span>
+        <p class="folder-path">{projectState.folderPath}</p>
+      </div>
 
       <div class="setting-group">
         <span class="setting-label">Git Configuration</span>
@@ -137,6 +143,16 @@
 
   .setting-group {
     margin-bottom: 20px;
+  }
+
+  .folder-path {
+    font-size: 13px;
+    color: var(--text-secondary);
+    word-break: break-all;
+    padding: 8px 12px;
+    background: var(--bg-base);
+    border-radius: 6px;
+    font-family: monospace;
   }
 
   .setting-label {
