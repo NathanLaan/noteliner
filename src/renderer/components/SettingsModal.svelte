@@ -40,6 +40,21 @@
         </div>
       </div>
 
+      <div class="setting-group">
+        <span class="setting-label">UI Scale</span>
+        <div class="scale-list">
+          {#each themeState.scaleList as scale (scale.id)}
+            <button
+              class="scale-option"
+              class:active={themeState.scale === scale.id}
+              onclick={() => themeState.setScale(scale.id)}
+            >
+              {scale.label}
+            </button>
+          {/each}
+        </div>
+      </div>
+
       <div class="modal-footer">
         <button class="close-btn" onclick={onClose}>OK</button>
       </div>
@@ -143,6 +158,30 @@
   }
 
   .theme-option.active .theme-radio {
+    color: var(--accent);
+  }
+
+  .scale-list {
+    display: flex;
+    gap: 4px;
+  }
+
+  .scale-option {
+    padding: 8px 14px;
+    background: var(--bg-button);
+    color: var(--text-primary);
+    border-radius: 6px;
+    font-size: 13px;
+    transition: background 0.15s;
+  }
+
+  .scale-option:hover {
+    background: var(--bg-button-hover);
+  }
+
+  .scale-option.active {
+    background: var(--bg-selected);
+    outline: 1px solid var(--accent);
     color: var(--accent);
   }
 

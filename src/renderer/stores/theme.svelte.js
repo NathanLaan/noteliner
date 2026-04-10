@@ -109,8 +109,22 @@ const THEMES = {
   }
 };
 
+const UI_SCALES = [
+  { id: '50', label: '50%', value: 0.5 },
+  { id: '75', label: '75%', value: 0.75 },
+  { id: '100', label: '100%', value: 1.0 },
+  { id: '110', label: '110%', value: 1.1 },
+  { id: '120', label: '120%', value: 1.2 },
+  { id: '130', label: '130%', value: 1.3 },
+  { id: '140', label: '140%', value: 1.4 },
+  { id: '150', label: '150%', value: 1.5 },
+  { id: '175', label: '175%', value: 1.75 },
+  { id: '200', label: '200%', value: 2.0 },
+];
+
 class ThemeState {
   current = $state('midnight');
+  scale = $state('100');
 
   get theme() {
     return THEMES[this.current];
@@ -120,11 +134,47 @@ class ThemeState {
     return Object.entries(THEMES).map(([id, t]) => ({ id, name: t.name }));
   }
 
+  get scaleList() {
+    return UI_SCALES;
+  }
+
   set(themeId) {
     if (!THEMES[themeId]) return;
     this.current = themeId;
     this.apply();
     localStorage.setItem('noteliner-theme', themeId);
+  }
+
+  setScale(scaleId) {
+    const entry = UI_SCALES.find(s => s.id === scaleId);
+    if (!entry) return;
+    this.scale = scaleId;
+    this.applyScale();
+    localStorage.setItem('noteliner-scale', scaleId);
+  }
+
+  zoomIn() {
+    const idx = UI_SCALES.findIndex(s => s.id === this.scale);
+    if (idx < UI_SCALES.length - 1) this.setScale(UI_SCALES[idx + 1].id);
+  }
+
+  zoomOut() {
+    const idx = UI_SCALES.findIndex(s => s.id === this.scale);
+    if (idx > 0) this.setScale(UI_SCALES[idx - 1].id);
+  }
+
+  zoomReset() {
+    this.setScale('100');
+  }
+
+  applyScale() {
+    const entry = UI_SCALES.find(s => s.id === this.scale);
+    if (entry) {
+      const root = document.documentElement;
+      root.style.setProperty('--ui-zoom', entry.value);
+      root.style.setProperty('--ui-zoom-height', `${100 / entry.value}vh`);
+      root.style.setProperty('--ui-zoom-width', `${100 / entry.value}vw`);
+    }
   }
 
   apply() {
@@ -133,12 +183,17 @@ class ThemeState {
     for (const [key, value] of Object.entries(vars)) {
       root.style.setProperty(key, value);
     }
+    this.applyScale();
   }
 
   init() {
     const saved = localStorage.getItem('noteliner-theme');
     if (saved && THEMES[saved]) {
       this.current = saved;
+    }
+    const savedScale = localStorage.getItem('noteliner-scale');
+    if (savedScale && UI_SCALES.find(s => s.id === savedScale)) {
+      this.scale = savedScale;
     }
     this.apply();
   }

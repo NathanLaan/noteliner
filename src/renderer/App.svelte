@@ -58,6 +58,15 @@
       } else if (e.ctrlKey && e.key === 'i') {
         e.preventDefault();
         showAbout = true;
+      } else if (e.ctrlKey && (e.key === '=' || e.key === '+')) {
+        e.preventDefault();
+        themeState.zoomIn();
+      } else if (e.ctrlKey && e.key === '-') {
+        e.preventDefault();
+        themeState.zoomOut();
+      } else if (e.ctrlKey && e.key === '0') {
+        e.preventDefault();
+        themeState.zoomReset();
       }
     }
 
@@ -279,7 +288,9 @@
 <style>
   .app-layout {
     display: flex;
-    height: 100vh;
+    zoom: var(--ui-zoom, 1);
+    height: var(--ui-zoom-height, 100vh);
+    width: var(--ui-zoom-width, 100vw);
     overflow: hidden;
   }
 
