@@ -1,12 +1,25 @@
 <script>
   import { onMount, onDestroy } from 'svelte';
   import { projectState } from '../stores/project.svelte.js';
+  import { themeState } from '../stores/theme.svelte.js';
   import { logState } from '../stores/log.svelte.js';
   import { EditorView, basicSetup } from 'codemirror';
   import { markdown } from '@codemirror/lang-markdown';
   import { languages } from '@codemirror/language-data';
   import { EditorState } from '@codemirror/state';
   import { oneDark } from '@codemirror/theme-one-dark';
+
+  const lightTheme = EditorView.theme({
+    '&': { backgroundColor: '#ffffff', color: '#1a1a1a' },
+    '.cm-content': { caretColor: '#1a1a1a' },
+    '.cm-cursor': { borderLeftColor: '#1a1a1a' },
+    '.cm-activeLine': { backgroundColor: 'rgba(0, 0, 0, 0.04)' },
+    '.cm-selectionMatch': { backgroundColor: 'rgba(50, 120, 220, 0.15)' },
+    '&.cm-focused .cm-selectionBackground, .cm-selectionBackground': { backgroundColor: 'rgba(50, 120, 220, 0.2)' },
+    '.cm-gutters': { backgroundColor: '#f5f5f5', color: '#999999', borderRight: '1px solid #e0e0e0' },
+    '.cm-activeLineGutter': { backgroundColor: 'rgba(0, 0, 0, 0.06)' },
+    '.cm-foldPlaceholder': { backgroundColor: '#e8e8e8', color: '#666666' },
+  }, { dark: false });
 
   let { onTogglePreview, showPreview, onGitConfigRequired = () => {} } = $props();
 
@@ -17,6 +30,7 @@
   let editorView = null;
   let saveTimeout = null;
   let currentFileId = null;
+  let currentTheme = null;
   let isUpdating = false;
 
   // Custom theme overrides
@@ -26,6 +40,10 @@
     '.cm-content': { padding: '16px 0' },
     '.cm-line': { padding: '0 16px' }
   });
+
+  function getEditorTheme() {
+    return themeState.current === 'light' ? lightTheme : oneDark;
+  }
 
   function createEditor() {
     if (editorView) {
@@ -37,7 +55,7 @@
       extensions: [
         basicSetup,
         markdown({ codeLanguages: languages }),
-        oneDark,
+        getEditorTheme(),
         customTheme,
         EditorView.updateListener.of((update) => {
           if (update.docChanged && !isUpdating) {
@@ -147,7 +165,17 @@
   }
 
   onMount(() => {
+    currentTheme = themeState.current;
     createEditor();
+  });
+
+  // Recreate editor when theme changes
+  $effect(() => {
+    const theme = themeState.current;
+    if (currentTheme !== null && theme !== currentTheme) {
+      currentTheme = theme;
+      if (editorContainer) createEditor();
+    }
   });
 
   onDestroy(() => {
