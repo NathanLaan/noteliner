@@ -55,7 +55,12 @@
 
       <div class="setting-group">
         <span class="setting-label">Project Location</span>
-        <p class="folder-path">{projectState.folderPath}</p>
+        <div class="folder-row">
+          <p class="folder-path">{projectState.folderPath}</p>
+          <button class="open-folder-btn" onclick={() => window.api.openPath(projectState.folderPath)} title="Open in file manager">
+            <i class="fas fa-folder-open"></i>
+          </button>
+        </div>
       </div>
 
       <div class="setting-group">
@@ -145,7 +150,14 @@
     margin-bottom: 20px;
   }
 
+  .folder-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
   .folder-path {
+    flex: 1;
     font-size: 13px;
     color: var(--text-secondary);
     word-break: break-all;
@@ -153,6 +165,25 @@
     background: var(--bg-base);
     border-radius: 6px;
     font-family: monospace;
+  }
+
+  .open-folder-btn {
+    flex-shrink: 0;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
+    color: var(--text-muted);
+    background: var(--bg-button);
+    font-size: 14px;
+    transition: background 0.15s, color 0.15s;
+  }
+
+  .open-folder-btn:hover {
+    background: var(--bg-button-hover);
+    color: var(--text-primary);
   }
 
   .setting-label {
