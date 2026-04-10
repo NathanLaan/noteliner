@@ -7,7 +7,9 @@
     <h2>NoteLiner</h2>
     <p class="version">Version {__APP_VERSION__}</p>
     <p class="desc">An outliner-style note-taking application built with Electron and Svelte.</p>
-    <button class="close-btn" onclick={onClose}>Close</button>
+    <div class="modal-footer">
+      <button class="close-btn" onclick={onClose}>OK</button>
+    </div>
   </div>
 </div>
 
@@ -28,7 +30,7 @@
     border-radius: 12px;
     padding: 32px;
     min-width: 320px;
-    text-align: center;
+    text-align: left;
   }
 
   h2 {
@@ -47,6 +49,11 @@
     color: var(--text-secondary);
     margin-bottom: 24px;
     line-height: 1.5;
+  }
+
+  .modal-footer {
+    display: flex;
+    justify-content: flex-end;
   }
 
   .close-btn {
