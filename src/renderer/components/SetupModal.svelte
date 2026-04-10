@@ -2,9 +2,17 @@
   let { folderPath, onSetup, onCancel } = $props();
   let remoteUrl = $state('');
   let mode = $state('choose'); // 'choose' | 'remote'
+
+  function focusOnMount(node) {
+    node.focus();
+  }
+
+  function handleKeydown(e) {
+    if (e.key === 'Escape') onCancel();
+  }
 </script>
 
-<div class="modal-overlay" onclick={(e) => { if (e.target === e.currentTarget) onCancel(); }} onkeydown={(e) => { if (e.key === 'Escape') onCancel(); }} role="dialog" aria-modal="true" tabindex="-1">
+<div class="modal-overlay" use:focusOnMount onclick={(e) => { if (e.target === e.currentTarget) onCancel(); }} onkeydown={handleKeydown} role="dialog" aria-modal="true" tabindex="-1">
   <div class="modal">
     <h2>Set Up Project</h2>
     <p class="folder-path">{folderPath}</p>
