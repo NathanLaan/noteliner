@@ -114,6 +114,3 @@ ipcMain.handle('git:pull', async () => {
   return await gitService.pull(projectService.projectPath);
 });
 
-ipcMain.handle('app:getVersion', () => {
-  return app.getVersion();
-});

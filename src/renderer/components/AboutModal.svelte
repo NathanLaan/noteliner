@@ -1,18 +1,11 @@
 <script>
-  import { onMount } from 'svelte';
-
   let { onClose } = $props();
-  let version = $state('');
-
-  onMount(async () => {
-    version = await window.api.getVersion();
-  });
 </script>
 
 <div class="modal-overlay" onclick={(e) => { if (e.target === e.currentTarget) onClose(); }} onkeydown={(e) => { if (e.key === 'Escape') onClose(); }} role="dialog" aria-modal="true" tabindex="-1">
   <div class="modal">
     <h2>NoteLiner</h2>
-    <p class="version">Version {version}</p>
+    <p class="version">Version {__APP_VERSION__}</p>
     <p class="desc">An outliner-style note-taking application built with Electron and Svelte.</p>
     <button class="close-btn" onclick={onClose}>Close</button>
   </div>

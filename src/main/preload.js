@@ -21,9 +21,6 @@ contextBridge.exposeInMainWorld('api', {
   gitPush: () => ipcRenderer.invoke('git:push'),
   gitPull: () => ipcRenderer.invoke('git:pull'),
 
-  // App
-  getVersion: () => ipcRenderer.invoke('app:getVersion'),
-
   // Events
   onGitLog: (callback) => {
     const listener = (_event, msg) => callback(msg);
