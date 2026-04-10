@@ -1,5 +1,6 @@
 <script>
   import { projectState } from '../stores/project.svelte.js';
+  import FileTree from './FileTree.svelte';
 
   let {
     parentId,
@@ -60,6 +61,17 @@
     dragOverPosition = null;
   }
 
+  function autoFocus(node) {
+    node.focus();
+  }
+
+  function handleKeydown(e, fileId) {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      onSelect(fileId);
+    }
+  }
+
   function handleContextMenu(e, file) {
     e.preventDefault();
     const action = prompt(`File: ${file.name}\n\nType "rename" to rename, "delete" to delete:`);
@@ -89,9 +101,11 @@
     ondragleave={handleDragLeave}
     ondrop={(e) => handleDropEvent(e, file.id)}
     onclick={() => onSelect(file.id)}
+    onkeydown={(e) => handleKeydown(e, file.id)}
     ondblclick={() => onStartRename(file.id, file.name)}
     oncontextmenu={(e) => handleContextMenu(e, file)}
     role="treeitem"
+    aria-selected={isSelected}
     tabindex="0"
   >
     {#if file.id === editingId}
@@ -102,7 +116,7 @@
         oninput={(e) => onEditingNameChange(e.target.value)}
         onblur={onCommitRename}
         onkeydown={(e) => { if (e.key === 'Enter') onCommitRename(); if (e.key === 'Escape') { onEditingNameChange(''); onCommitRename(); } }}
-        autofocus
+        use:autoFocus
       />
     {:else}
       <i class="fas fa-file-lines file-icon"></i>
@@ -113,7 +127,7 @@
     {/if}
   </div>
 
-  <svelte:self
+  <FileTree
     parentId={file.id}
     {selectedId}
     {editingId}

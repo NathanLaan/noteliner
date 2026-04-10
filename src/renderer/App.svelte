@@ -110,7 +110,8 @@
             bind:width={sidebarWidth}
           />
         </div>
-        <div class="resizer sidebar-resizer" onmousedown={(e) => {
+        <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+        <div class="resizer sidebar-resizer" role="separator" aria-orientation="vertical" tabindex="-1" onmousedown={(e) => {
           const startX = e.clientX;
           const startWidth = sidebarWidth;
           const onMouseMove = (e) => {
@@ -134,7 +135,8 @@
         {/if}
       </div>
       {#if showLog}
-        <div class="log-resizer" onmousedown={(e) => {
+        <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+        <div class="log-resizer" role="separator" aria-orientation="horizontal" tabindex="-1" onmousedown={(e) => {
           const startY = e.clientY;
           const startHeight = logPanelHeight;
           const onMouseMove = (e) => {

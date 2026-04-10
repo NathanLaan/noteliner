@@ -4,12 +4,12 @@
   let { onClose } = $props();
 </script>
 
-<div class="modal-overlay" onclick={onClose} role="dialog" aria-modal="true">
-  <div class="modal" onclick={(e) => e.stopPropagation()}>
+<div class="modal-overlay" onclick={(e) => { if (e.target === e.currentTarget) onClose(); }} onkeydown={(e) => { if (e.key === 'Escape') onClose(); }} role="dialog" aria-modal="true" tabindex="-1">
+  <div class="modal">
     <h2>Settings</h2>
 
     <div class="setting-group">
-      <label class="setting-label">Theme</label>
+      <span class="setting-label">Theme</span>
       <div class="theme-list">
         {#each themeState.list as theme (theme.id)}
           <button

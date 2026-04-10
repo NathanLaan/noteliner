@@ -4,8 +4,8 @@
   let mode = $state('choose'); // 'choose' | 'remote'
 </script>
 
-<div class="modal-overlay" onclick={onCancel} role="dialog" aria-modal="true">
-  <div class="modal" onclick={(e) => e.stopPropagation()}>
+<div class="modal-overlay" onclick={(e) => { if (e.target === e.currentTarget) onCancel(); }} onkeydown={(e) => { if (e.key === 'Escape') onCancel(); }} role="dialog" aria-modal="true" tabindex="-1">
+  <div class="modal">
     <h2>Set Up Project</h2>
     <p class="folder-path">{folderPath}</p>
 

@@ -8,7 +8,8 @@ export default defineConfig({
   root: 'src/renderer',
   build: {
     outDir: path.resolve(__dirname, 'dist'),
-    emptyOutDir: true
+    emptyOutDir: true,
+    chunkSizeWarningLimit: 1000
   },
   resolve: {
     alias: {
