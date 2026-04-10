@@ -31,6 +31,9 @@
       } else if (e.ctrlKey && e.key === ',') {
         e.preventDefault();
         showSettings = true;
+      } else if (e.ctrlKey && e.key === 'l') {
+        e.preventDefault();
+        handleToggleLog();
       } else if (e.ctrlKey && e.key === 'i') {
         e.preventDefault();
         showAbout = true;

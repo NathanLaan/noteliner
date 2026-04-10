@@ -15,7 +15,7 @@
 
   <div class="toolbar-spacer"></div>
 
-  <button class="toolbar-btn" onclick={onToggleLog} title="Show Log">
+  <button class="toolbar-btn" onclick={onToggleLog} title="Show Log (Ctrl+L)">
     <i class="fas fa-terminal"></i>
   </button>
 
