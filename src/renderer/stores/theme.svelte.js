@@ -31,6 +31,8 @@ const THEMES = {
       '--pre-bg': '#11111b',
       '--blockquote-border': '#45475a',
       '--tag-bg': '#313244',
+      '--modal-header-bg': '#2a2a4a',
+      '--modal-header-text': '#cdd6f4',
     }
   },
   dark: {
@@ -65,6 +67,8 @@ const THEMES = {
       '--pre-bg': '#111111',
       '--blockquote-border': '#444444',
       '--tag-bg': '#333333',
+      '--modal-header-bg': '#2a2a2a',
+      '--modal-header-text': '#e0e0e0',
     }
   },
   light: {
@@ -99,6 +103,8 @@ const THEMES = {
       '--pre-bg': '#f0f0f0',
       '--blockquote-border': '#d4d4d4',
       '--tag-bg': '#e0e0e0',
+      '--modal-header-bg': '#e8e8e8',
+      '--modal-header-text': '#1a1a1a',
     }
   }
 };
