@@ -80,7 +80,7 @@
 
 <div class="attachment-panel">
   <div class="panel-header">
-    <span class="panel-title">Attachments</span>
+    <span class="panel-title">ATTACHMENTS</span>
     {#if projectState.selectedFileId}
       <button class="add-btn" onclick={handleAddFiles} title="Add attachment">
         <i class="fas fa-plus"></i>
@@ -133,6 +133,8 @@
     align-items: center;
     justify-content: space-between;
     padding: 8px 12px;
+    min-height: 44px;
+    box-sizing: border-box;
     background: var(--bg-base);
     border-bottom: 1px solid var(--border);
     flex-shrink: 0;
@@ -141,7 +143,6 @@
   .panel-title {
     font-size: 11px;
     font-weight: 600;
-    text-transform: uppercase;
     letter-spacing: 0.5px;
     color: var(--text-muted);
   }

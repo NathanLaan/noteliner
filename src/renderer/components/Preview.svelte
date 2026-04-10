@@ -2,6 +2,8 @@
   import { projectState } from '../stores/project.svelte.js';
   import { marked } from 'marked';
 
+  let { onClose = () => {} } = $props();
+
   function resolveAttachmentUrls(rawHtml) {
     return rawHtml.replace(
       /(?:src|href)="\.?\/?_attachments\/([^"]+)"/g,
@@ -17,7 +19,10 @@
 
 <div class="preview-wrapper">
   <div class="preview-toolbar">
-    <span class="preview-title">Preview</span>
+    <span class="preview-title">PREVIEW</span>
+    <button class="close-btn" onclick={onClose} title="Close Preview">
+      <i class="fas fa-xmark"></i>
+    </button>
   </div>
   <div class="preview-content">
     {@html html}
@@ -32,16 +37,38 @@
   }
 
   .preview-toolbar {
-    padding: 8px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 12px;
+    min-height: 44px;
+    box-sizing: border-box;
     background: var(--bg-base);
     border-bottom: 1px solid var(--border);
     flex-shrink: 0;
   }
 
   .preview-title {
-    font-size: 13px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
     color: var(--text-muted);
-    font-weight: 500;
+  }
+
+  .close-btn {
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    color: var(--text-muted);
+    font-size: 12px;
+  }
+
+  .close-btn:hover {
+    background: var(--bg-button);
+    color: var(--text-primary);
   }
 
   .preview-content {

@@ -59,7 +59,7 @@
 
 <div class="sidebar-content">
   <div class="sidebar-header">
-    <span class="sidebar-title">Files</span>
+    <span class="sidebar-title">FILES</span>
   </div>
   <div class="file-list">
     <FileTree
@@ -85,17 +85,21 @@
   }
 
   .sidebar-header {
-    padding: 12px 16px 8px;
+    padding: 8px 12px;
+    min-height: 44px;
+    box-sizing: border-box;
     display: flex;
     align-items: center;
     justify-content: space-between;
+    background: var(--bg-base);
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
   }
 
   .sidebar-title {
     font-size: 11px;
     font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
+    letter-spacing: 0.5px;
     color: var(--text-muted);
   }
 

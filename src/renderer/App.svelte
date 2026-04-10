@@ -230,7 +230,7 @@
         {#if showPreview}
           <div class="resizer preview-resizer"></div>
           <div class="preview-area">
-            <Preview />
+            <Preview onClose={handleTogglePreview} />
           </div>
         {/if}
         {#if showAttachments}

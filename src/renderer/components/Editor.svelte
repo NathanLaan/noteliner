@@ -208,20 +208,25 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 8px 16px;
+    padding: 8px 12px;
+    min-height: 44px;
+    box-sizing: border-box;
     background: var(--bg-base);
     border-bottom: 1px solid var(--border);
     flex-shrink: 0;
   }
 
   .file-name {
-    font-size: 13px;
-    color: var(--text-primary);
-    font-weight: 500;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    color: var(--text-muted);
   }
 
   .no-file {
-    font-size: 13px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
     color: var(--text-muted);
     font-style: italic;
   }
