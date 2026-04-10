@@ -3,7 +3,7 @@
 </script>
 
 <div class="toolbar">
-  <button class="toolbar-btn" onclick={onOpenFolder} title="Open Folder">
+  <button class="toolbar-btn" onclick={onOpenFolder} title="Open Folder (Ctrl+O)">
     <i class="fas fa-folder-open"></i>
   </button>
 
@@ -19,11 +19,11 @@
     <i class="fas fa-terminal"></i>
   </button>
 
-  <button class="toolbar-btn" onclick={onShowSettings} title="Settings">
+  <button class="toolbar-btn" onclick={onShowSettings} title="Settings (Ctrl+,)">
     <i class="fas fa-gear"></i>
   </button>
 
-  <button class="toolbar-btn" onclick={onShowAbout} title="About">
+  <button class="toolbar-btn" onclick={onShowAbout} title="About (Ctrl+I)">
     <i class="fas fa-circle-info"></i>
   </button>
 </div>

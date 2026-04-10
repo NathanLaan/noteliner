@@ -23,6 +23,22 @@
 
   onMount(() => {
     themeState.init();
+
+    function handleKeydown(e) {
+      if (e.ctrlKey && e.key === 'o') {
+        e.preventDefault();
+        handleOpenFolder();
+      } else if (e.ctrlKey && e.key === ',') {
+        e.preventDefault();
+        showSettings = true;
+      } else if (e.ctrlKey && e.key === 'i') {
+        e.preventDefault();
+        showAbout = true;
+      }
+    }
+
+    window.addEventListener('keydown', handleKeydown);
+    return () => window.removeEventListener('keydown', handleKeydown);
   });
 
   async function handleOpenFolder() {
