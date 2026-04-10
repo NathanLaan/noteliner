@@ -30,6 +30,15 @@ contextBridge.exposeInMainWorld('api', {
   openFileDialog: () => ipcRenderer.invoke('dialog:openFiles'),
   openPath: (filePath) => ipcRenderer.invoke('shell:openPath', filePath),
 
+  // Recent projects
+  getRecentProjects: () => ipcRenderer.invoke('projects:getRecent'),
+  addRecentProject: (folderPath) => ipcRenderer.invoke('projects:addRecent', folderPath),
+  removeRecentProject: (folderPath) => ipcRenderer.invoke('projects:removeRecent', folderPath),
+
+  // System
+  getSystemInfo: () => ipcRenderer.invoke('system:getInfo'),
+  ensureDir: (dirPath) => ipcRenderer.invoke('fs:ensureDir', dirPath),
+
   // Events
   onGitLog: (callback) => {
     const listener = (_event, msg) => callback(msg);

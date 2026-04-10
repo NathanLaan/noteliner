@@ -10,6 +10,7 @@
   import SetupModal from './components/SetupModal.svelte';
   import SettingsModal from './components/SettingsModal.svelte';
   import ProjectSettingsModal from './components/ProjectSettingsModal.svelte';
+  import NewProjectModal from './components/NewProjectModal.svelte';
   import AttachmentPanel from './components/AttachmentPanel.svelte';
   import { projectState } from './stores/project.svelte.js';
   import { themeState } from './stores/theme.svelte.js';
@@ -22,6 +23,7 @@
   let showSetup = $state(false);
   let showSettings = $state(false);
   let showProjectSettings = $state(false);
+  let showNewProject = $state(false);
   let projectSettingsRequired = $state(false);
   let setupFolderPath = $state('');
   let sidebarWidth = $state(260);
@@ -63,17 +65,34 @@
     return () => window.removeEventListener('keydown', handleKeydown);
   });
 
+  function loadProject(folderPath, result) {
+    if (result.status === 'loaded') {
+      projectState.load(folderPath, result.index);
+      window.api.addRecentProject(folderPath);
+      if (result.needsGitConfig) {
+        projectSettingsRequired = true;
+        showProjectSettings = true;
+      }
+    }
+  }
+
   async function handleOpenFolder() {
     const folderPath = await window.api.openFolderDialog();
     if (!folderPath) return;
 
     const result = await window.api.openProject(folderPath);
     if (result.status === 'loaded') {
-      projectState.load(folderPath, result.index);
-      if (result.needsGitConfig) {
-        projectSettingsRequired = true;
-        showProjectSettings = true;
-      }
+      loadProject(folderPath, result);
+    } else if (result.status === 'needs_setup') {
+      setupFolderPath = folderPath;
+      showSetup = true;
+    }
+  }
+
+  async function handleOpenRecent(folderPath) {
+    const result = await window.api.openProject(folderPath);
+    if (result.status === 'loaded') {
+      loadProject(folderPath, result);
     } else if (result.status === 'needs_setup') {
       setupFolderPath = folderPath;
       showSetup = true;
@@ -84,11 +103,17 @@
     showSetup = false;
     const result = await window.api.initProject(setupFolderPath, remoteUrl);
     if (result.status === 'loaded') {
-      projectState.load(setupFolderPath, result.index);
-      if (result.needsGitConfig) {
-        projectSettingsRequired = true;
-        showProjectSettings = true;
-      }
+      loadProject(setupFolderPath, result);
+    }
+  }
+
+  async function handleNewProjectConfirm({ folderPath, name, email }) {
+    showNewProject = false;
+    const result = await window.api.initProject(folderPath, '');
+    if (result.status === 'loaded') {
+      await window.api.setGitConfig(name, email);
+      projectState.load(folderPath, result.index);
+      window.api.addRecentProject(folderPath);
     }
   }
 
@@ -143,6 +168,13 @@
   <SettingsModal onClose={() => showSettings = false} />
 {/if}
 
+{#if showNewProject}
+  <NewProjectModal
+    onConfirm={handleNewProjectConfirm}
+    onCancel={() => showNewProject = false}
+  />
+{/if}
+
 {#if showProjectSettings}
   <ProjectSettingsModal
     required={projectSettingsRequired}
@@ -164,7 +196,11 @@
 
   {#if !projectState.isOpen}
     <div class="main-area">
-      <OpenScreen onOpenFolder={handleOpenFolder} />
+      <OpenScreen
+        onOpenFolder={handleOpenFolder}
+        onNewProject={() => showNewProject = true}
+        onOpenRecent={handleOpenRecent}
+      />
     </div>
   {:else}
     <div class="main-area">
