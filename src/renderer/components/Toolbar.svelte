@@ -8,7 +8,7 @@
   </button>
 
   {#if projectOpen}
-    <button class="toolbar-btn" onclick={onNewFile} title="New File">
+    <button class="toolbar-btn" onclick={onNewFile} title="New File (Ctrl+N)">
       <i class="fas fa-file-circle-plus"></i>
     </button>
 

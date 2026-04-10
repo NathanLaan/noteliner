@@ -178,7 +178,7 @@
         class="editor-btn"
         class:active={showPreview}
         onclick={onTogglePreview}
-        title="Toggle Preview"
+        title="Toggle Preview (Ctrl+P)"
       >
         <i class="fas fa-eye"></i>
       </button>

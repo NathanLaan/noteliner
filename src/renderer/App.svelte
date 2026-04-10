@@ -28,9 +28,15 @@
     themeState.init();
 
     function handleKeydown(e) {
-      if (e.ctrlKey && e.key === 'o') {
+      if (e.ctrlKey && e.key === 'n') {
+        e.preventDefault();
+        handleNewFile();
+      } else if (e.ctrlKey && e.key === 'o') {
         e.preventDefault();
         handleOpenFolder();
+      } else if (e.ctrlKey && e.key === 'p') {
+        e.preventDefault();
+        handleTogglePreview();
       } else if (e.ctrlKey && e.key === ',') {
         e.preventDefault();
         showSettings = true;
