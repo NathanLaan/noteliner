@@ -20,6 +20,8 @@ contextBridge.exposeInMainWorld('api', {
   // Git
   gitPush: () => ipcRenderer.invoke('git:push'),
   gitPull: () => ipcRenderer.invoke('git:pull'),
+  getGitConfig: () => ipcRenderer.invoke('git:getConfig'),
+  setGitConfig: (name, email) => ipcRenderer.invoke('git:setConfig', name, email),
 
   // Attachments
   addAttachment: (fileId, buffer, originalName) => ipcRenderer.invoke('file:addAttachment', fileId, buffer, originalName),

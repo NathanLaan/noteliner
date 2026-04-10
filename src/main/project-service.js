@@ -39,15 +39,19 @@ class ProjectService {
       await this.gitService.pull(folderPath);
       this.index = JSON.parse(fs.readFileSync(this.indexPath(), 'utf-8'));
       this.migrateIndex();
-      return { status: 'loaded', index: this.index };
+      const needsGitConfig = await this.checkGitConfig();
+      return { status: 'loaded', index: this.index, needsGitConfig };
     }
 
     if (isGit && !hasIndex) {
       // Git repo but no index — create index
       this.index = { version: 2, files: [] };
       fs.writeFileSync(this.indexPath(), JSON.stringify(this.index, null, 2));
-      await this.gitService.commit(folderPath, 'Initialize noteliner.json');
-      return { status: 'loaded', index: this.index };
+      const needsGitConfig = await this.checkGitConfig();
+      if (!needsGitConfig) {
+        await this.gitService.commit(folderPath, 'Initialize noteliner.json');
+      }
+      return { status: 'loaded', index: this.index, needsGitConfig };
     }
 
     // Not a git repo — needs setup
@@ -78,7 +82,22 @@ class ProjectService {
       await this.gitService.commit(folderPath, 'Initialize noteliner.json');
     }
 
-    return { status: 'loaded', index: this.index };
+    const needsGitConfig = await this.checkGitConfig();
+    return { status: 'loaded', index: this.index, needsGitConfig };
+  }
+
+  async checkGitConfig() {
+    const config = await this.gitService.checkConfig(this.projectPath);
+    return !config.name || !config.email;
+  }
+
+  async getGitConfig() {
+    return await this.gitService.checkConfig(this.projectPath);
+  }
+
+  async setGitConfig(name, email) {
+    await this.gitService.setConfig(this.projectPath, 'user.name', name);
+    await this.gitService.setConfig(this.projectPath, 'user.email', email);
   }
 
   getIndex() {

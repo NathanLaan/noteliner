@@ -9,6 +9,7 @@
   import AboutModal from './components/AboutModal.svelte';
   import SetupModal from './components/SetupModal.svelte';
   import SettingsModal from './components/SettingsModal.svelte';
+  import ProjectSettingsModal from './components/ProjectSettingsModal.svelte';
   import AttachmentPanel from './components/AttachmentPanel.svelte';
   import { projectState } from './stores/project.svelte.js';
   import { themeState } from './stores/theme.svelte.js';
@@ -20,6 +21,8 @@
   let showAbout = $state(false);
   let showSetup = $state(false);
   let showSettings = $state(false);
+  let showProjectSettings = $state(false);
+  let projectSettingsRequired = $state(false);
   let setupFolderPath = $state('');
   let sidebarWidth = $state(260);
   let attachmentPanelWidth = $state(220);
@@ -37,6 +40,10 @@
       } else if (e.ctrlKey && e.key === 'p') {
         e.preventDefault();
         handleTogglePreview();
+      } else if (e.ctrlKey && e.shiftKey && e.code === 'Comma') {
+        e.preventDefault();
+        showProjectSettings = true;
+        projectSettingsRequired = false;
       } else if (e.ctrlKey && e.key === ',') {
         e.preventDefault();
         showSettings = true;
@@ -63,6 +70,10 @@
     const result = await window.api.openProject(folderPath);
     if (result.status === 'loaded') {
       projectState.load(folderPath, result.index);
+      if (result.needsGitConfig) {
+        projectSettingsRequired = true;
+        showProjectSettings = true;
+      }
     } else if (result.status === 'needs_setup') {
       setupFolderPath = folderPath;
       showSetup = true;
@@ -74,6 +85,10 @@
     const result = await window.api.initProject(setupFolderPath, remoteUrl);
     if (result.status === 'loaded') {
       projectState.load(setupFolderPath, result.index);
+      if (result.needsGitConfig) {
+        projectSettingsRequired = true;
+        showProjectSettings = true;
+      }
     }
   }
 
@@ -105,6 +120,11 @@
   function handleShowSettings() {
     showSettings = true;
   }
+
+  function handleShowProjectSettings() {
+    projectSettingsRequired = false;
+    showProjectSettings = true;
+  }
 </script>
 
 {#if showAbout}
@@ -123,6 +143,13 @@
   <SettingsModal onClose={() => showSettings = false} />
 {/if}
 
+{#if showProjectSettings}
+  <ProjectSettingsModal
+    required={projectSettingsRequired}
+    onClose={() => { showProjectSettings = false; projectSettingsRequired = false; }}
+  />
+{/if}
+
 <div class="app-layout">
   <Toolbar
     onOpenFolder={handleOpenFolder}
@@ -131,6 +158,7 @@
     onToggleAttachments={handleToggleAttachments}
     onShowAbout={handleShowAbout}
     onShowSettings={handleShowSettings}
+    onShowProjectSettings={handleShowProjectSettings}
     projectOpen={projectState.isOpen}
   />
 
@@ -161,7 +189,7 @@
           window.addEventListener('mouseup', onMouseUp);
         }}></div>
         <div class="editor-area">
-          <Editor onTogglePreview={handleTogglePreview} showPreview={showPreview} />
+          <Editor onTogglePreview={handleTogglePreview} showPreview={showPreview} onGitConfigRequired={() => { projectSettingsRequired = true; showProjectSettings = true; }} />
         </div>
         {#if showPreview}
           <div class="resizer preview-resizer"></div>

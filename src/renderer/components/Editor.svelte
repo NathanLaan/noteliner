@@ -8,7 +8,7 @@
   import { EditorState } from '@codemirror/state';
   import { oneDark } from '@codemirror/theme-one-dark';
 
-  let { onTogglePreview, showPreview } = $props();
+  let { onTogglePreview, showPreview, onGitConfigRequired = () => {} } = $props();
 
   const IMAGE_EXTENSIONS = ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.svg'];
   const MAX_SIZE = 30 * 1024 * 1024;
@@ -61,7 +61,10 @@
     saveTimeout = setTimeout(async () => {
       const file = projectState.selectedFile;
       if (file) {
-        await window.api.writeFile(file.filename, content);
+        const result = await window.api.writeFile(file.filename, content);
+        if (result && result.error === 'git_config_required') {
+          onGitConfigRequired();
+        }
       }
     }, 500);
   }

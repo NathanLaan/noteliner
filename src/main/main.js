@@ -91,19 +91,39 @@ ipcMain.handle('file:read', async (_event, filePath) => {
 });
 
 ipcMain.handle('file:write', async (_event, filePath, content) => {
-  return await projectService.writeFile(filePath, content);
+  try {
+    return await projectService.writeFile(filePath, content);
+  } catch (err) {
+    if (err.code === 'GIT_CONFIG_REQUIRED') return { error: 'git_config_required' };
+    throw err;
+  }
 });
 
 ipcMain.handle('file:create', async (_event, name) => {
-  return await projectService.createFile(name);
+  try {
+    return await projectService.createFile(name);
+  } catch (err) {
+    if (err.code === 'GIT_CONFIG_REQUIRED') return { error: 'git_config_required' };
+    throw err;
+  }
 });
 
 ipcMain.handle('file:delete', async (_event, fileId) => {
-  return await projectService.deleteFile(fileId);
+  try {
+    return await projectService.deleteFile(fileId);
+  } catch (err) {
+    if (err.code === 'GIT_CONFIG_REQUIRED') return { error: 'git_config_required' };
+    throw err;
+  }
 });
 
 ipcMain.handle('file:rename', async (_event, fileId, newName) => {
-  return await projectService.renameFile(fileId, newName);
+  try {
+    return await projectService.renameFile(fileId, newName);
+  } catch (err) {
+    if (err.code === 'GIT_CONFIG_REQUIRED') return { error: 'git_config_required' };
+    throw err;
+  }
 });
 
 ipcMain.handle('git:push', async () => {
@@ -114,6 +134,16 @@ ipcMain.handle('git:push', async () => {
 ipcMain.handle('git:pull', async () => {
   if (!projectService.projectPath) return;
   return await gitService.pull(projectService.projectPath);
+});
+
+// Git config
+
+ipcMain.handle('git:getConfig', async () => {
+  return await projectService.getGitConfig();
+});
+
+ipcMain.handle('git:setConfig', async (_event, name, email) => {
+  return await projectService.setGitConfig(name, email);
 });
 
 // Attachments
