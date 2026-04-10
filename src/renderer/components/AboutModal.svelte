@@ -12,11 +12,16 @@
 
 <div class="modal-overlay" use:focusOnMount onclick={(e) => { if (e.target === e.currentTarget) onClose(); }} onkeydown={handleKeydown} role="dialog" aria-modal="true" tabindex="-1">
   <div class="modal">
-    <h2>NoteLiner</h2>
-    <p class="version">Version {__APP_VERSION__}</p>
-    <p class="desc">An outliner-style note-taking application built with Electron and Svelte.</p>
-    <div class="modal-footer">
-      <button class="close-btn" onclick={onClose}>OK</button>
+    <div class="modal-header">
+      <h2>About</h2>
+    </div>
+    <div class="modal-body">
+      <p class="app-name">NoteLiner</p>
+      <p class="version">Version {__APP_VERSION__}</p>
+      <p class="desc">An outliner-style note-taking application built with Electron and Svelte.</p>
+      <div class="modal-footer">
+        <button class="close-btn" onclick={onClose}>OK</button>
+      </div>
     </div>
   </div>
 </div>
@@ -36,16 +41,38 @@
     background: var(--bg-surface);
     border: 1px solid var(--border);
     border-radius: 12px;
-    padding: 32px;
     min-width: 320px;
     text-align: left;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
   }
 
-  h2 {
-    font-size: 24px;
+  .modal-header {
+    display: flex;
+    align-items: center;
+    background: var(--modal-header-bg);
+    padding: 16px 24px;
+    flex-shrink: 0;
+  }
+
+  .modal-header h2 {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--modal-header-text);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .modal-body {
+    padding: 24px 24px 20px;
+  }
+
+  .app-name {
+    font-size: 22px;
     font-weight: 400;
     color: var(--text-primary);
-    margin-bottom: 8px;
+    margin-bottom: 6px;
   }
 
   .version {

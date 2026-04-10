@@ -14,31 +14,36 @@
 
 <div class="modal-overlay" use:focusOnMount onclick={(e) => { if (e.target === e.currentTarget) onClose(); }} onkeydown={handleKeydown} role="dialog" aria-modal="true" tabindex="-1">
   <div class="modal">
-    <h2>Settings</h2>
+    <div class="modal-header">
+      <h2>Settings</h2>
+    </div>
+    <div class="modal-body">
+      <div class="setting-group">
+        <span class="setting-label">Theme</span>
+        <div class="theme-list">
+          {#each themeState.list as theme (theme.id)}
+            <button
+              class="theme-option"
+              class:active={themeState.current === theme.id}
+              onclick={() => themeState.set(theme.id)}
+            >
+              <span class="theme-radio">
+                {#if themeState.current === theme.id}
+                  <i class="fas fa-circle-check"></i>
+                {:else}
+                  <i class="far fa-circle"></i>
+                {/if}
+              </span>
+              {theme.name}
+            </button>
+          {/each}
+        </div>
+      </div>
 
-    <div class="setting-group">
-      <span class="setting-label">Theme</span>
-      <div class="theme-list">
-        {#each themeState.list as theme (theme.id)}
-          <button
-            class="theme-option"
-            class:active={themeState.current === theme.id}
-            onclick={() => themeState.set(theme.id)}
-          >
-            <span class="theme-radio">
-              {#if themeState.current === theme.id}
-                <i class="fas fa-circle-check"></i>
-              {:else}
-                <i class="far fa-circle"></i>
-              {/if}
-            </span>
-            {theme.name}
-          </button>
-        {/each}
+      <div class="modal-footer">
+        <button class="close-btn" onclick={onClose}>Close</button>
       </div>
     </div>
-
-    <button class="close-btn" onclick={onClose}>Close</button>
   </div>
 </div>
 
@@ -57,15 +62,35 @@
     background: var(--bg-surface);
     border: 1px solid var(--border);
     border-radius: 12px;
-    padding: 32px;
     min-width: 340px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
   }
 
-  h2 {
-    font-size: 20px;
-    font-weight: 400;
-    color: var(--text-primary);
-    margin-bottom: 24px;
+  .modal-header {
+    display: flex;
+    align-items: center;
+    background: var(--modal-header-bg);
+    padding: 16px 24px;
+    flex-shrink: 0;
+  }
+
+  .modal-header h2 {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--modal-header-text);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .modal-body {
+    padding: 24px 24px 20px;
+  }
+
+  .modal-footer {
+    display: flex;
+    justify-content: flex-end;
   }
 
   .setting-group {

@@ -14,39 +14,43 @@
 
 <div class="modal-overlay" use:focusOnMount onclick={(e) => { if (e.target === e.currentTarget) onCancel(); }} onkeydown={handleKeydown} role="dialog" aria-modal="true" tabindex="-1">
   <div class="modal">
-    <h2>Set Up Project</h2>
-    <p class="folder-path">{folderPath}</p>
+    <div class="modal-header">
+      <h2>Set Up Project</h2>
+    </div>
+    <div class="modal-body">
+      <p class="folder-path">{folderPath}</p>
 
-    {#if mode === 'choose'}
-      <p class="prompt">This folder is not a NoteLiner project. How would you like to set it up?</p>
-      <div class="btn-group">
-        <button class="action-btn" onclick={() => onSetup('')}>
-          <i class="fas fa-plus"></i>
-          Create New Repository
-        </button>
-        <button class="action-btn" onclick={() => mode = 'remote'}>
-          <i class="fas fa-cloud-arrow-down"></i>
-          Clone from Remote
-        </button>
-      </div>
-    {:else}
-      <p class="prompt">Enter the remote Git repository URL:</p>
-      <input
-        class="url-input"
-        type="text"
-        bind:value={remoteUrl}
-        placeholder="https://github.com/user/repo.git"
-        onkeydown={(e) => { if (e.key === 'Enter' && remoteUrl.trim()) onSetup(remoteUrl.trim()); }}
-      />
-      <div class="btn-group">
-        <button class="action-btn" onclick={() => mode = 'choose'}>Back</button>
-        <button class="action-btn primary" onclick={() => { if (remoteUrl.trim()) onSetup(remoteUrl.trim()); }}>
-          Clone
-        </button>
-      </div>
-    {/if}
+      {#if mode === 'choose'}
+        <p class="prompt">This folder is not a NoteLiner project. How would you like to set it up?</p>
+        <div class="btn-group">
+          <button class="action-btn" onclick={() => onSetup('')}>
+            <i class="fas fa-plus"></i>
+            Create New Repository
+          </button>
+          <button class="action-btn" onclick={() => mode = 'remote'}>
+            <i class="fas fa-cloud-arrow-down"></i>
+            Clone from Remote
+          </button>
+        </div>
+      {:else}
+        <p class="prompt">Enter the remote Git repository URL:</p>
+        <input
+          class="url-input"
+          type="text"
+          bind:value={remoteUrl}
+          placeholder="https://github.com/user/repo.git"
+          onkeydown={(e) => { if (e.key === 'Enter' && remoteUrl.trim()) onSetup(remoteUrl.trim()); }}
+        />
+        <div class="btn-group">
+          <button class="action-btn" onclick={() => mode = 'choose'}>Back</button>
+          <button class="action-btn primary" onclick={() => { if (remoteUrl.trim()) onSetup(remoteUrl.trim()); }}>
+            Clone
+          </button>
+        </div>
+      {/if}
 
-    <button class="cancel-btn" onclick={onCancel}>Cancel</button>
+      <button class="cancel-btn" onclick={onCancel}>Cancel</button>
+    </div>
   </div>
 </div>
 
@@ -65,16 +69,31 @@
     background: var(--bg-surface);
     border: 1px solid var(--border);
     border-radius: 12px;
-    padding: 32px;
     min-width: 400px;
     text-align: center;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
   }
 
-  h2 {
-    font-size: 20px;
-    font-weight: 400;
-    color: var(--text-primary);
-    margin-bottom: 8px;
+  .modal-header {
+    display: flex;
+    align-items: center;
+    background: var(--modal-header-bg);
+    padding: 16px 24px;
+    flex-shrink: 0;
+  }
+
+  .modal-header h2 {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--modal-header-text);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .modal-body {
+    padding: 24px 24px 20px;
   }
 
   .folder-path {
