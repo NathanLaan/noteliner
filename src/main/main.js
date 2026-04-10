@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, dialog } = require('electron');
+const { app, BrowserWindow, Menu, ipcMain, dialog } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const { GitService } = require('./git-service');
@@ -22,6 +22,8 @@ function createWindow() {
       nodeIntegration: false
     }
   });
+
+  Menu.setApplicationMenu(null);
 
   if (isDev) {
     mainWindow.loadURL('http://localhost:5173');
