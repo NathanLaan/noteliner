@@ -1,8 +1,42 @@
 const { app, BrowserWindow, Menu, ipcMain, dialog, shell, net, protocol } = require('electron');
 const path = require('path');
 const fs = require('fs');
+const os = require('os');
 const { GitService } = require('./git-service');
 const { ProjectService } = require('./project-service');
+
+const RECENT_PROJECTS_FILE = 'recent-projects.json';
+const MAX_RECENT = 5;
+
+function getRecentProjectsPath() {
+  return path.join(app.getPath('userData'), RECENT_PROJECTS_FILE);
+}
+
+function loadRecentProjects() {
+  try {
+    const filePath = getRecentProjectsPath();
+    if (fs.existsSync(filePath)) {
+      return JSON.parse(fs.readFileSync(filePath, 'utf-8'));
+    }
+  } catch { /* ignore */ }
+  return [];
+}
+
+function saveRecentProjects(projects) {
+  fs.writeFileSync(getRecentProjectsPath(), JSON.stringify(projects, null, 2));
+}
+
+function addRecentProject(folderPath) {
+  let projects = loadRecentProjects();
+  projects = projects.filter(p => p.path !== folderPath);
+  projects.unshift({
+    path: folderPath,
+    name: path.basename(folderPath),
+    openedAt: new Date().toISOString()
+  });
+  if (projects.length > MAX_RECENT) projects = projects.slice(0, MAX_RECENT);
+  saveRecentProjects(projects);
+}
 
 let mainWindow;
 let gitService;
@@ -183,5 +217,36 @@ ipcMain.handle('dialog:openFiles', async () => {
 
 ipcMain.handle('shell:openPath', async (_event, filePath) => {
   return await shell.openPath(filePath);
+});
+
+// Recent projects
+
+ipcMain.handle('projects:getRecent', async () => {
+  return loadRecentProjects();
+});
+
+ipcMain.handle('projects:addRecent', async (_event, folderPath) => {
+  addRecentProject(folderPath);
+});
+
+ipcMain.handle('projects:removeRecent', async (_event, folderPath) => {
+  let projects = loadRecentProjects();
+  projects = projects.filter(p => p.path !== folderPath);
+  saveRecentProjects(projects);
+});
+
+// System info
+
+ipcMain.handle('system:getInfo', async () => {
+  const userInfo = os.userInfo();
+  return {
+    username: userInfo.username,
+    hostname: os.hostname(),
+    homeDir: userInfo.homedir
+  };
+});
+
+ipcMain.handle('fs:ensureDir', async (_event, dirPath) => {
+  fs.mkdirSync(dirPath, { recursive: true });
 });
 

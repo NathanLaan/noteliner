@@ -1,38 +1,89 @@
 # NoteLiner
 
-NoteLiner is a single-user outliner style application, built using Electron and Svelte. It allows the user to create files in a hierarchical structure. Each file is written in Markdown, with basic syntax highlighting.
+NoteLiner is a single-user outliner-style note-taking application, built with Electron and Svelte 5. It allows users to create and organize files in a hierarchical structure. Each file is written in Markdown with syntax highlighting, and all changes are automatically synced via Git.
 
-## Data Storage and Syncing
+## Features
 
-NoteLiner works with the concept of a "Project", which represents a  folder on the user's computer. Each Project contains the following:
+- Hierarchical file organization with drag-and-drop reordering
+- Markdown editor with syntax highlighting (CodeMirror 6)
+- Live markdown preview panel
+- File attachments (paste, drag-and-drop, or file picker) with image thumbnails
+- Automatic Git commit on every change with debounced push to remote
+- Three built-in themes: Midnight, Dark, and Light
+- Keyboard shortcuts for all major actions
 
-1. A local Git repository that maps to a remote Git repository on GitHub.com or GitLab.com.
-2. An index file named "noteliner.json", which uses a JSON structure to track all of the files the current directory, as well as the tags associated with each file. 
-3. Zero (0) or more files, saved as "FILE_NAME.md" in the project directory.
+## Data Storage
 
-Changes are committed locally on whenever a file is added, removed, or modified. Every commit is pushed to a remote Git repository on a configurable debounce timer. This enables cross-device sync via Git.
+NoteLiner works with the concept of a **Project**, which is a folder on the user's computer containing:
 
-Each file may have a number of tags associated with it.
+1. A local Git repository, optionally linked to a remote on GitHub or GitLab.
+2. An index file (`noteliner.json`) tracking all files, their hierarchy, tags, and attachments.
+3. Markdown files (`.md`) in the project root.
+4. An `_attachments/` directory for files attached to notes (images, PDFs, etc.).
+
+Changes are committed locally whenever a file is added, removed, or modified. Commits are pushed to the remote repository on a 30-second debounce timer, enabling cross-device sync via Git.
 
 ## User Interface
 
-The user interface consists of:
+### Toolbar (left edge)
 
-1. A toolbar along the left side of the app with font-awesome button icons
-2. A resizeable left sidebar panel that contains the list of files in the current project. Users can drag files around within the list to re-order them, or re-parent them.
-3. A center panel that contains a text editor for editing the contents of the currently selected file.
-4. A right panel which can be viewed or hidden, to show the formatted "content" of the current file being edited.
-5. A bottom panel that contains a textarea which displays the list of sync commands that the app is running to sync the project files to the remote Git repository.
+A vertical toolbar with icon buttons:
 
-The toolbar has the following buttons, which use FontAwesome icons:
+| Button | Shortcut | Description |
+|---|---|---|
+| Open Folder | `Ctrl+O` | Open a project folder. Loads existing projects or prompts to create/clone. |
+| New File | `Ctrl+N` | Create a new file in the project. |
+| Attachments | `Ctrl+B` | Toggle the attachments sidebar. |
+| Show Log | `Ctrl+L` | Toggle the git sync log panel. |
+| Project Settings | `Ctrl+Shift+,` | Configure git user name/email, view project location. |
+| Settings | `Ctrl+,` | Change application theme. |
+| About | `Ctrl+I` | Show application name and version. |
 
-- Open Folder. When the user clicks this button, the app displays an "Open Folder" modal dialog, allowing the user to select a folder. When the user selects a folder and clicks the "OK" button in the "Open Folder" modal dialog, the app sets that folder as the active folder. If the folder already contains a Git repository and a noteliner.json file, the project is loaded into the application. The application then attempts to pull the latest version of the remoter Git repository. If the user selects a blank folder, the app prompts the user to enter the URL for a remote Git repository or create a new Git repository. If the user enters a remote Git repository, it is cloned to the folder that the user selected.
-- New File. When the user clicks this button, a new file is created below the currently selected file in the file list. If there are no files selected, the new file is added to the end of the list of files. If there are no files in the project, the new file becomes the first file.
-- Show Log: When the user clicks this button, if the Logging panel is not visible, it is shown. If the Logging panel is visible, it is hidden. The app saves the last vertical height of the Logging panel, and restores the panel to that height when it is shown.
-- About. When the user clicks this button, they are shown an About modal dialog, with the Application name and version.
+### Panels
 
-The first time the app opens, the Open screen is shown.
+- **Left sidebar** -- Resizable file tree showing the project hierarchy. Files can be dragged to reorder or re-parent. Double-click to rename, right-click for context menu.
+- **Editor** -- CodeMirror 6 markdown editor with syntax highlighting, line wrapping, and auto-save (500ms debounce). Supports paste and drag-and-drop for file attachments.
+- **Preview** (`Ctrl+P`) -- Live rendered markdown preview with image support.
+- **Attachments sidebar** (`Ctrl+B`) -- Right panel showing files attached to the current note. Images display as thumbnails; other files show a type icon. Add via paste, drag-and-drop, or the `[+]` button (native file picker). Double-click to open with the system default application.
+- **Log panel** (`Ctrl+L`) -- Bottom panel showing git sync activity in real time.
 
-## Plan
+### Modal Dialogs
 
-Create an implementation plan as a starting point, save the implementation plan, including assumptions, scope, and major implementation steps to /docs/plan-implementation.md. List the major phases of the plan, and I will review and approve.
+All modal dialogs support `Enter` to confirm and `Escape` to close.
+
+- **Set Up Project** -- Shown when opening a folder that isn't a NoteLiner project. Choose to create a new repository or clone from a remote URL.
+- **Project Settings** -- Git user name/email configuration and project folder location. Automatically shown if git config is missing (required for saving).
+- **Settings** -- Theme selection (Midnight, Dark, Light).
+- **About** -- Application name and version (SemVer + git commit hash).
+
+## Attachments
+
+Files can be attached to any note via:
+
+- **Paste** -- Paste from clipboard onto the editor.
+- **Drag-and-drop** -- Drop files onto the editor area.
+- **File picker** -- Click `[+]` in the attachments panel.
+
+Attachments are stored in the `_attachments/` directory and tracked in `noteliner.json`. A markdown reference is automatically inserted at the cursor: `![name](path)` for images, `[name](path)` for other files. Maximum file size is 30MB.
+
+## Versioning
+
+The application version combines the SemVer version from `package.json` with the short git commit hash, e.g. `0.2.0.8c6e3d6`. This is injected at build time via Vite's `define` option.
+
+## Development
+
+```bash
+npm install
+npm run electron:dev    # Start in development mode
+npm run build           # Build the renderer (Vite)
+npm run start           # Run the built Electron app
+```
+
+## Technology
+
+- [Electron](https://www.electronjs.org/) -- Desktop application framework
+- [Svelte 5](https://svelte.dev/) -- Reactive UI framework
+- [Vite](https://vitejs.dev/) -- Build tool
+- [CodeMirror 6](https://codemirror.net/) -- Text editor
+- [marked](https://marked.js.org/) -- Markdown parser
+- [Font Awesome](https://fontawesome.com/) -- Icons
