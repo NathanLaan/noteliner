@@ -9,31 +9,50 @@
   import AboutModal from './components/AboutModal.svelte';
   import SetupModal from './components/SetupModal.svelte';
   import SettingsModal from './components/SettingsModal.svelte';
+  import ProjectSettingsModal from './components/ProjectSettingsModal.svelte';
+  import AttachmentPanel from './components/AttachmentPanel.svelte';
   import { projectState } from './stores/project.svelte.js';
   import { themeState } from './stores/theme.svelte.js';
 
   let showPreview = $state(false);
   let showLog = $state(false);
+  let showAttachments = $state(false);
   let logPanelHeight = $state(300);
   let showAbout = $state(false);
   let showSetup = $state(false);
   let showSettings = $state(false);
+  let showProjectSettings = $state(false);
+  let projectSettingsRequired = $state(false);
   let setupFolderPath = $state('');
   let sidebarWidth = $state(260);
+  let attachmentPanelWidth = $state(220);
 
   onMount(() => {
     themeState.init();
 
     function handleKeydown(e) {
-      if (e.ctrlKey && e.key === 'o') {
+      if (e.ctrlKey && e.key === 'n') {
+        e.preventDefault();
+        handleNewFile();
+      } else if (e.ctrlKey && e.key === 'o') {
         e.preventDefault();
         handleOpenFolder();
+      } else if (e.ctrlKey && e.key === 'p') {
+        e.preventDefault();
+        handleTogglePreview();
+      } else if (e.ctrlKey && e.shiftKey && e.code === 'Comma') {
+        e.preventDefault();
+        showProjectSettings = true;
+        projectSettingsRequired = false;
       } else if (e.ctrlKey && e.key === ',') {
         e.preventDefault();
         showSettings = true;
       } else if (e.ctrlKey && e.key === 'l') {
         e.preventDefault();
         handleToggleLog();
+      } else if (e.ctrlKey && e.key === 'b') {
+        e.preventDefault();
+        handleToggleAttachments();
       } else if (e.ctrlKey && e.key === 'i') {
         e.preventDefault();
         showAbout = true;
@@ -51,6 +70,10 @@
     const result = await window.api.openProject(folderPath);
     if (result.status === 'loaded') {
       projectState.load(folderPath, result.index);
+      if (result.needsGitConfig) {
+        projectSettingsRequired = true;
+        showProjectSettings = true;
+      }
     } else if (result.status === 'needs_setup') {
       setupFolderPath = folderPath;
       showSetup = true;
@@ -62,6 +85,10 @@
     const result = await window.api.initProject(setupFolderPath, remoteUrl);
     if (result.status === 'loaded') {
       projectState.load(setupFolderPath, result.index);
+      if (result.needsGitConfig) {
+        projectSettingsRequired = true;
+        showProjectSettings = true;
+      }
     }
   }
 
@@ -82,12 +109,21 @@
     showPreview = !showPreview;
   }
 
+  function handleToggleAttachments() {
+    showAttachments = !showAttachments;
+  }
+
   function handleShowAbout() {
     showAbout = true;
   }
 
   function handleShowSettings() {
     showSettings = true;
+  }
+
+  function handleShowProjectSettings() {
+    projectSettingsRequired = false;
+    showProjectSettings = true;
   }
 </script>
 
@@ -107,13 +143,22 @@
   <SettingsModal onClose={() => showSettings = false} />
 {/if}
 
+{#if showProjectSettings}
+  <ProjectSettingsModal
+    required={projectSettingsRequired}
+    onClose={() => { showProjectSettings = false; projectSettingsRequired = false; }}
+  />
+{/if}
+
 <div class="app-layout">
   <Toolbar
     onOpenFolder={handleOpenFolder}
     onNewFile={handleNewFile}
     onToggleLog={handleToggleLog}
+    onToggleAttachments={handleToggleAttachments}
     onShowAbout={handleShowAbout}
     onShowSettings={handleShowSettings}
+    onShowProjectSettings={handleShowProjectSettings}
     projectOpen={projectState.isOpen}
   />
 
@@ -144,12 +189,31 @@
           window.addEventListener('mouseup', onMouseUp);
         }}></div>
         <div class="editor-area">
-          <Editor onTogglePreview={handleTogglePreview} showPreview={showPreview} />
+          <Editor onTogglePreview={handleTogglePreview} showPreview={showPreview} onGitConfigRequired={() => { projectSettingsRequired = true; showProjectSettings = true; }} />
         </div>
         {#if showPreview}
           <div class="resizer preview-resizer"></div>
           <div class="preview-area">
             <Preview />
+          </div>
+        {/if}
+        {#if showAttachments}
+          <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+          <div class="resizer attachment-resizer" role="separator" aria-orientation="vertical" tabindex="-1" onmousedown={(e) => {
+            const startX = e.clientX;
+            const startWidth = attachmentPanelWidth;
+            const onMouseMove = (e) => {
+              attachmentPanelWidth = Math.max(160, Math.min(400, startWidth - (e.clientX - startX)));
+            };
+            const onMouseUp = () => {
+              window.removeEventListener('mousemove', onMouseMove);
+              window.removeEventListener('mouseup', onMouseUp);
+            };
+            window.addEventListener('mousemove', onMouseMove);
+            window.addEventListener('mouseup', onMouseUp);
+          }}></div>
+          <div class="attachment-area" style="width: {attachmentPanelWidth}px">
+            <AttachmentPanel />
           </div>
         {/if}
       </div>
@@ -241,6 +305,12 @@
 
   .log-resizer:hover {
     background: var(--border-hover);
+  }
+
+  .attachment-area {
+    flex-shrink: 0;
+    overflow: hidden;
+    border-left: 1px solid var(--border);
   }
 
   .log-area {

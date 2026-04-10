@@ -56,6 +56,11 @@ class GitService {
         this.log('Nothing to commit.');
         return null;
       }
+      if (err.message && (err.message.includes('unable to auto-detect email') || err.message.includes('user.name') || err.message.includes('user.email'))) {
+        const configErr = new Error('git_config_required');
+        configErr.code = 'GIT_CONFIG_REQUIRED';
+        throw configErr;
+      }
       throw err;
     }
   }
@@ -80,6 +85,29 @@ class GitService {
 
   async addRemote(folderPath, url) {
     return await this.exec(['remote', 'add', 'origin', url], folderPath);
+  }
+
+  async getConfig(folderPath, key) {
+    // Try local first, then fall back to global
+    try {
+      return await this.exec(['config', '--local', key], folderPath);
+    } catch {
+      try {
+        return await this.exec(['config', key], folderPath);
+      } catch {
+        return null;
+      }
+    }
+  }
+
+  async setConfig(folderPath, key, value) {
+    return await this.exec(['config', '--local', key, value], folderPath);
+  }
+
+  async checkConfig(folderPath) {
+    const name = await this.getConfig(folderPath, 'user.name');
+    const email = await this.getConfig(folderPath, 'user.email');
+    return { name, email };
   }
 
   async hasRemote(folderPath) {

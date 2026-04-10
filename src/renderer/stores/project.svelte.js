@@ -4,7 +4,7 @@
 class ProjectState {
   isOpen = $state(false);
   folderPath = $state('');
-  index = $state({ version: 1, files: [] });
+  index = $state({ version: 2, files: [] });
   selectedFileId = $state(null);
   editorContent = $state('');
 
@@ -19,7 +19,7 @@ class ProjectState {
   close() {
     this.isOpen = false;
     this.folderPath = '';
-    this.index = { version: 1, files: [] };
+    this.index = { version: 2, files: [] };
     this.selectedFileId = null;
     this.editorContent = '';
   }
@@ -55,6 +55,27 @@ class ProjectState {
   get selectedFile() {
     if (!this.selectedFileId) return null;
     return this.index.files.find(f => f.id === this.selectedFileId) || null;
+  }
+
+  get selectedFileAttachments() {
+    const file = this.selectedFile;
+    if (!file) return [];
+    return file.attachments || [];
+  }
+
+  addAttachment(fileId, attachment) {
+    const file = this.index.files.find(f => f.id === fileId);
+    if (file) {
+      if (!file.attachments) file.attachments = [];
+      file.attachments.push(attachment);
+    }
+  }
+
+  removeAttachment(fileId, attachmentId) {
+    const file = this.index.files.find(f => f.id === fileId);
+    if (file && file.attachments) {
+      file.attachments = file.attachments.filter(a => a.id !== attachmentId);
+    }
   }
 
   getChildren(parentId) {

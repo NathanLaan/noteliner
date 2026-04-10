@@ -1,4 +1,4 @@
-const { app, BrowserWindow, Menu, ipcMain, dialog } = require('electron');
+const { app, BrowserWindow, Menu, ipcMain, dialog, shell, net, protocol } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const { GitService } = require('./git-service');
@@ -45,6 +45,16 @@ function createWindow() {
 }
 
 app.whenReady().then(() => {
+  protocol.handle('attachment', (request) => {
+    if (!projectService || !projectService.projectPath) {
+      return new Response('Not found', { status: 404 });
+    }
+    const url = new URL(request.url);
+    const filename = decodeURIComponent(url.pathname).replace(/^\/+/, '');
+    const filePath = path.join(projectService.projectPath, '_attachments', filename);
+    return net.fetch('file://' + filePath);
+  });
+
   createWindow();
 
   app.on('activate', () => {
@@ -91,19 +101,39 @@ ipcMain.handle('file:read', async (_event, filePath) => {
 });
 
 ipcMain.handle('file:write', async (_event, filePath, content) => {
-  return await projectService.writeFile(filePath, content);
+  try {
+    return await projectService.writeFile(filePath, content);
+  } catch (err) {
+    if (err.code === 'GIT_CONFIG_REQUIRED') return { error: 'git_config_required' };
+    throw err;
+  }
 });
 
 ipcMain.handle('file:create', async (_event, name) => {
-  return await projectService.createFile(name);
+  try {
+    return await projectService.createFile(name);
+  } catch (err) {
+    if (err.code === 'GIT_CONFIG_REQUIRED') return { error: 'git_config_required' };
+    throw err;
+  }
 });
 
 ipcMain.handle('file:delete', async (_event, fileId) => {
-  return await projectService.deleteFile(fileId);
+  try {
+    return await projectService.deleteFile(fileId);
+  } catch (err) {
+    if (err.code === 'GIT_CONFIG_REQUIRED') return { error: 'git_config_required' };
+    throw err;
+  }
 });
 
 ipcMain.handle('file:rename', async (_event, fileId, newName) => {
-  return await projectService.renameFile(fileId, newName);
+  try {
+    return await projectService.renameFile(fileId, newName);
+  } catch (err) {
+    if (err.code === 'GIT_CONFIG_REQUIRED') return { error: 'git_config_required' };
+    throw err;
+  }
 });
 
 ipcMain.handle('git:push', async () => {
@@ -114,5 +144,44 @@ ipcMain.handle('git:push', async () => {
 ipcMain.handle('git:pull', async () => {
   if (!projectService.projectPath) return;
   return await gitService.pull(projectService.projectPath);
+});
+
+// Git config
+
+ipcMain.handle('git:getConfig', async () => {
+  return await projectService.getGitConfig();
+});
+
+ipcMain.handle('git:setConfig', async (_event, name, email) => {
+  return await projectService.setGitConfig(name, email);
+});
+
+// Attachments
+
+ipcMain.handle('file:addAttachment', async (_event, fileId, buffer, originalName) => {
+  return await projectService.addAttachment(fileId, buffer, originalName);
+});
+
+ipcMain.handle('file:removeAttachment', async (_event, fileId, attachmentId) => {
+  return await projectService.removeAttachment(fileId, attachmentId);
+});
+
+ipcMain.handle('file:getAttachmentPath', async (_event, filename) => {
+  return projectService.getAttachmentPath(filename);
+});
+
+ipcMain.handle('dialog:openFiles', async () => {
+  const result = await dialog.showOpenDialog(mainWindow, {
+    properties: ['openFile', 'multiSelections']
+  });
+  if (result.canceled) return [];
+  return result.filePaths.map(filePath => ({
+    buffer: fs.readFileSync(filePath).buffer,
+    name: path.basename(filePath)
+  }));
+});
+
+ipcMain.handle('shell:openPath', async (_event, filePath) => {
+  return await shell.openPath(filePath);
 });
 

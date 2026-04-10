@@ -2,7 +2,17 @@
   import { projectState } from '../stores/project.svelte.js';
   import { marked } from 'marked';
 
-  let html = $derived(projectState.editorContent ? marked(projectState.editorContent) : '<p class="empty">Nothing to preview</p>');
+  function resolveAttachmentUrls(rawHtml) {
+    return rawHtml.replace(
+      /(?:src|href)="\.?\/?_attachments\/([^"]+)"/g,
+      (match, filename) => match.replace(`./_attachments/${filename}`, `attachment:///${encodeURIComponent(filename)}`)
+        .replace(`_attachments/${filename}`, `attachment:///${encodeURIComponent(filename)}`)
+    );
+  }
+
+  let html = $derived(projectState.editorContent
+    ? resolveAttachmentUrls(marked(projectState.editorContent))
+    : '<p class="empty">Nothing to preview</p>');
 </script>
 
 <div class="preview-wrapper">
@@ -52,5 +62,6 @@
   .preview-content :global(blockquote) { border-left: 3px solid var(--blockquote-border); padding-left: 12px; color: var(--text-secondary); margin-bottom: 12px; }
   .preview-content :global(ul), .preview-content :global(ol) { padding-left: 24px; margin-bottom: 12px; }
   .preview-content :global(li) { margin-bottom: 4px; }
+  .preview-content :global(img) { max-width: 100%; height: auto; border-radius: 4px; }
   .preview-content :global(.empty) { color: var(--text-muted); font-style: italic; }
 </style>
