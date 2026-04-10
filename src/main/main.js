@@ -1,4 +1,4 @@
-const { app, BrowserWindow, Menu, ipcMain, dialog } = require('electron');
+const { app, BrowserWindow, Menu, ipcMain, dialog, shell } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const { GitService } = require('./git-service');
@@ -114,5 +114,34 @@ ipcMain.handle('git:push', async () => {
 ipcMain.handle('git:pull', async () => {
   if (!projectService.projectPath) return;
   return await gitService.pull(projectService.projectPath);
+});
+
+// Attachments
+
+ipcMain.handle('file:addAttachment', async (_event, fileId, buffer, originalName) => {
+  return await projectService.addAttachment(fileId, buffer, originalName);
+});
+
+ipcMain.handle('file:removeAttachment', async (_event, fileId, attachmentId) => {
+  return await projectService.removeAttachment(fileId, attachmentId);
+});
+
+ipcMain.handle('file:getAttachmentPath', async (_event, filename) => {
+  return projectService.getAttachmentPath(filename);
+});
+
+ipcMain.handle('dialog:openFiles', async () => {
+  const result = await dialog.showOpenDialog(mainWindow, {
+    properties: ['openFile', 'multiSelections']
+  });
+  if (result.canceled) return [];
+  return result.filePaths.map(filePath => ({
+    buffer: fs.readFileSync(filePath).buffer,
+    name: path.basename(filePath)
+  }));
+});
+
+ipcMain.handle('shell:openPath', async (_event, filePath) => {
+  return await shell.openPath(filePath);
 });
 

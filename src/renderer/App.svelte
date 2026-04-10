@@ -9,17 +9,20 @@
   import AboutModal from './components/AboutModal.svelte';
   import SetupModal from './components/SetupModal.svelte';
   import SettingsModal from './components/SettingsModal.svelte';
+  import AttachmentPanel from './components/AttachmentPanel.svelte';
   import { projectState } from './stores/project.svelte.js';
   import { themeState } from './stores/theme.svelte.js';
 
   let showPreview = $state(false);
   let showLog = $state(false);
+  let showAttachments = $state(false);
   let logPanelHeight = $state(300);
   let showAbout = $state(false);
   let showSetup = $state(false);
   let showSettings = $state(false);
   let setupFolderPath = $state('');
   let sidebarWidth = $state(260);
+  let attachmentPanelWidth = $state(220);
 
   onMount(() => {
     themeState.init();
@@ -34,6 +37,9 @@
       } else if (e.ctrlKey && e.key === 'l') {
         e.preventDefault();
         handleToggleLog();
+      } else if (e.ctrlKey && e.key === 'b') {
+        e.preventDefault();
+        handleToggleAttachments();
       } else if (e.ctrlKey && e.key === 'i') {
         e.preventDefault();
         showAbout = true;
@@ -82,6 +88,10 @@
     showPreview = !showPreview;
   }
 
+  function handleToggleAttachments() {
+    showAttachments = !showAttachments;
+  }
+
   function handleShowAbout() {
     showAbout = true;
   }
@@ -112,6 +122,7 @@
     onOpenFolder={handleOpenFolder}
     onNewFile={handleNewFile}
     onToggleLog={handleToggleLog}
+    onToggleAttachments={handleToggleAttachments}
     onShowAbout={handleShowAbout}
     onShowSettings={handleShowSettings}
     projectOpen={projectState.isOpen}
@@ -150,6 +161,25 @@
           <div class="resizer preview-resizer"></div>
           <div class="preview-area">
             <Preview />
+          </div>
+        {/if}
+        {#if showAttachments}
+          <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+          <div class="resizer attachment-resizer" role="separator" aria-orientation="vertical" tabindex="-1" onmousedown={(e) => {
+            const startX = e.clientX;
+            const startWidth = attachmentPanelWidth;
+            const onMouseMove = (e) => {
+              attachmentPanelWidth = Math.max(160, Math.min(400, startWidth - (e.clientX - startX)));
+            };
+            const onMouseUp = () => {
+              window.removeEventListener('mousemove', onMouseMove);
+              window.removeEventListener('mouseup', onMouseUp);
+            };
+            window.addEventListener('mousemove', onMouseMove);
+            window.addEventListener('mouseup', onMouseUp);
+          }}></div>
+          <div class="attachment-area" style="width: {attachmentPanelWidth}px">
+            <AttachmentPanel />
           </div>
         {/if}
       </div>
@@ -241,6 +271,12 @@
 
   .log-resizer:hover {
     background: var(--border-hover);
+  }
+
+  .attachment-area {
+    flex-shrink: 0;
+    overflow: hidden;
+    border-left: 1px solid var(--border);
   }
 
   .log-area {

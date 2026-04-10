@@ -1,5 +1,5 @@
 <script>
-  let { onOpenFolder, onNewFile, onToggleLog, onShowAbout, onShowSettings, projectOpen } = $props();
+  let { onOpenFolder, onNewFile, onToggleLog, onToggleAttachments, onShowAbout, onShowSettings, projectOpen } = $props();
 </script>
 
 <div class="toolbar">
@@ -10,6 +10,10 @@
   {#if projectOpen}
     <button class="toolbar-btn" onclick={onNewFile} title="New File">
       <i class="fas fa-file-circle-plus"></i>
+    </button>
+
+    <button class="toolbar-btn" onclick={onToggleAttachments} title="Attachments (Ctrl+B)">
+      <i class="fas fa-paperclip"></i>
     </button>
   {/if}
 

@@ -1,6 +1,7 @@
 <script>
   import { onMount, onDestroy } from 'svelte';
   import { projectState } from '../stores/project.svelte.js';
+  import { logState } from '../stores/log.svelte.js';
   import { EditorView, basicSetup } from 'codemirror';
   import { markdown } from '@codemirror/lang-markdown';
   import { languages } from '@codemirror/language-data';
@@ -8,6 +9,9 @@
   import { oneDark } from '@codemirror/theme-one-dark';
 
   let { onTogglePreview, showPreview } = $props();
+
+  const IMAGE_EXTENSIONS = ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.svg'];
+  const MAX_SIZE = 30 * 1024 * 1024;
 
   let editorContainer;
   let editorView = null;
@@ -75,6 +79,70 @@
     isUpdating = false;
   }
 
+  function getExtension(name) {
+    const dot = name.lastIndexOf('.');
+    return dot >= 0 ? name.slice(dot).toLowerCase() : '';
+  }
+
+  function isImage(name) {
+    return IMAGE_EXTENSIONS.includes(getExtension(name));
+  }
+
+  function insertMarkdownReference(attachment) {
+    if (!editorView) return;
+    const path = `./_attachments/${attachment.filename}`;
+    const ref = isImage(attachment.originalName)
+      ? `![${attachment.originalName}](${path})`
+      : `[${attachment.originalName}](${path})`;
+    const pos = editorView.state.selection.main.head;
+    editorView.dispatch({
+      changes: { from: pos, insert: ref + '\n' }
+    });
+  }
+
+  async function processFiles(files) {
+    if (!projectState.selectedFileId) return;
+    for (const file of files) {
+      if (file.size > MAX_SIZE) {
+        logState.add(`Attachment rejected: ${file.name} exceeds 30MB limit`);
+        continue;
+      }
+      try {
+        const buffer = await file.arrayBuffer();
+        const attachment = await window.api.addAttachment(
+          projectState.selectedFileId, buffer, file.name
+        );
+        projectState.addAttachment(projectState.selectedFileId, attachment);
+        insertMarkdownReference(attachment);
+      } catch (err) {
+        logState.add(`Attachment failed: ${err.message}`);
+      }
+    }
+  }
+
+  function handlePaste(e) {
+    const files = e.clipboardData?.files;
+    if (files && files.length > 0 && projectState.selectedFileId) {
+      e.preventDefault();
+      processFiles(files);
+    }
+  }
+
+  function handleDragOver(e) {
+    if (projectState.selectedFileId) {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'copy';
+    }
+  }
+
+  function handleDrop(e) {
+    const files = e.dataTransfer?.files;
+    if (files && files.length > 0 && projectState.selectedFileId) {
+      e.preventDefault();
+      processFiles(files);
+    }
+  }
+
   onMount(() => {
     createEditor();
   });
@@ -116,7 +184,8 @@
       </button>
     </div>
   </div>
-  <div class="editor-container" bind:this={editorContainer}></div>
+  <!-- svelte-ignore a11y_no_static_element_interactions -->
+  <div class="editor-container" bind:this={editorContainer} onpaste={handlePaste} ondragover={handleDragOver} ondrop={handleDrop}></div>
 </div>
 
 <style>
