@@ -1,4 +1,4 @@
-const { app, BrowserWindow, Menu, ipcMain, dialog, shell } = require('electron');
+const { app, BrowserWindow, Menu, ipcMain, dialog, shell, net, protocol } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const { GitService } = require('./git-service');
@@ -45,6 +45,16 @@ function createWindow() {
 }
 
 app.whenReady().then(() => {
+  protocol.handle('attachment', (request) => {
+    if (!projectService || !projectService.projectPath) {
+      return new Response('Not found', { status: 404 });
+    }
+    const url = new URL(request.url);
+    const filename = decodeURIComponent(url.pathname).replace(/^\/+/, '');
+    const filePath = path.join(projectService.projectPath, '_attachments', filename);
+    return net.fetch('file://' + filePath);
+  });
+
   createWindow();
 
   app.on('activate', () => {

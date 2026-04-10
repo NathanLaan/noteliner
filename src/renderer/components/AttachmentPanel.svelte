@@ -17,8 +17,6 @@
     '.json': 'fa-file-code', '.js': 'fa-file-code', '.html': 'fa-file-code',
   };
 
-  let thumbnailUrls = $state({});
-
   function getExtension(name) {
     const dot = name.lastIndexOf('.');
     return dot >= 0 ? name.slice(dot).toLowerCase() : '';
@@ -38,12 +36,8 @@
     return ext ? ext.slice(1).toUpperCase() : 'FILE';
   }
 
-  async function loadThumbnail(attachment) {
-    if (thumbnailUrls[attachment.id]) return;
-    try {
-      const absPath = await window.api.getAttachmentPath(attachment.filename);
-      thumbnailUrls[attachment.id] = `file://${absPath}`;
-    } catch { /* ignore */ }
+  function getThumbnailUrl(attachment) {
+    return `attachment:///${encodeURIComponent(attachment.filename)}`;
   }
 
   async function handleAddFiles() {
@@ -70,7 +64,6 @@
     try {
       await window.api.removeAttachment(projectState.selectedFileId, attachment.id);
       projectState.removeAttachment(projectState.selectedFileId, attachment.id);
-      delete thumbnailUrls[attachment.id];
     } catch (err) {
       logState.add(`Remove failed: ${err.message}`);
     }
@@ -83,12 +76,6 @@
     } catch { /* ignore */ }
   }
 
-  $effect(() => {
-    const attachments = projectState.selectedFileAttachments;
-    for (const att of attachments) {
-      if (isImage(att.originalName)) loadThumbnail(att);
-    }
-  });
 </script>
 
 <div class="attachment-panel">
@@ -109,10 +96,10 @@
       {#each projectState.selectedFileAttachments as attachment (attachment.id)}
         <!-- svelte-ignore a11y_no_static_element_interactions -->
         <div class="attachment-item" ondblclick={() => handleOpen(attachment)}>
-          {#if isImage(attachment.originalName) && thumbnailUrls[attachment.id]}
+          {#if isImage(attachment.originalName)}
             <img
               class="thumbnail"
-              src={thumbnailUrls[attachment.id]}
+              src={getThumbnailUrl(attachment)}
               alt={attachment.originalName}
             />
           {:else}
