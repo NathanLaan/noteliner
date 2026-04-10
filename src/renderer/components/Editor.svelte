@@ -155,14 +155,19 @@
     if (saveTimeout) clearTimeout(saveTimeout);
   });
 
-  // Watch for file selection changes
+  // Watch for file selection and content changes
   $effect(() => {
     const fileId = projectState.selectedFileId;
     const content = projectState.editorContent;
 
     if (fileId !== currentFileId) {
       currentFileId = fileId;
-      if (editorView) {
+    }
+
+    // Update editor only when content differs (avoids circular updates from user typing)
+    if (editorView) {
+      const current = editorView.state.doc.toString();
+      if (current !== (content || '')) {
         updateEditorContent(content);
       }
     }
