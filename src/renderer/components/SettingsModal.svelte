@@ -14,6 +14,8 @@
     { keys: 'Ctrl+,', action: 'Settings' },
     { keys: 'Ctrl+Shift+,', action: 'Project Settings' },
     { keys: 'Ctrl+Shift+S', action: 'Remote Sync' },
+    { keys: 'Ctrl+T', action: 'Add Tag' },
+    { keys: 'Ctrl+Y', action: 'Remove Tag' },
     { keys: 'Ctrl+I', action: 'About' },
     { keys: 'Ctrl++', action: 'Zoom In' },
     { keys: 'Ctrl+-', action: 'Zoom Out' },
