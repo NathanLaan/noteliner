@@ -106,7 +106,7 @@ class ProjectState {
     if (!file.tags) file.tags = [];
     const normalized = tag.trim();
     if (normalized && !file.tags.includes(normalized)) {
-      file.tags.push(normalized);
+      file.tags = [...file.tags, normalized];
     }
   }
 

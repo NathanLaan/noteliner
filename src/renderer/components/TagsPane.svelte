@@ -67,6 +67,27 @@
     adding = false;
   });
 
+  let dragOverTag = $state(null);
+
+  function handleChipDragOver(e, tag) {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    dragOverTag = tag;
+  }
+
+  function handleChipDragLeave() {
+    dragOverTag = null;
+  }
+
+  function handleChipDrop(e, tag) {
+    e.preventDefault();
+    dragOverTag = null;
+    const fileId = e.dataTransfer.getData('text/plain');
+    if (!fileId) return;
+    projectState.addTag(fileId, tag);
+    onTagsChanged();
+  }
+
   let hasSelection = $derived(!!projectState.selectedFileId);
   let tags = $derived(projectState.selectedFileTags);
 </script>
@@ -96,7 +117,15 @@
       />
     {/if}
     {#each tags as tag (tag)}
-      <button class="tag-chip" class:selected={tag === selectedTag} onclick={() => selectedTag = (selectedTag === tag ? null : tag)}>
+      <button
+        class="tag-chip"
+        class:selected={tag === selectedTag}
+        class:drag-over={tag === dragOverTag}
+        onclick={() => selectedTag = (selectedTag === tag ? null : tag)}
+        ondragover={(e) => handleChipDragOver(e, tag)}
+        ondragleave={handleChipDragLeave}
+        ondrop={(e) => handleChipDrop(e, tag)}
+      >
         {tag}
       </button>
     {/each}
@@ -200,6 +229,12 @@
   .tag-chip.selected {
     background: var(--bg-selected);
     outline: 1px solid var(--accent);
+    color: var(--accent);
+  }
+
+  .tag-chip.drag-over {
+    background: var(--bg-selected);
+    outline: 2px solid var(--accent);
     color: var(--accent);
   }
 
