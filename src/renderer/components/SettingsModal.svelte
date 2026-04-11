@@ -97,42 +97,6 @@
 </div>
 
 <style>
-  .modal-overlay {
-    position: fixed;
-    inset: 0;
-    background: var(--modal-overlay);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 1000;
-  }
-
-  .modal {
-    background: var(--bg-surface);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    min-width: 380px;
-    overflow: hidden;
-    display: flex;
-    flex-direction: column;
-  }
-
-  .modal-header {
-    display: flex;
-    align-items: center;
-    background: var(--modal-header-bg);
-    padding: 16px 24px;
-    flex-shrink: 0;
-  }
-
-  .modal-header h2 {
-    font-size: 14px;
-    font-weight: 600;
-    color: var(--modal-header-text);
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-  }
-
   .tab-bar {
     display: flex;
     border-bottom: 1px solid var(--border);
@@ -157,11 +121,6 @@
   .tab.active {
     color: var(--accent);
     border-bottom-color: var(--accent);
-  }
-
-  .modal-body {
-    padding: 24px 24px 20px;
-    min-height: 200px;
   }
 
   .modal-footer {
