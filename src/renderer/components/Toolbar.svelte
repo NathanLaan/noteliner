@@ -1,5 +1,5 @@
 <script>
-  let { onOpenFolder, onNewFile, onToggleLog, onToggleAttachments, onShowAbout, onShowSettings, onShowProjectSettings, projectOpen } = $props();
+  let { onOpenFolder, onNewFile, onToggleLog, onToggleAttachments, onShowAbout, onShowSettings, onShowProjectSettings, projectOpen, logVisible = false, attachmentsVisible = false } = $props();
 </script>
 
 <div class="toolbar">
@@ -12,14 +12,14 @@
       <i class="fas fa-file-circle-plus"></i>
     </button>
 
-    <button class="toolbar-btn" onclick={onToggleAttachments} title="Attachments (Ctrl+B)">
+    <button class="toolbar-btn" class:active={attachmentsVisible} onclick={onToggleAttachments} title="Attachments (Ctrl+B)">
       <i class="fas fa-paperclip"></i>
     </button>
   {/if}
 
   <div class="toolbar-spacer"></div>
 
-  <button class="toolbar-btn" onclick={onToggleLog} title="Show Log (Ctrl+L)">
+  <button class="toolbar-btn" class:active={logVisible} onclick={onToggleLog} title="Show Log (Ctrl+L)">
     <i class="fas fa-terminal"></i>
   </button>
 
@@ -66,6 +66,12 @@
   .toolbar-btn:hover {
     background: var(--bg-button);
     color: var(--text-primary);
+  }
+
+  .toolbar-btn.active {
+    background: var(--bg-selected);
+    outline: 1px solid var(--accent);
+    color: var(--accent);
   }
 
   .toolbar-spacer {

@@ -201,6 +201,8 @@
     onShowSettings={handleShowSettings}
     onShowProjectSettings={handleShowProjectSettings}
     projectOpen={projectState.isOpen}
+    logVisible={showLog}
+    attachmentsVisible={showAttachments}
   />
 
   {#if !projectState.isOpen}

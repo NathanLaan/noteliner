@@ -93,13 +93,15 @@
 
   .close-btn {
     padding: 8px 24px;
-    background: var(--bg-button);
-    color: var(--text-primary);
+    background: var(--bg-selected);
+    outline: 1px solid var(--accent);
+    color: var(--accent);
     border-radius: 6px;
-    transition: background 0.15s;
+    transition: background 0.15s, color 0.15s;
   }
 
   .close-btn:hover {
-    background: var(--bg-button-hover);
+    background: var(--accent);
+    color: var(--accent-on);
   }
 </style>
