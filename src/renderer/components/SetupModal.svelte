@@ -131,12 +131,14 @@
   }
 
   .action-btn.primary {
-    background: var(--accent);
-    color: var(--accent-on);
+    background: var(--bg-selected);
+    outline: 1px solid var(--accent);
+    color: var(--accent);
   }
 
   .action-btn.primary:hover {
-    background: var(--accent-hover);
+    background: var(--accent);
+    color: var(--accent-on);
   }
 
   .url-input {
