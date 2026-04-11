@@ -180,6 +180,37 @@ ipcMain.handle('git:pull', async () => {
   return await gitService.pull(projectService.projectPath);
 });
 
+ipcMain.handle('git:getRemoteUrl', async () => {
+  if (!projectService.projectPath) return null;
+  return await gitService.getRemoteUrl(projectService.projectPath);
+});
+
+ipcMain.handle('git:setRemoteUrl', async (_event, url) => {
+  if (!projectService.projectPath) return;
+  return await gitService.setRemoteUrl(projectService.projectPath, url);
+});
+
+ipcMain.handle('git:removeRemote', async () => {
+  if (!projectService.projectPath) return;
+  return await gitService.removeRemote(projectService.projectPath);
+});
+
+ipcMain.handle('git:getSyncStatus', async () => {
+  if (!projectService.projectPath) return { status: 'error', message: 'No project open' };
+  return await gitService.getSyncStatus(projectService.projectPath);
+});
+
+ipcMain.handle('git:getBranch', async () => {
+  if (!projectService.projectPath) return null;
+  return await gitService.getCurrentBranch(projectService.projectPath);
+});
+
+ipcMain.handle('git:pushUpstream', async () => {
+  if (!projectService.projectPath) return;
+  const branch = await gitService.getCurrentBranch(projectService.projectPath);
+  return await gitService.setUpstreamAndPush(projectService.projectPath, branch);
+});
+
 // Git config
 
 ipcMain.handle('git:getConfig', async () => {

@@ -11,6 +11,7 @@
   import SettingsModal from './components/SettingsModal.svelte';
   import ProjectSettingsModal from './components/ProjectSettingsModal.svelte';
   import NewProjectModal from './components/NewProjectModal.svelte';
+  import SyncModal from './components/SyncModal.svelte';
   import AttachmentPanel from './components/AttachmentPanel.svelte';
   import { projectState } from './stores/project.svelte.js';
   import { themeState } from './stores/theme.svelte.js';
@@ -24,6 +25,7 @@
   let showSettings = $state(false);
   let showProjectSettings = $state(false);
   let showNewProject = $state(false);
+  let showSync = $state(false);
   let projectSettingsRequired = $state(false);
   let setupFolderPath = $state('');
   let sidebarWidth = $state(260);
@@ -49,6 +51,9 @@
       } else if (e.ctrlKey && e.key === ',') {
         e.preventDefault();
         showSettings = true;
+      } else if (e.ctrlKey && e.shiftKey && e.code === 'KeyS') {
+        e.preventDefault();
+        if (projectState.isOpen) showSync = true;
       } else if (e.ctrlKey && e.key === 'l') {
         e.preventDefault();
         handleToggleLog();
@@ -159,6 +164,10 @@
     projectSettingsRequired = false;
     showProjectSettings = true;
   }
+
+  function handleShowSync() {
+    showSync = true;
+  }
 </script>
 
 {#if showAbout}
@@ -191,6 +200,10 @@
   />
 {/if}
 
+{#if showSync}
+  <SyncModal onClose={() => showSync = false} />
+{/if}
+
 <div class="app-layout">
   <Toolbar
     onOpenFolder={handleOpenFolder}
@@ -200,6 +213,7 @@
     onShowAbout={handleShowAbout}
     onShowSettings={handleShowSettings}
     onShowProjectSettings={handleShowProjectSettings}
+    onShowSync={handleShowSync}
     projectOpen={projectState.isOpen}
     logVisible={showLog}
     attachmentsVisible={showAttachments}
