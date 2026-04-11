@@ -22,6 +22,12 @@ contextBridge.exposeInMainWorld('api', {
   gitPull: () => ipcRenderer.invoke('git:pull'),
   getGitConfig: () => ipcRenderer.invoke('git:getConfig'),
   setGitConfig: (name, email) => ipcRenderer.invoke('git:setConfig', name, email),
+  gitGetRemoteUrl: () => ipcRenderer.invoke('git:getRemoteUrl'),
+  gitSetRemoteUrl: (url) => ipcRenderer.invoke('git:setRemoteUrl', url),
+  gitRemoveRemote: () => ipcRenderer.invoke('git:removeRemote'),
+  gitGetSyncStatus: () => ipcRenderer.invoke('git:getSyncStatus'),
+  gitGetBranch: () => ipcRenderer.invoke('git:getBranch'),
+  gitPushUpstream: () => ipcRenderer.invoke('git:pushUpstream'),
 
   // Attachments
   addAttachment: (fileId, buffer, originalName) => ipcRenderer.invoke('file:addAttachment', fileId, buffer, originalName),

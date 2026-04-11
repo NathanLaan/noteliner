@@ -1,5 +1,5 @@
 <script>
-  let { onOpenFolder, onNewFile, onToggleLog, onToggleAttachments, onShowAbout, onShowSettings, onShowProjectSettings, projectOpen, logVisible = false, attachmentsVisible = false } = $props();
+  let { onOpenFolder, onNewFile, onToggleLog, onToggleAttachments, onShowAbout, onShowSettings, onShowProjectSettings, onShowSync, projectOpen, logVisible = false, attachmentsVisible = false } = $props();
 </script>
 
 <div class="toolbar">
@@ -14,6 +14,10 @@
 
     <button class="toolbar-btn" class:active={attachmentsVisible} onclick={onToggleAttachments} title="Attachments (Ctrl+B)">
       <i class="fas fa-paperclip"></i>
+    </button>
+
+    <button class="toolbar-btn" onclick={onShowSync} title="Remote Sync (Ctrl+Shift+S)">
+      <i class="fas fa-cloud-arrow-up"></i>
     </button>
   {/if}
 

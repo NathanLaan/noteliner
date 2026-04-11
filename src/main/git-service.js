@@ -119,6 +119,80 @@ class GitService {
     }
   }
 
+  async getRemoteUrl(folderPath) {
+    try {
+      return await this.exec(['remote', 'get-url', 'origin'], folderPath);
+    } catch {
+      return null;
+    }
+  }
+
+  async setRemoteUrl(folderPath, url) {
+    const hasOrigin = await this.hasRemote(folderPath);
+    if (hasOrigin) {
+      return await this.exec(['remote', 'set-url', 'origin', url], folderPath);
+    } else {
+      return await this.exec(['remote', 'add', 'origin', url], folderPath);
+    }
+  }
+
+  async removeRemote(folderPath) {
+    return await this.exec(['remote', 'remove', 'origin'], folderPath);
+  }
+
+  async getSyncStatus(folderPath) {
+    try {
+      // Fetch to update remote refs
+      await this.exec(['fetch', 'origin'], folderPath);
+    } catch (err) {
+      return { status: 'error', message: `Fetch failed: ${err.message}` };
+    }
+
+    try {
+      const local = await this.exec(['rev-parse', 'HEAD'], folderPath);
+      let remote;
+      try {
+        remote = await this.exec(['rev-parse', '@{u}'], folderPath);
+      } catch {
+        return { status: 'no-upstream' };
+      }
+
+      if (local === remote) {
+        return { status: 'synced' };
+      }
+
+      const base = await this.exec(['merge-base', 'HEAD', '@{u}'], folderPath);
+
+      if (base === remote) {
+        const count = await this.exec(['rev-list', '--count', '@{u}..HEAD'], folderPath);
+        return { status: 'ahead', count: parseInt(count, 10) };
+      }
+
+      if (base === local) {
+        const count = await this.exec(['rev-list', '--count', 'HEAD..@{u}'], folderPath);
+        return { status: 'behind', count: parseInt(count, 10) };
+      }
+
+      const ahead = await this.exec(['rev-list', '--count', '@{u}..HEAD'], folderPath);
+      const behind = await this.exec(['rev-list', '--count', 'HEAD..@{u}'], folderPath);
+      return { status: 'diverged', ahead: parseInt(ahead, 10), behind: parseInt(behind, 10) };
+    } catch (err) {
+      return { status: 'error', message: err.message };
+    }
+  }
+
+  async getCurrentBranch(folderPath) {
+    try {
+      return await this.exec(['branch', '--show-current'], folderPath);
+    } catch {
+      return null;
+    }
+  }
+
+  async setUpstreamAndPush(folderPath, branch) {
+    return await this.exec(['push', '-u', 'origin', branch], folderPath);
+  }
+
   schedulePush(folderPath) {
     if (this.pushTimer) {
       clearTimeout(this.pushTimer);
