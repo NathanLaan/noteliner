@@ -38,7 +38,7 @@
   }
 
   async function handleTagsChanged() {
-    await window.api.saveIndex(projectState.index);
+    await window.api.saveIndex($state.snapshot(projectState.index));
   }
 
   let hasTagGroups = $derived(projectState.allTags.length > 0);
@@ -63,7 +63,7 @@
       siblings.forEach((f, i) => f.order = i);
     }
 
-    await window.api.saveIndex(projectState.index);
+    await window.api.saveIndex($state.snapshot(projectState.index));
   }
 </script>
 
