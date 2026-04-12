@@ -18,6 +18,7 @@
 
   let showPreview = $state(false);
   let showLog = $state(false);
+  let showSidebar = $state(true);
   let showAttachments = $state(false);
   let logPanelHeight = $state(300);
   let showAbout = $state(false);
@@ -65,6 +66,9 @@
         if (projectState.isOpen && projectState.selectedFileId) {
           tagAction = { type: 'remove', ts: Date.now() };
         }
+      } else if (e.ctrlKey && e.key === 'e') {
+        e.preventDefault();
+        if (projectState.isOpen) handleToggleSidebar();
       } else if (e.ctrlKey && e.key === 'l') {
         e.preventDefault();
         handleToggleLog();
@@ -159,6 +163,10 @@
     showPreview = !showPreview;
   }
 
+  function handleToggleSidebar() {
+    showSidebar = !showSidebar;
+  }
+
   function handleToggleAttachments() {
     showAttachments = !showAttachments;
   }
@@ -220,6 +228,7 @@
     onOpenFolder={handleOpenFolder}
     onNewFile={handleNewFile}
     onToggleLog={handleToggleLog}
+    onToggleSidebar={handleToggleSidebar}
     onToggleAttachments={handleToggleAttachments}
     onShowAbout={handleShowAbout}
     onShowSettings={handleShowSettings}
@@ -227,6 +236,7 @@
     onShowSync={handleShowSync}
     projectOpen={projectState.isOpen}
     logVisible={showLog}
+    sidebarVisible={showSidebar}
     attachmentsVisible={showAttachments}
   />
 
@@ -241,26 +251,28 @@
   {:else}
     <div class="main-area">
       <div class="content-area" class:with-log={showLog}>
-        <div class="sidebar" style="width: {sidebarWidth}px">
-          <Sidebar
-            bind:width={sidebarWidth}
-            {tagAction}
-          />
-        </div>
-        <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
-        <div class="resizer sidebar-resizer" role="separator" aria-orientation="vertical" tabindex="-1" onmousedown={(e) => {
-          const startX = e.clientX;
-          const startWidth = sidebarWidth;
-          const onMouseMove = (e) => {
-            sidebarWidth = Math.max(180, Math.min(500, startWidth + e.clientX - startX));
-          };
-          const onMouseUp = () => {
-            window.removeEventListener('mousemove', onMouseMove);
-            window.removeEventListener('mouseup', onMouseUp);
-          };
-          window.addEventListener('mousemove', onMouseMove);
-          window.addEventListener('mouseup', onMouseUp);
-        }}></div>
+        {#if showSidebar}
+          <div class="sidebar" style="width: {sidebarWidth}px">
+            <Sidebar
+              bind:width={sidebarWidth}
+              {tagAction}
+            />
+          </div>
+          <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+          <div class="resizer sidebar-resizer" role="separator" aria-orientation="vertical" tabindex="-1" onmousedown={(e) => {
+            const startX = e.clientX;
+            const startWidth = sidebarWidth;
+            const onMouseMove = (e) => {
+              sidebarWidth = Math.max(180, Math.min(500, startWidth + e.clientX - startX));
+            };
+            const onMouseUp = () => {
+              window.removeEventListener('mousemove', onMouseMove);
+              window.removeEventListener('mouseup', onMouseUp);
+            };
+            window.addEventListener('mousemove', onMouseMove);
+            window.addEventListener('mouseup', onMouseUp);
+          }}></div>
+        {/if}
         <div class="editor-area">
           <Editor onTogglePreview={handleTogglePreview} showPreview={showPreview} onGitConfigRequired={() => { projectSettingsRequired = true; showProjectSettings = true; }} />
         </div>
