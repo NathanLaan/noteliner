@@ -38,7 +38,8 @@
     '&': { height: '100%', fontSize: '14px' },
     '.cm-scroller': { overflow: 'auto' },
     '.cm-content': { padding: '16px 0' },
-    '.cm-line': { padding: '0 16px' }
+    '.cm-line': { padding: '0 16px' },
+    '.cm-lineNumbers': { minWidth: '44px' },
   });
 
   function getEditorTheme() {
