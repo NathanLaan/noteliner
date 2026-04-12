@@ -8,6 +8,7 @@ class ProjectState {
   selectedFileId = $state(null);
   editorContent = $state('');
   scrollToLine = $state(null);
+  cursorLine = $state(1);
 
   load(folderPath, index) {
     this.folderPath = folderPath;
