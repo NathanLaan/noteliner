@@ -64,6 +64,10 @@
             projectState.editorContent = content;
             scheduleSave(content);
           }
+          if (update.selectionSet || update.docChanged) {
+            const pos = update.state.selection.main.head;
+            projectState.cursorLine = update.state.doc.lineAt(pos).number;
+          }
         }),
         EditorView.lineWrapping
       ]

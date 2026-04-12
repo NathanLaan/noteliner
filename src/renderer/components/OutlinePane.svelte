@@ -20,6 +20,26 @@
 
   let headings = $derived(extractHeadings(projectState.editorContent));
 
+  let activeHeadingLine = $derived.by(() => {
+    const line = projectState.cursorLine;
+    if (!line || headings.length === 0) return null;
+    let active = null;
+    for (const h of headings) {
+      if (h.line <= line) active = h.line;
+      else break;
+    }
+    return active;
+  });
+
+  function scrollActiveIntoView(node) {
+    $effect(() => {
+      if (activeHeadingLine) {
+        const el = node.querySelector(`[data-line="${activeHeadingLine}"]`);
+        if (el) el.scrollIntoView({ block: 'nearest' });
+      }
+    });
+  }
+
   function handleClick(line) {
     projectState.scrollToLine = { line, ts: Date.now() };
   }
@@ -29,10 +49,12 @@
   <div class="outline-header">
     <span class="outline-title">OUTLINE</span>
   </div>
-  <div class="outline-list">
+  <div class="outline-list" use:scrollActiveIntoView>
     {#each headings as h (h.line)}
       <div
         class="outline-item level-{h.level}"
+        class:active={h.line === activeHeadingLine}
+        data-line={h.line}
         style="padding-left: {8 + (h.level - 1) * 14}px"
         onclick={() => handleClick(h.line)}
         onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleClick(h.line); } }}
@@ -92,6 +114,12 @@
   .outline-item:hover {
     background: var(--bg-item-hover);
     color: var(--text-primary);
+  }
+
+  .outline-item.active {
+    background: var(--bg-selected);
+    color: var(--accent);
+    border-left: 2px solid var(--accent);
   }
 
   .outline-item.level-1 {
