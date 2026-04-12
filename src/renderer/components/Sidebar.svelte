@@ -72,7 +72,7 @@
     <span class="sidebar-title">FILES</span>
   </div>
   <div class="file-list">
-    <TagGroups selectedId={projectState.selectedFileId} onSelect={handleSelect} />
+    <TagGroups selectedId={projectState.selectedFileId} onSelect={handleSelect} onTagsChanged={handleTagsChanged} />
     {#if hasTagGroups}
       <div class="tag-separator"></div>
     {/if}

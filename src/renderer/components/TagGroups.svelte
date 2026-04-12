@@ -1,9 +1,31 @@
 <script>
   import { projectState } from '../stores/project.svelte.js';
 
-  let { selectedId, onSelect } = $props();
+  let { selectedId, onSelect, onTagsChanged } = $props();
 
   let expandedTags = $state(new Set());
+  let dragOverTag = $state(null);
+
+  function handleDragOver(e, tag) {
+    e.preventDefault();
+    e.stopPropagation();
+    e.dataTransfer.dropEffect = 'move';
+    dragOverTag = tag;
+  }
+
+  function handleDragLeave() {
+    dragOverTag = null;
+  }
+
+  function handleDrop(e, tag) {
+    e.preventDefault();
+    e.stopPropagation();
+    dragOverTag = null;
+    const fileId = e.dataTransfer.getData('text/plain');
+    if (!fileId) return;
+    projectState.addTag(fileId, tag);
+    onTagsChanged();
+  }
 
   function toggle(tag) {
     if (expandedTags.has(tag)) {
@@ -22,7 +44,7 @@
 {#each projectState.allTags as tag (tag)}
   {@const files = projectState.getFilesWithTag(tag)}
   {@const expanded = isExpanded(tag)}
-  <div class="tag-header" onclick={() => toggle(tag)} role="treeitem" aria-selected="false" aria-expanded={expanded} tabindex="0" onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(tag); } }}>
+  <div class="tag-header" class:drag-over={tag === dragOverTag} onclick={() => toggle(tag)} ondragover={(e) => handleDragOver(e, tag)} ondragleave={handleDragLeave} ondrop={(e) => handleDrop(e, tag)} role="treeitem" aria-selected="false" aria-expanded={expanded} tabindex="0" onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(tag); } }}>
     <i class="fas fa-chevron-right chevron" class:expanded></i>
     <i class="fas fa-tag tag-icon"></i>
     <span class="tag-name">{tag}</span>
@@ -59,6 +81,12 @@
 
   .tag-header:hover {
     background: var(--bg-item-hover);
+  }
+
+  .tag-header.drag-over {
+    background: var(--bg-drag-over);
+    outline: 2px solid var(--accent);
+    outline-offset: -2px;
   }
 
   .chevron {
