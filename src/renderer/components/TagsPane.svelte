@@ -137,10 +137,11 @@
 
 <style>
   .tags-pane {
-    flex-shrink: 0;
-    border-top: 1px solid var(--border);
     display: flex;
     flex-direction: column;
+    overflow: hidden;
+    min-height: 0;
+    height: 100%;
   }
 
   .tags-header {

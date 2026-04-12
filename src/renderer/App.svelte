@@ -21,6 +21,7 @@
   let showLog = $state(false);
   let showSidebar = $state(true);
   let showOutline = $state(false);
+  let showTagGroups = $state(false);
   let showAttachments = $state(false);
   let logPanelHeight = $state(300);
   let showAbout = $state(false);
@@ -75,6 +76,9 @@
         if (projectState.isOpen && projectState.selectedFileId) {
           tagAction = { type: 'remove', ts: Date.now() };
         }
+      } else if (e.ctrlKey && e.key === 'g') {
+        e.preventDefault();
+        if (projectState.isOpen) handleToggleTagGroups();
       } else if (e.ctrlKey && e.key === 'e') {
         e.preventDefault();
         if (projectState.isOpen) handleToggleSidebar();
@@ -193,6 +197,10 @@
     showOutline = !showOutline;
   }
 
+  function handleToggleTagGroups() {
+    showTagGroups = !showTagGroups;
+  }
+
   function handleToggleAttachments() {
     showAttachments = !showAttachments;
   }
@@ -266,6 +274,7 @@
     onToggleLog={handleToggleLog}
     onToggleSidebar={handleToggleSidebar}
     onToggleOutline={handleToggleOutline}
+    onToggleTagGroups={handleToggleTagGroups}
     onToggleAttachments={handleToggleAttachments}
     onShowAbout={handleShowAbout}
     onShowSettings={handleShowSettings}
@@ -275,6 +284,7 @@
     logVisible={showLog}
     sidebarVisible={showSidebar}
     outlineVisible={showOutline}
+    tagGroupsVisible={showTagGroups}
     attachmentsVisible={showAttachments}
   />
 
@@ -295,6 +305,7 @@
               bind:width={sidebarWidth}
               {tagAction}
               outlineVisible={showOutline}
+              tagGroupsVisible={showTagGroups}
             />
           </div>
           <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
