@@ -1,5 +1,5 @@
 <script>
-  let { onOpenFolder, onNewFile, onToggleSidebar, onToggleOutline, onToggleLog, onToggleAttachments, onShowAbout, onShowSettings, onShowProjectSettings, onShowSync, projectOpen, logVisible = false, sidebarVisible = true, outlineVisible = false, attachmentsVisible = false } = $props();
+  let { onOpenFolder, onNewFile, onDeleteFile, onToggleSidebar, onToggleOutline, onToggleLog, onToggleAttachments, onShowAbout, onShowSettings, onShowProjectSettings, onShowSync, projectOpen, hasSelectedFile = false, logVisible = false, sidebarVisible = true, outlineVisible = false, attachmentsVisible = false } = $props();
 </script>
 
 <div class="toolbar">
@@ -10,6 +10,10 @@
   {#if projectOpen}
     <button class="toolbar-btn" onclick={onNewFile} title="New File (Ctrl+N)">
       <i class="fas fa-file-circle-plus"></i>
+    </button>
+
+    <button class="toolbar-btn" onclick={onDeleteFile} disabled={!hasSelectedFile} title="Delete File (Ctrl+D)">
+      <i class="fas fa-file-circle-minus"></i>
     </button>
 
     <button class="toolbar-btn" class:active={sidebarVisible} onclick={onToggleSidebar} title="Toggle Files Panel (Ctrl+E)">
@@ -78,6 +82,16 @@
   .toolbar-btn:hover {
     background: var(--bg-button);
     color: var(--text-primary);
+  }
+
+  .toolbar-btn:disabled {
+    opacity: 0.3;
+    cursor: default;
+  }
+
+  .toolbar-btn:disabled:hover {
+    background: none;
+    color: var(--text-secondary);
   }
 
   .toolbar-btn.active {

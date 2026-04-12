@@ -11,6 +11,7 @@
   import SettingsModal from './components/SettingsModal.svelte';
   import ProjectSettingsModal from './components/ProjectSettingsModal.svelte';
   import NewProjectModal from './components/NewProjectModal.svelte';
+  import DeleteFileModal from './components/DeleteFileModal.svelte';
   import SyncModal from './components/SyncModal.svelte';
   import AttachmentPanel from './components/AttachmentPanel.svelte';
   import { projectState } from './stores/project.svelte.js';
@@ -28,6 +29,7 @@
   let showProjectSettings = $state(false);
   let showNewProject = $state(false);
   let showSync = $state(false);
+  let showDeleteFile = $state(false);
   let projectSettingsRequired = $state(false);
   let tagAction = $state(null);
   let setupFolderPath = $state('');
@@ -41,6 +43,9 @@
       if (e.ctrlKey && e.key === 'n') {
         e.preventDefault();
         handleNewFile();
+      } else if (e.ctrlKey && e.key === 'd') {
+        e.preventDefault();
+        handleDeleteFile();
       } else if (e.ctrlKey && e.key === 'o') {
         e.preventDefault();
         handleOpenFolder();
@@ -159,6 +164,19 @@
     projectState.selectFile(entry.id);
   }
 
+  function handleDeleteFile() {
+    if (!projectState.isOpen || !projectState.selectedFileId) return;
+    showDeleteFile = true;
+  }
+
+  async function handleDeleteFileConfirm() {
+    const fileId = projectState.selectedFileId;
+    showDeleteFile = false;
+    if (!fileId) return;
+    await window.api.deleteFile(fileId);
+    projectState.removeFile(fileId);
+  }
+
   function handleToggleLog() {
     showLog = !showLog;
   }
@@ -220,6 +238,14 @@
   />
 {/if}
 
+{#if showDeleteFile && projectState.selectedFile}
+  <DeleteFileModal
+    fileName={projectState.selectedFile.name}
+    onConfirm={handleDeleteFileConfirm}
+    onCancel={() => showDeleteFile = false}
+  />
+{/if}
+
 {#if showProjectSettings}
   <ProjectSettingsModal
     required={projectSettingsRequired}
@@ -235,6 +261,8 @@
   <Toolbar
     onOpenFolder={handleOpenFolder}
     onNewFile={handleNewFile}
+    onDeleteFile={handleDeleteFile}
+    hasSelectedFile={!!projectState.selectedFileId}
     onToggleLog={handleToggleLog}
     onToggleSidebar={handleToggleSidebar}
     onToggleOutline={handleToggleOutline}

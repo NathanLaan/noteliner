@@ -7,6 +7,7 @@
 
   const shortcuts = [
     { keys: 'Ctrl+N', action: 'New File' },
+    { keys: 'Ctrl+D', action: 'Delete File' },
     { keys: 'Ctrl+O', action: 'Open Folder' },
     { keys: 'Ctrl+P', action: 'Toggle Preview' },
     { keys: 'Ctrl+E', action: 'Toggle Files Panel' },
