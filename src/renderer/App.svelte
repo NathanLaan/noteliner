@@ -27,6 +27,7 @@
   let showNewProject = $state(false);
   let showSync = $state(false);
   let projectSettingsRequired = $state(false);
+  let tagAction = $state(null);
   let setupFolderPath = $state('');
   let sidebarWidth = $state(260);
   let attachmentPanelWidth = $state(220);
@@ -54,6 +55,16 @@
       } else if (e.ctrlKey && e.shiftKey && e.code === 'KeyS') {
         e.preventDefault();
         if (projectState.isOpen) showSync = true;
+      } else if (e.ctrlKey && e.key === 't') {
+        e.preventDefault();
+        if (projectState.isOpen && projectState.selectedFileId) {
+          tagAction = { type: 'add', ts: Date.now() };
+        }
+      } else if (e.ctrlKey && e.key === 'y') {
+        e.preventDefault();
+        if (projectState.isOpen && projectState.selectedFileId) {
+          tagAction = { type: 'remove', ts: Date.now() };
+        }
       } else if (e.ctrlKey && e.key === 'l') {
         e.preventDefault();
         handleToggleLog();
@@ -233,6 +244,7 @@
         <div class="sidebar" style="width: {sidebarWidth}px">
           <Sidebar
             bind:width={sidebarWidth}
+            {tagAction}
           />
         </div>
         <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->

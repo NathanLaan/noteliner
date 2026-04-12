@@ -2,6 +2,10 @@
   import { onMount, tick } from 'svelte';
   import { projectState } from '../stores/project.svelte.js';
   import FileTree from './FileTree.svelte';
+  import TagGroups from './TagGroups.svelte';
+  import TagsPane from './TagsPane.svelte';
+
+  let { tagAction = null } = $props();
 
   let editingId = $state(null);
   let editingName = $state('');
@@ -33,6 +37,12 @@
     projectState.selectFile(fileId);
   }
 
+  async function handleTagsChanged() {
+    await window.api.saveIndex($state.snapshot(projectState.index));
+  }
+
+  let hasTagGroups = $derived(projectState.allTags.length > 0);
+
   async function handleDrop(draggedId, targetId, position) {
     // position: 'before', 'after', 'child'
     const files = projectState.index.files;
@@ -53,7 +63,7 @@
       siblings.forEach((f, i) => f.order = i);
     }
 
-    await window.api.saveIndex(projectState.index);
+    await window.api.saveIndex($state.snapshot(projectState.index));
   }
 </script>
 
@@ -62,6 +72,10 @@
     <span class="sidebar-title">FILES</span>
   </div>
   <div class="file-list">
+    <TagGroups selectedId={projectState.selectedFileId} onSelect={handleSelect} onTagsChanged={handleTagsChanged} />
+    {#if hasTagGroups}
+      <div class="tag-separator"></div>
+    {/if}
     <FileTree
       parentId={null}
       selectedId={projectState.selectedFileId}
@@ -75,6 +89,7 @@
       onEditingNameChange={(val) => editingName = val}
     />
   </div>
+  <TagsPane onTagsChanged={handleTagsChanged} {tagAction} />
 </div>
 
 <style>
@@ -107,5 +122,11 @@
     flex: 1;
     overflow-y: auto;
     padding: 4px 0;
+  }
+
+  .tag-separator {
+    height: 1px;
+    background: var(--border);
+    margin: 6px 12px;
   }
 </style>

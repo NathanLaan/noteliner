@@ -83,6 +83,44 @@ class ProjectState {
       .filter(f => f.parentId === parentId)
       .sort((a, b) => a.order - b.order);
   }
+
+  get allTags() {
+    const tagSet = new Set();
+    for (const file of this.index.files) {
+      if (file.tags) {
+        for (const tag of file.tags) tagSet.add(tag);
+      }
+    }
+    return [...tagSet].sort();
+  }
+
+  get selectedFileTags() {
+    const file = this.selectedFile;
+    if (!file) return [];
+    return file.tags || [];
+  }
+
+  addTag(fileId, tag) {
+    const file = this.index.files.find(f => f.id === fileId);
+    if (!file) return;
+    if (!file.tags) file.tags = [];
+    const normalized = tag.trim();
+    if (normalized && !file.tags.includes(normalized)) {
+      file.tags = [...file.tags, normalized];
+    }
+  }
+
+  removeTag(fileId, tag) {
+    const file = this.index.files.find(f => f.id === fileId);
+    if (!file || !file.tags) return;
+    file.tags = file.tags.filter(t => t !== tag);
+  }
+
+  getFilesWithTag(tag) {
+    return this.index.files
+      .filter(f => f.tags && f.tags.includes(tag))
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }
 }
 
 export const projectState = new ProjectState();
