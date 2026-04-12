@@ -184,6 +184,21 @@
     if (saveTimeout) clearTimeout(saveTimeout);
   });
 
+  // Watch for scroll-to-line requests from outline
+  $effect(() => {
+    const req = projectState.scrollToLine;
+    if (req && editorView) {
+      const lineCount = editorView.state.doc.lines;
+      const lineNum = Math.min(req.line, lineCount);
+      const line = editorView.state.doc.line(lineNum);
+      editorView.dispatch({
+        selection: { anchor: line.from },
+        effects: EditorView.scrollIntoView(line.from, { y: 'start' })
+      });
+      editorView.focus();
+    }
+  });
+
   // Watch for file selection and content changes
   $effect(() => {
     const fileId = projectState.selectedFileId;

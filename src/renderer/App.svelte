@@ -19,6 +19,7 @@
   let showPreview = $state(false);
   let showLog = $state(false);
   let showSidebar = $state(true);
+  let showOutline = $state(false);
   let showAttachments = $state(false);
   let logPanelHeight = $state(300);
   let showAbout = $state(false);
@@ -56,6 +57,9 @@
       } else if (e.ctrlKey && e.shiftKey && e.code === 'KeyS') {
         e.preventDefault();
         if (projectState.isOpen) showSync = true;
+      } else if (e.ctrlKey && e.shiftKey && e.code === 'KeyO') {
+        e.preventDefault();
+        if (projectState.isOpen) handleToggleOutline();
       } else if (e.ctrlKey && e.key === 't') {
         e.preventDefault();
         if (projectState.isOpen && projectState.selectedFileId) {
@@ -167,6 +171,10 @@
     showSidebar = !showSidebar;
   }
 
+  function handleToggleOutline() {
+    showOutline = !showOutline;
+  }
+
   function handleToggleAttachments() {
     showAttachments = !showAttachments;
   }
@@ -229,6 +237,7 @@
     onNewFile={handleNewFile}
     onToggleLog={handleToggleLog}
     onToggleSidebar={handleToggleSidebar}
+    onToggleOutline={handleToggleOutline}
     onToggleAttachments={handleToggleAttachments}
     onShowAbout={handleShowAbout}
     onShowSettings={handleShowSettings}
@@ -237,6 +246,7 @@
     projectOpen={projectState.isOpen}
     logVisible={showLog}
     sidebarVisible={showSidebar}
+    outlineVisible={showOutline}
     attachmentsVisible={showAttachments}
   />
 
@@ -256,6 +266,7 @@
             <Sidebar
               bind:width={sidebarWidth}
               {tagAction}
+              {outlineVisible}
             />
           </div>
           <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->

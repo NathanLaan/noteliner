@@ -7,6 +7,7 @@ class ProjectState {
   index = $state({ version: 2, files: [] });
   selectedFileId = $state(null);
   editorContent = $state('');
+  scrollToLine = $state(null);
 
   load(folderPath, index) {
     this.folderPath = folderPath;
@@ -14,6 +15,7 @@ class ProjectState {
     this.isOpen = true;
     this.selectedFileId = null;
     this.editorContent = '';
+    this.scrollToLine = null;
   }
 
   close() {
@@ -22,6 +24,7 @@ class ProjectState {
     this.index = { version: 2, files: [] };
     this.selectedFileId = null;
     this.editorContent = '';
+    this.scrollToLine = null;
   }
 
   addFile(entry) {

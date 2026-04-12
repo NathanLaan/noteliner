@@ -10,6 +10,7 @@
     { keys: 'Ctrl+O', action: 'Open Folder' },
     { keys: 'Ctrl+P', action: 'Toggle Preview' },
     { keys: 'Ctrl+E', action: 'Toggle Files Panel' },
+    { keys: 'Ctrl+Shift+O', action: 'Toggle Outline' },
     { keys: 'Ctrl+B', action: 'Toggle Attachments' },
     { keys: 'Ctrl+L', action: 'Toggle Log Panel' },
     { keys: 'Ctrl+,', action: 'Settings' },

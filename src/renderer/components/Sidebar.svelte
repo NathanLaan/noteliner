@@ -4,8 +4,9 @@
   import FileTree from './FileTree.svelte';
   import TagGroups from './TagGroups.svelte';
   import TagsPane from './TagsPane.svelte';
+  import OutlinePane from './OutlinePane.svelte';
 
-  let { tagAction = null } = $props();
+  let { tagAction = null, outlineVisible = false } = $props();
 
   let editingId = $state(null);
   let editingName = $state('');
@@ -89,6 +90,9 @@
       onEditingNameChange={(val) => editingName = val}
     />
   </div>
+  {#if outlineVisible}
+    <OutlinePane />
+  {/if}
   <TagsPane onTagsChanged={handleTagsChanged} {tagAction} />
 </div>
 

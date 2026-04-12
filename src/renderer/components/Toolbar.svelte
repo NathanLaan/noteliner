@@ -1,5 +1,5 @@
 <script>
-  let { onOpenFolder, onNewFile, onToggleSidebar, onToggleLog, onToggleAttachments, onShowAbout, onShowSettings, onShowProjectSettings, onShowSync, projectOpen, logVisible = false, sidebarVisible = true, attachmentsVisible = false } = $props();
+  let { onOpenFolder, onNewFile, onToggleSidebar, onToggleOutline, onToggleLog, onToggleAttachments, onShowAbout, onShowSettings, onShowProjectSettings, onShowSync, projectOpen, logVisible = false, sidebarVisible = true, outlineVisible = false, attachmentsVisible = false } = $props();
 </script>
 
 <div class="toolbar">
@@ -14,6 +14,10 @@
 
     <button class="toolbar-btn" class:active={sidebarVisible} onclick={onToggleSidebar} title="Toggle Files Panel (Ctrl+E)">
       <i class="fas fa-bars-staggered"></i>
+    </button>
+
+    <button class="toolbar-btn" class:active={outlineVisible} onclick={onToggleOutline} title="Toggle Outline (Ctrl+Shift+O)">
+      <i class="fas fa-list-ol"></i>
     </button>
 
     <button class="toolbar-btn" class:active={attachmentsVisible} onclick={onToggleAttachments} title="Attachments (Ctrl+B)">

@@ -5,6 +5,9 @@ const os = require('os');
 const { GitService } = require('./git-service');
 const { ProjectService } = require('./project-service');
 
+// Set app name early so Linux WM_CLASS is correct (for dock icon in dev mode)
+app.setName('NoteLiner');
+
 const RECENT_PROJECTS_FILE = 'recent-projects.json';
 const MAX_RECENT = 5;
 
