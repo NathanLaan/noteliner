@@ -112,7 +112,7 @@
       const startY = e.clientY;
       const startHeight = getter();
       const onMouseMove = (e) => {
-        setter(Math.max(minH, startHeight + e.clientY - startY));
+        setter(Math.max(minH, startHeight - (e.clientY - startY)));
       };
       const onMouseUp = () => {
         window.removeEventListener('mousemove', onMouseMove);
