@@ -50,11 +50,11 @@
 
 <style>
   .outline-pane {
-    flex-shrink: 0;
     display: flex;
     flex-direction: column;
-    border-top: 1px solid var(--border);
-    max-height: 40%;
+    overflow: hidden;
+    min-height: 0;
+    height: 100%;
   }
 
   .outline-header {
