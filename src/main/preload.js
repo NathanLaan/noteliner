@@ -45,6 +45,11 @@ contextBridge.exposeInMainWorld('api', {
   getSystemInfo: () => ipcRenderer.invoke('system:getInfo'),
   ensureDir: (dirPath) => ipcRenderer.invoke('fs:ensureDir', dirPath),
 
+  // Window state
+  getWindowState: (folderPath) => ipcRenderer.invoke('window-state:getLayout', folderPath),
+  saveWindowState: (folderPath, layout) => ipcRenderer.invoke('window-state:saveLayout', folderPath, layout),
+  restoreWindowBounds: (folderPath) => ipcRenderer.invoke('window-state:restoreBounds', folderPath),
+
   // Events
   onGitLog: (callback) => {
     const listener = (_event, msg) => callback(msg);

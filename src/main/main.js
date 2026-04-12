@@ -1,9 +1,10 @@
-const { app, BrowserWindow, Menu, ipcMain, dialog, shell, net, protocol } = require('electron');
+const { app, BrowserWindow, Menu, ipcMain, dialog, shell, net, protocol, screen } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const os = require('os');
 const { GitService } = require('./git-service');
 const { ProjectService } = require('./project-service');
+const { WindowStateService } = require('./window-state-service');
 
 // Set app name early so Linux WM_CLASS is correct (for dock icon in dev mode)
 app.setName('NoteLiner');
@@ -44,6 +45,8 @@ function addRecentProject(folderPath) {
 let mainWindow;
 let gitService;
 let projectService;
+let windowStateService;
+let boundsTimer = null;
 
 const isDev = !app.isPackaged;
 
@@ -80,6 +83,41 @@ function createWindow() {
   });
 
   projectService = new ProjectService(gitService);
+  windowStateService = new WindowStateService(
+    path.join(app.getPath('userData'), 'window-state.json')
+  );
+
+  function saveBoundsDebounced() {
+    if (!projectService.projectPath || mainWindow.isMaximized()) return;
+    if (boundsTimer) clearTimeout(boundsTimer);
+    boundsTimer = setTimeout(() => {
+      boundsTimer = null;
+      const bounds = mainWindow.getBounds();
+      windowStateService.setBounds(projectService.projectPath, bounds, false);
+    }, 1000);
+  }
+
+  mainWindow.on('resize', saveBoundsDebounced);
+  mainWindow.on('move', saveBoundsDebounced);
+  mainWindow.on('maximize', () => {
+    if (projectService.projectPath) {
+      windowStateService.setBounds(projectService.projectPath, mainWindow.getNormalBounds(), true);
+    }
+  });
+  mainWindow.on('unmaximize', () => {
+    if (projectService.projectPath) {
+      const bounds = mainWindow.getBounds();
+      windowStateService.setBounds(projectService.projectPath, bounds, false);
+    }
+  });
+  mainWindow.on('close', () => {
+    if (boundsTimer) clearTimeout(boundsTimer);
+    if (projectService.projectPath) {
+      const isMax = mainWindow.isMaximized();
+      const bounds = isMax ? mainWindow.getNormalBounds() : mainWindow.getBounds();
+      windowStateService.setBoundsSync(projectService.projectPath, bounds, isMax);
+    }
+  });
 }
 
 app.whenReady().then(() => {
@@ -283,5 +321,35 @@ ipcMain.handle('system:getInfo', async () => {
 
 ipcMain.handle('fs:ensureDir', async (_event, dirPath) => {
   fs.mkdirSync(dirPath, { recursive: true });
+});
+
+// Window state
+
+ipcMain.handle('window-state:getLayout', async (_event, folderPath) => {
+  return windowStateService.getLayout(folderPath);
+});
+
+ipcMain.handle('window-state:saveLayout', async (_event, folderPath, layout) => {
+  windowStateService.setLayout(folderPath, layout);
+});
+
+ipcMain.handle('window-state:restoreBounds', async (_event, folderPath) => {
+  const saved = windowStateService.getBounds(folderPath);
+  if (!saved || !saved.bounds) return;
+
+  const bounds = saved.bounds;
+  const displays = screen.getAllDisplays();
+  const visible = displays.some(d => {
+    const db = d.bounds;
+    return bounds.x < db.x + db.width && bounds.x + bounds.width > db.x
+        && bounds.y < db.y + db.height && bounds.y + bounds.height > db.y;
+  });
+
+  if (visible) {
+    mainWindow.setBounds(bounds);
+  }
+  if (saved.isMaximized) {
+    mainWindow.maximize();
+  }
 });
 
