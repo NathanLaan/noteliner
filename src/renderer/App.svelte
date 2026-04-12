@@ -11,6 +11,7 @@
   import SettingsModal from './components/SettingsModal.svelte';
   import ProjectSettingsModal from './components/ProjectSettingsModal.svelte';
   import NewProjectModal from './components/NewProjectModal.svelte';
+  import DeleteFileModal from './components/DeleteFileModal.svelte';
   import SyncModal from './components/SyncModal.svelte';
   import AttachmentPanel from './components/AttachmentPanel.svelte';
   import { projectState } from './stores/project.svelte.js';
@@ -18,6 +19,8 @@
 
   let showPreview = $state(false);
   let showLog = $state(false);
+  let showSidebar = $state(true);
+  let showOutline = $state(false);
   let showAttachments = $state(false);
   let logPanelHeight = $state(300);
   let showAbout = $state(false);
@@ -26,6 +29,7 @@
   let showProjectSettings = $state(false);
   let showNewProject = $state(false);
   let showSync = $state(false);
+  let showDeleteFile = $state(false);
   let projectSettingsRequired = $state(false);
   let tagAction = $state(null);
   let setupFolderPath = $state('');
@@ -39,6 +43,9 @@
       if (e.ctrlKey && e.key === 'n') {
         e.preventDefault();
         handleNewFile();
+      } else if (e.ctrlKey && e.key === 'd') {
+        e.preventDefault();
+        handleDeleteFile();
       } else if (e.ctrlKey && e.key === 'o') {
         e.preventDefault();
         handleOpenFolder();
@@ -55,6 +62,9 @@
       } else if (e.ctrlKey && e.shiftKey && e.code === 'KeyS') {
         e.preventDefault();
         if (projectState.isOpen) showSync = true;
+      } else if (e.ctrlKey && e.shiftKey && e.code === 'KeyO') {
+        e.preventDefault();
+        if (projectState.isOpen) handleToggleOutline();
       } else if (e.ctrlKey && e.key === 't') {
         e.preventDefault();
         if (projectState.isOpen && projectState.selectedFileId) {
@@ -65,6 +75,9 @@
         if (projectState.isOpen && projectState.selectedFileId) {
           tagAction = { type: 'remove', ts: Date.now() };
         }
+      } else if (e.ctrlKey && e.key === 'e') {
+        e.preventDefault();
+        if (projectState.isOpen) handleToggleSidebar();
       } else if (e.ctrlKey && e.key === 'l') {
         e.preventDefault();
         handleToggleLog();
@@ -151,12 +164,33 @@
     projectState.selectFile(entry.id);
   }
 
+  function handleDeleteFile() {
+    if (!projectState.isOpen || !projectState.selectedFileId) return;
+    showDeleteFile = true;
+  }
+
+  async function handleDeleteFileConfirm() {
+    const fileId = projectState.selectedFileId;
+    showDeleteFile = false;
+    if (!fileId) return;
+    await window.api.deleteFile(fileId);
+    projectState.removeFile(fileId);
+  }
+
   function handleToggleLog() {
     showLog = !showLog;
   }
 
   function handleTogglePreview() {
     showPreview = !showPreview;
+  }
+
+  function handleToggleSidebar() {
+    showSidebar = !showSidebar;
+  }
+
+  function handleToggleOutline() {
+    showOutline = !showOutline;
   }
 
   function handleToggleAttachments() {
@@ -204,6 +238,14 @@
   />
 {/if}
 
+{#if showDeleteFile && projectState.selectedFile}
+  <DeleteFileModal
+    fileName={projectState.selectedFile.name}
+    onConfirm={handleDeleteFileConfirm}
+    onCancel={() => showDeleteFile = false}
+  />
+{/if}
+
 {#if showProjectSettings}
   <ProjectSettingsModal
     required={projectSettingsRequired}
@@ -219,7 +261,11 @@
   <Toolbar
     onOpenFolder={handleOpenFolder}
     onNewFile={handleNewFile}
+    onDeleteFile={handleDeleteFile}
+    hasSelectedFile={!!projectState.selectedFileId}
     onToggleLog={handleToggleLog}
+    onToggleSidebar={handleToggleSidebar}
+    onToggleOutline={handleToggleOutline}
     onToggleAttachments={handleToggleAttachments}
     onShowAbout={handleShowAbout}
     onShowSettings={handleShowSettings}
@@ -227,6 +273,8 @@
     onShowSync={handleShowSync}
     projectOpen={projectState.isOpen}
     logVisible={showLog}
+    sidebarVisible={showSidebar}
+    outlineVisible={showOutline}
     attachmentsVisible={showAttachments}
   />
 
@@ -241,26 +289,29 @@
   {:else}
     <div class="main-area">
       <div class="content-area" class:with-log={showLog}>
-        <div class="sidebar" style="width: {sidebarWidth}px">
-          <Sidebar
-            bind:width={sidebarWidth}
-            {tagAction}
-          />
-        </div>
-        <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
-        <div class="resizer sidebar-resizer" role="separator" aria-orientation="vertical" tabindex="-1" onmousedown={(e) => {
-          const startX = e.clientX;
-          const startWidth = sidebarWidth;
-          const onMouseMove = (e) => {
-            sidebarWidth = Math.max(180, Math.min(500, startWidth + e.clientX - startX));
-          };
-          const onMouseUp = () => {
-            window.removeEventListener('mousemove', onMouseMove);
-            window.removeEventListener('mouseup', onMouseUp);
-          };
-          window.addEventListener('mousemove', onMouseMove);
-          window.addEventListener('mouseup', onMouseUp);
-        }}></div>
+        {#if showSidebar}
+          <div class="sidebar" style="width: {sidebarWidth}px">
+            <Sidebar
+              bind:width={sidebarWidth}
+              {tagAction}
+              outlineVisible={showOutline}
+            />
+          </div>
+          <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+          <div class="resizer sidebar-resizer" role="separator" aria-orientation="vertical" tabindex="-1" onmousedown={(e) => {
+            const startX = e.clientX;
+            const startWidth = sidebarWidth;
+            const onMouseMove = (e) => {
+              sidebarWidth = Math.max(180, Math.min(500, startWidth + e.clientX - startX));
+            };
+            const onMouseUp = () => {
+              window.removeEventListener('mousemove', onMouseMove);
+              window.removeEventListener('mouseup', onMouseUp);
+            };
+            window.addEventListener('mousemove', onMouseMove);
+            window.addEventListener('mouseup', onMouseUp);
+          }}></div>
+        {/if}
         <div class="editor-area">
           <Editor onTogglePreview={handleTogglePreview} showPreview={showPreview} onGitConfigRequired={() => { projectSettingsRequired = true; showProjectSettings = true; }} />
         </div>

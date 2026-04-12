@@ -1,13 +1,14 @@
 {
   "name": "noteliner",
-  "version": "0.2.0",
+  "version": "0.3.1",
   "description": "An outliner-style note-taking app built with Electron and Svelte",
   "main": "src/main/main.js",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
     "start": "electron .",
-    "electron:dev": "node scripts/dev.js"
+    "electron:dev": "node scripts/dev.js",
+    "postinstall": "bash scripts/install-desktop.sh"
   },
   "keywords": [
     "outliner",

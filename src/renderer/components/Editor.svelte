@@ -38,7 +38,8 @@
     '&': { height: '100%', fontSize: '14px' },
     '.cm-scroller': { overflow: 'auto' },
     '.cm-content': { padding: '16px 0' },
-    '.cm-line': { padding: '0 16px' }
+    '.cm-line': { padding: '0 16px' },
+    '.cm-lineNumbers': { minWidth: '44px' },
   });
 
   function getEditorTheme() {
@@ -181,6 +182,21 @@
   onDestroy(() => {
     if (editorView) editorView.destroy();
     if (saveTimeout) clearTimeout(saveTimeout);
+  });
+
+  // Watch for scroll-to-line requests from outline
+  $effect(() => {
+    const req = projectState.scrollToLine;
+    if (req && editorView) {
+      const lineCount = editorView.state.doc.lines;
+      const lineNum = Math.min(req.line, lineCount);
+      const line = editorView.state.doc.line(lineNum);
+      editorView.dispatch({
+        selection: { anchor: line.from },
+        effects: EditorView.scrollIntoView(line.from, { y: 'start' })
+      });
+      editorView.focus();
+    }
   });
 
   // Watch for file selection and content changes
