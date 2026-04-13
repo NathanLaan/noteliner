@@ -3,6 +3,21 @@
 
   let { x, y, items, onClose } = $props();
 
+  let adjustedX = $state(x);
+  let adjustedY = $state(y);
+
+  function adjustPosition(node) {
+    const zoom = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--ui-zoom')) || 1;
+    const viewW = window.innerWidth / zoom;
+    const viewH = window.innerHeight / zoom;
+    const rect = node.getBoundingClientRect();
+    const menuW = rect.width / zoom;
+    const menuH = rect.height / zoom;
+
+    adjustedX = (x + menuW > viewW) ? Math.max(0, x - menuW) : x;
+    adjustedY = (y + menuH > viewH) ? Math.max(0, y - menuH) : y;
+  }
+
   function handleClickOutside(e) {
     onClose();
   }
@@ -32,7 +47,7 @@
   });
 </script>
 
-<div class="context-menu" style="left: {x}px; top: {y}px">
+<div class="context-menu" use:adjustPosition style="left: {adjustedX}px; top: {adjustedY}px">
   {#each items as item}
     {#if item.separator}
       <div class="context-separator"></div>
