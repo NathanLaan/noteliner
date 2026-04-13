@@ -62,17 +62,12 @@
     const totalH = sidebarEl.clientHeight;
     if (totalH <= 0) return;
     const resizerCount = Math.max(0, visiblePanes.length - 1);
-    // All panes except the last are fixed-height; last is flex.
-    const nonFlex = visiblePanes.slice(0, -1);
-    // Reserve min-height for flex pane
-    const lastMin = visiblePanes.length > 0 ? PANE_META[visiblePanes[visiblePanes.length - 1]].minH : 0;
-    let budget = totalH - resizerCount * RESIZER_H - lastMin;
-    // Shrink fixed panes proportionally if they exceed the budget
+    const budget = totalH - resizerCount * RESIZER_H;
     let sum = 0;
-    for (const key of nonFlex) sum += getHeightForPane(key);
+    for (const key of visiblePanes) sum += getHeightForPane(key);
     if (sum > budget && sum > 0) {
       const scale = budget / sum;
-      for (const key of nonFlex) {
+      for (const key of visiblePanes) {
         const meta = PANE_META[key];
         const scaled = Math.max(meta.minH, Math.floor(getHeightForPane(key) * scale));
         onPaneResize(meta.heightKey, scaled);
@@ -196,13 +191,15 @@
       // height tracks the cursor at any UI scale.
       const zoom = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--ui-zoom')) || 1;
 
-      // Compute max height for this pane: available space minus every other
-      // visible pane's minimum height and the resizers between them.
+      // Compute max height for this pane: the available space minus every
+      // other visible pane's CURRENT height and the resizers. Using current
+      // heights (not minH) ensures resize only affects this pane; the others
+      // stay put.
       const totalH = sidebarEl ? sidebarEl.clientHeight : 0;
       const resizerCount = Math.max(0, visiblePanes.length - 1);
       let reservedForOthers = resizerCount * RESIZER_H;
       for (const key of visiblePanes) {
-        if (key !== paneKeyAbove) reservedForOthers += PANE_META[key].minH;
+        if (key !== paneKeyAbove) reservedForOthers += getHeightForPane(key);
       }
       const maxH = Math.max(meta.minH, totalH - reservedForOthers);
 
@@ -285,7 +282,7 @@
     <div
       class="resizable-pane"
       class:flex-pane={isLast}
-      style={isLast ? '' : `height: ${getHeightForPane(paneKey)}px`}
+      style="height: {getHeightForPane(paneKey)}px"
     >
       <!-- svelte-ignore a11y_no_static_element_interactions -->
       <div
@@ -346,9 +343,11 @@
     min-height: 44px;
   }
 
+  /* Last visible pane auto-grows to fill leftover space when the sum of
+     pane heights is less than the sidebar. If user-assigned heights fill
+     the sidebar, the explicit height wins and flex-grow is inactive. */
   .resizable-pane.flex-pane {
-    flex: 1;
-    min-height: 44px;
+    flex-grow: 1;
   }
 
   .pane-body {
