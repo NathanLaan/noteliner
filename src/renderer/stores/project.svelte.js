@@ -88,6 +88,41 @@ class ProjectState {
       .sort((a, b) => a.order - b.order);
   }
 
+  // Returns files flattened into display order (depth-first, following the tree)
+  getFlatFileList() {
+    const result = [];
+    const walk = (parentId) => {
+      for (const file of this.getChildren(parentId)) {
+        result.push(file);
+        walk(file.id);
+      }
+    };
+    walk(null);
+    return result;
+  }
+
+  selectPrevFile() {
+    const list = this.getFlatFileList();
+    if (list.length === 0) return;
+    if (!this.selectedFileId) {
+      this.selectFile(list[0].id);
+      return;
+    }
+    const idx = list.findIndex(f => f.id === this.selectedFileId);
+    if (idx > 0) this.selectFile(list[idx - 1].id);
+  }
+
+  selectNextFile() {
+    const list = this.getFlatFileList();
+    if (list.length === 0) return;
+    if (!this.selectedFileId) {
+      this.selectFile(list[0].id);
+      return;
+    }
+    const idx = list.findIndex(f => f.id === this.selectedFileId);
+    if (idx >= 0 && idx < list.length - 1) this.selectFile(list[idx + 1].id);
+  }
+
   get allTags() {
     const tagSet = new Set();
     for (const file of this.index.files) {

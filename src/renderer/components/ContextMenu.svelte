@@ -3,8 +3,9 @@
 
   let { x, y, items, onClose } = $props();
 
-  let adjustedX = $state(x);
-  let adjustedY = $state(y);
+  // null until adjustPosition runs, then set to the clamped coordinates
+  let adjustedX = $state(null);
+  let adjustedY = $state(null);
 
   function adjustPosition(node) {
     const zoom = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--ui-zoom')) || 1;
@@ -47,7 +48,7 @@
   });
 </script>
 
-<div class="context-menu" use:adjustPosition style="left: {adjustedX}px; top: {adjustedY}px">
+<div class="context-menu" use:adjustPosition style="left: {adjustedX ?? x}px; top: {adjustedY ?? y}px">
   {#each items as item}
     {#if item.separator}
       <div class="context-separator"></div>

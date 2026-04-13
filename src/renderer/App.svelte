@@ -18,6 +18,8 @@
   import { projectState } from './stores/project.svelte.js';
   import { themeState } from './stores/theme.svelte.js';
 
+  const VALID_PANE_KEYS = ['files', 'tagGroups', 'outline', 'tags'];
+
   const DEFAULT_LAYOUT = {
     showPreview: false,
     showLog: false,
@@ -28,10 +30,18 @@
     sidebarWidth: 260,
     logPanelHeight: 300,
     attachmentPanelWidth: 220,
+    filesHeight: 200,
     tagGroupsHeight: 150,
     outlineHeight: 150,
     tagsHeight: 100,
+    paneOrder: ['files', 'tagGroups', 'outline', 'tags'],
   };
+
+  function normalizePaneOrder(order) {
+    const valid = Array.isArray(order) ? order.filter(k => VALID_PANE_KEYS.includes(k)) : [];
+    const missing = VALID_PANE_KEYS.filter(k => !valid.includes(k));
+    return [...valid, ...missing];
+  }
 
   let layout = $state({ ...DEFAULT_LAYOUT });
 
@@ -117,6 +127,12 @@
       } else if (e.ctrlKey && e.key === 'b') {
         e.preventDefault();
         handleToggleAttachments();
+      } else if (e.ctrlKey && e.key === 'PageUp') {
+        e.preventDefault();
+        if (projectState.isOpen) projectState.selectPrevFile();
+      } else if (e.ctrlKey && e.key === 'PageDown') {
+        e.preventDefault();
+        if (projectState.isOpen) projectState.selectNextFile();
       } else if (e.ctrlKey && e.key === 'i') {
         e.preventDefault();
         showAbout = true;
@@ -148,6 +164,7 @@
       } else {
         layout = { ...DEFAULT_LAYOUT };
       }
+      layout.paneOrder = normalizePaneOrder(layout.paneOrder);
 
       // Restore window bounds
       window.api.restoreWindowBounds(folderPath);
@@ -248,6 +265,14 @@
 
   function handlePaneResize(paneName, value) {
     layout[paneName] = value;
+  }
+
+  function handlePaneReorder(newOrder) {
+    layout.paneOrder = normalizePaneOrder(newOrder);
+  }
+
+  function triggerTagAction(type) {
+    tagAction = { type, ts: Date.now() };
   }
 
   function handleShowAbout() {
@@ -404,8 +429,12 @@
               tagGroupsHeight={layout.tagGroupsHeight}
               outlineHeight={layout.outlineHeight}
               tagsHeight={layout.tagsHeight}
+              filesHeight={layout.filesHeight}
+              paneOrder={layout.paneOrder}
               onPaneResize={handlePaneResize}
+              onPaneReorder={handlePaneReorder}
               onContextAction={handleContextAction}
+              onTagAction={triggerTagAction}
             />
           </div>
           <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->

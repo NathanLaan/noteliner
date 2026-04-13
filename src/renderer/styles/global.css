@@ -100,3 +100,70 @@ input, textarea {
   flex: 1;
   overflow-y: auto;
 }
+
+/* Shared sidebar pane header styles */
+
+.pane-header {
+  padding: 8px 12px;
+  min-height: 44px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--bg-base);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+  user-select: none;
+  cursor: grab;
+}
+
+.pane-header:active {
+  cursor: grabbing;
+}
+
+.pane-header.drag-over-before {
+  border-top: 2px solid var(--accent);
+}
+
+.pane-header.drag-over-after {
+  border-bottom: 2px solid var(--accent);
+}
+
+.pane-header.dragging {
+  opacity: 0.5;
+}
+
+.pane-title {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  color: var(--text-muted);
+}
+
+.pane-header-actions {
+  display: flex;
+  gap: 2px;
+  cursor: default;
+}
+
+.pane-header-btn {
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  color: var(--text-muted);
+  font-size: 11px;
+  transition: background 0.15s, color 0.15s;
+}
+
+.pane-header-btn:hover:not(:disabled) {
+  background: var(--bg-button-hover);
+  color: var(--text-primary);
+}
+
+.pane-header-btn:disabled {
+  opacity: 0.3;
+  cursor: default;
+}

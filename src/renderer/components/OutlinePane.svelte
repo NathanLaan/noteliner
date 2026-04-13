@@ -45,11 +45,7 @@
   }
 </script>
 
-<div class="outline-pane">
-  <div class="outline-header">
-    <span class="outline-title">OUTLINE</span>
-  </div>
-  <div class="outline-list" use:scrollActiveIntoView>
+<div class="outline-list" use:scrollActiveIntoView>
     {#each headings as h (h.line)}
       <div
         class="outline-item level-{h.level}"
@@ -67,37 +63,15 @@
     {#if headings.length === 0}
       <span class="outline-empty">No headings</span>
     {/if}
-  </div>
 </div>
 
 <style>
-  .outline-pane {
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-    min-height: 0;
-    height: 100%;
-  }
-
-  .outline-header {
-    padding: 6px 12px;
-    display: flex;
-    align-items: center;
-    background: var(--bg-base);
-    flex-shrink: 0;
-  }
-
-  .outline-title {
-    font-size: 11px;
-    font-weight: 600;
-    letter-spacing: 0.5px;
-    color: var(--text-muted);
-  }
-
   .outline-list {
     overflow-y: auto;
     padding: 4px 0;
     flex: 1;
+    min-height: 0;
+    height: 100%;
   }
 
   .outline-item {

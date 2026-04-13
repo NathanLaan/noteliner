@@ -72,6 +72,12 @@
     if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault();
       onSelect(fileId);
+    } else if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      projectState.selectNextFile();
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      projectState.selectPrevFile();
     }
   }
 
