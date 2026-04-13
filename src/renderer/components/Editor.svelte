@@ -162,11 +162,69 @@
   }
 
   function handleDrop(e) {
+    // Internal file drags are intercepted in capture phase (interceptInternalDrops).
+    // This handler only processes external file drops (attachments).
+    if (!projectState.selectedFileId) return;
     const files = e.dataTransfer?.files;
-    if (files && files.length > 0 && projectState.selectedFileId) {
+    if (files && files.length > 0) {
       e.preventDefault();
       processFiles(files);
     }
+  }
+
+  // Capture-phase interceptor for internal file drags from FileTree.
+  // Runs BEFORE CodeMirror's own drop handler, which would otherwise insert the UUID as text.
+  function interceptInternalDrops(node) {
+    function isInternalDrag(e) {
+      const types = e.dataTransfer?.types;
+      // Internal drags carry text/plain (the file UUID) but no Files
+      return types && types.includes('text/plain') && !types.includes('Files');
+    }
+
+    function onDragOver(e) {
+      if (!projectState.selectedFileId) return;
+      if (isInternalDrag(e)) {
+        e.preventDefault();
+        e.stopPropagation();
+        // Must match FileTree's effectAllowed='move'. Browsers reject the drop
+        // if dropEffect doesn't match effectAllowed.
+        e.dataTransfer.dropEffect = 'move';
+      }
+    }
+
+    function onDrop(e) {
+      if (!projectState.selectedFileId) return;
+      if (!isInternalDrag(e)) return;
+
+      const fileId = e.dataTransfer.getData('text/plain');
+      if (!fileId) return;
+
+      const file = projectState.index.files.find(f => f.id === fileId);
+      if (!file || file.id === projectState.selectedFileId) {
+        // Still prevent default so the UUID isn't inserted
+        e.preventDefault();
+        e.stopPropagation();
+        return;
+      }
+
+      e.preventDefault();
+      e.stopPropagation();
+
+      if (!editorView) return;
+      const ref = `[${file.name}](./${file.filename})`;
+      const pos = editorView.posAtCoords({ x: e.clientX, y: e.clientY }) ?? editorView.state.selection.main.head;
+      editorView.dispatch({ changes: { from: pos, insert: ref } });
+      editorView.focus();
+    }
+
+    node.addEventListener('dragover', onDragOver, true);
+    node.addEventListener('drop', onDrop, true);
+    return {
+      destroy() {
+        node.removeEventListener('dragover', onDragOver, true);
+        node.removeEventListener('drop', onDrop, true);
+      }
+    };
   }
 
   onMount(() => {
@@ -241,7 +299,7 @@
     </div>
   </div>
   <!-- svelte-ignore a11y_no_static_element_interactions -->
-  <div class="editor-container" bind:this={editorContainer} onpaste={handlePaste} ondragover={handleDragOver} ondrop={handleDrop}></div>
+  <div class="editor-container" bind:this={editorContainer} use:interceptInternalDrops onpaste={handlePaste} ondragover={handleDragOver} ondrop={handleDrop}></div>
 </div>
 
 <style>
