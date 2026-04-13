@@ -1,6 +1,7 @@
 <script>
   import { projectState } from '../stores/project.svelte.js';
   import FileTree from './FileTree.svelte';
+  import ContextMenu from './ContextMenu.svelte';
 
   let {
     parentId,
@@ -13,11 +14,13 @@
     onDelete,
     onDrop,
     onEditingNameChange,
+    onContextAction,
     depth = 0
   } = $props();
 
   let dragOverId = $state(null);
   let dragOverPosition = $state(null);
+  let contextMenu = $state(null);
 
   function getChildren() {
     return projectState.getChildren(parentId);
@@ -74,14 +77,23 @@
 
   function handleContextMenu(e, file) {
     e.preventDefault();
-    const action = prompt(`File: ${file.name}\n\nType "rename" to rename, "delete" to delete:`);
-    if (action === 'rename') {
-      onStartRename(file.id, file.name);
-    } else if (action === 'delete') {
-      if (confirm(`Delete "${file.name}"?`)) {
-        onDelete(file.id);
-      }
-    }
+    e.stopPropagation();
+    onSelect(file.id);
+    const zoom = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--ui-zoom')) || 1;
+    contextMenu = {
+      x: e.clientX / zoom,
+      y: e.clientY / zoom,
+      items: [
+        { label: 'Open in File System', icon: 'fa-folder-open', action: () => onContextAction('openInFileSystem', file) },
+        { separator: true },
+        { label: 'Preview', icon: 'fa-eye', action: () => onContextAction('preview', file) },
+        { label: 'Convert to HTML', icon: 'fa-file-code', action: () => onContextAction('convertToHtml', file) },
+        { separator: true },
+        { label: 'Rename', icon: 'fa-pen', action: () => onStartRename(file.id, file.name) },
+        { label: 'Clear Tags', icon: 'fa-tags', action: () => onContextAction('clearTags', file) },
+        { label: 'Delete', icon: 'fa-trash', action: () => onContextAction('delete', file) },
+      ]
+    };
   }
 </script>
 
@@ -138,9 +150,19 @@
     {onDelete}
     {onDrop}
     {onEditingNameChange}
+    {onContextAction}
     depth={depth + 1}
   />
 {/each}
+
+{#if contextMenu}
+  <ContextMenu
+    x={contextMenu.x}
+    y={contextMenu.y}
+    items={contextMenu.items}
+    onClose={() => contextMenu = null}
+  />
+{/if}
 
 <style>
   .file-item {

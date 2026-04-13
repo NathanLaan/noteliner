@@ -1,9 +1,11 @@
-const { app, BrowserWindow, Menu, ipcMain, dialog, shell, net, protocol } = require('electron');
+const { app, BrowserWindow, Menu, ipcMain, dialog, shell, net, protocol, screen } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const os = require('os');
 const { GitService } = require('./git-service');
 const { ProjectService } = require('./project-service');
+const { WindowStateService } = require('./window-state-service');
+const { marked } = require('marked');
 
 // Set app name early so Linux WM_CLASS is correct (for dock icon in dev mode)
 app.setName('NoteLiner');
@@ -44,6 +46,8 @@ function addRecentProject(folderPath) {
 let mainWindow;
 let gitService;
 let projectService;
+let windowStateService;
+let boundsTimer = null;
 
 const isDev = !app.isPackaged;
 
@@ -80,6 +84,41 @@ function createWindow() {
   });
 
   projectService = new ProjectService(gitService);
+  windowStateService = new WindowStateService(
+    path.join(app.getPath('userData'), 'window-state.json')
+  );
+
+  function saveBoundsDebounced() {
+    if (!projectService.projectPath || mainWindow.isMaximized()) return;
+    if (boundsTimer) clearTimeout(boundsTimer);
+    boundsTimer = setTimeout(() => {
+      boundsTimer = null;
+      const bounds = mainWindow.getBounds();
+      windowStateService.setBounds(projectService.projectPath, bounds, false);
+    }, 1000);
+  }
+
+  mainWindow.on('resize', saveBoundsDebounced);
+  mainWindow.on('move', saveBoundsDebounced);
+  mainWindow.on('maximize', () => {
+    if (projectService.projectPath) {
+      windowStateService.setBounds(projectService.projectPath, mainWindow.getNormalBounds(), true);
+    }
+  });
+  mainWindow.on('unmaximize', () => {
+    if (projectService.projectPath) {
+      const bounds = mainWindow.getBounds();
+      windowStateService.setBounds(projectService.projectPath, bounds, false);
+    }
+  });
+  mainWindow.on('close', () => {
+    if (boundsTimer) clearTimeout(boundsTimer);
+    if (projectService.projectPath) {
+      const isMax = mainWindow.isMaximized();
+      const bounds = isMax ? mainWindow.getNormalBounds() : mainWindow.getBounds();
+      windowStateService.setBoundsSync(projectService.projectPath, bounds, isMax);
+    }
+  });
 }
 
 app.whenReady().then(() => {
@@ -283,5 +322,74 @@ ipcMain.handle('system:getInfo', async () => {
 
 ipcMain.handle('fs:ensureDir', async (_event, dirPath) => {
   fs.mkdirSync(dirPath, { recursive: true });
+});
+
+// Convert to HTML
+
+ipcMain.handle('file:convertToHtml', async (_event, filename, name) => {
+  if (!projectService.projectPath) return null;
+  const mdContent = fs.readFileSync(path.join(projectService.projectPath, filename), 'utf-8');
+  const htmlBody = marked(mdContent);
+  const fullHtml = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>${name}</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 800px; margin: 40px auto; padding: 0 20px; line-height: 1.6; color: #1a1a1a; }
+    h1, h2, h3, h4 { margin-top: 1.5em; }
+    code { background: #f0f0f0; padding: 2px 6px; border-radius: 3px; font-size: 0.9em; }
+    pre { background: #f0f0f0; padding: 16px; border-radius: 6px; overflow-x: auto; }
+    pre code { background: none; padding: 0; }
+    img { max-width: 100%; }
+    blockquote { border-left: 3px solid #ccc; margin-left: 0; padding-left: 16px; color: #555; }
+    table { border-collapse: collapse; width: 100%; }
+    th, td { border: 1px solid #ddd; padding: 8px 12px; text-align: left; }
+    th { background: #f5f5f5; }
+  </style>
+</head>
+<body>
+  <h1>${name}</h1>
+  ${htmlBody}
+</body>
+</html>`;
+
+  const downloadsDir = path.join(os.homedir(), 'Downloads');
+  const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+  const htmlFilename = slug + '.html';
+  const outputPath = path.join(downloadsDir, htmlFilename);
+  fs.writeFileSync(outputPath, fullHtml, 'utf-8');
+  return { outputPath, downloadsDir };
+});
+
+// Window state
+
+ipcMain.handle('window-state:getLayout', async (_event, folderPath) => {
+  return windowStateService.getLayout(folderPath);
+});
+
+ipcMain.handle('window-state:saveLayout', async (_event, folderPath, layout) => {
+  windowStateService.setLayout(folderPath, layout);
+});
+
+ipcMain.handle('window-state:restoreBounds', async (_event, folderPath) => {
+  const saved = windowStateService.getBounds(folderPath);
+  if (!saved || !saved.bounds) return;
+
+  const bounds = saved.bounds;
+  const displays = screen.getAllDisplays();
+  const visible = displays.some(d => {
+    const db = d.bounds;
+    return bounds.x < db.x + db.width && bounds.x + bounds.width > db.x
+        && bounds.y < db.y + db.height && bounds.y + bounds.height > db.y;
+  });
+
+  if (visible) {
+    mainWindow.setBounds(bounds);
+  }
+  if (saved.isMaximized) {
+    mainWindow.maximize();
+  }
 });
 

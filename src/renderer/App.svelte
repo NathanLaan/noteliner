@@ -12,18 +12,30 @@
   import ProjectSettingsModal from './components/ProjectSettingsModal.svelte';
   import NewProjectModal from './components/NewProjectModal.svelte';
   import DeleteFileModal from './components/DeleteFileModal.svelte';
+  import ClearTagsModal from './components/ClearTagsModal.svelte';
   import SyncModal from './components/SyncModal.svelte';
   import AttachmentPanel from './components/AttachmentPanel.svelte';
   import { projectState } from './stores/project.svelte.js';
   import { themeState } from './stores/theme.svelte.js';
 
-  let showPreview = $state(false);
-  let showLog = $state(false);
-  let showSidebar = $state(true);
-  let showOutline = $state(false);
-  let showTagGroups = $state(false);
-  let showAttachments = $state(false);
-  let logPanelHeight = $state(300);
+  const DEFAULT_LAYOUT = {
+    showPreview: false,
+    showLog: false,
+    showSidebar: true,
+    showOutline: false,
+    showTagGroups: false,
+    showAttachments: false,
+    sidebarWidth: 260,
+    logPanelHeight: 300,
+    attachmentPanelWidth: 220,
+    tagGroupsHeight: 150,
+    outlineHeight: 150,
+    tagsHeight: 100,
+  };
+
+  let layout = $state({ ...DEFAULT_LAYOUT });
+
+  // Transient modal/action state (not persisted)
   let showAbout = $state(false);
   let showSetup = $state(false);
   let showSettings = $state(false);
@@ -31,11 +43,28 @@
   let showNewProject = $state(false);
   let showSync = $state(false);
   let showDeleteFile = $state(false);
+  let showClearTags = $state(false);
+  let clearTagsFile = $state(null);
   let projectSettingsRequired = $state(false);
   let tagAction = $state(null);
   let setupFolderPath = $state('');
-  let sidebarWidth = $state(260);
-  let attachmentPanelWidth = $state(220);
+
+  // Debounced layout save
+  let layoutSaveTimer = null;
+  function scheduleLayoutSave() {
+    if (!projectState.isOpen) return;
+    if (layoutSaveTimer) clearTimeout(layoutSaveTimer);
+    layoutSaveTimer = setTimeout(() => {
+      layoutSaveTimer = null;
+      window.api.saveWindowState(projectState.folderPath, { ...layout });
+    }, 1000);
+  }
+
+  $effect(() => {
+    // Track all layout fields to trigger on any change
+    JSON.stringify(layout);
+    if (projectState.isOpen) scheduleLayoutSave();
+  });
 
   onMount(() => {
     themeState.init();
@@ -107,10 +136,22 @@
     return () => window.removeEventListener('keydown', handleKeydown);
   });
 
-  function loadProject(folderPath, result) {
+  async function loadProject(folderPath, result) {
     if (result.status === 'loaded') {
       projectState.load(folderPath, result.index);
       window.api.addRecentProject(folderPath);
+
+      // Restore saved layout
+      const saved = await window.api.getWindowState(folderPath);
+      if (saved) {
+        layout = { ...DEFAULT_LAYOUT, ...saved };
+      } else {
+        layout = { ...DEFAULT_LAYOUT };
+      }
+
+      // Restore window bounds
+      window.api.restoreWindowBounds(folderPath);
+
       if (result.needsGitConfig) {
         projectSettingsRequired = true;
         showProjectSettings = true;
@@ -182,27 +223,31 @@
   }
 
   function handleToggleLog() {
-    showLog = !showLog;
+    layout.showLog = !layout.showLog;
   }
 
   function handleTogglePreview() {
-    showPreview = !showPreview;
+    layout.showPreview = !layout.showPreview;
   }
 
   function handleToggleSidebar() {
-    showSidebar = !showSidebar;
+    layout.showSidebar = !layout.showSidebar;
   }
 
   function handleToggleOutline() {
-    showOutline = !showOutline;
+    layout.showOutline = !layout.showOutline;
   }
 
   function handleToggleTagGroups() {
-    showTagGroups = !showTagGroups;
+    layout.showTagGroups = !layout.showTagGroups;
   }
 
   function handleToggleAttachments() {
-    showAttachments = !showAttachments;
+    layout.showAttachments = !layout.showAttachments;
+  }
+
+  function handlePaneResize(paneName, value) {
+    layout[paneName] = value;
   }
 
   function handleShowAbout() {
@@ -220,6 +265,48 @@
 
   function handleShowSync() {
     showSync = true;
+  }
+
+  async function handleContextAction(action, file) {
+    switch (action) {
+      case 'openInFileSystem':
+        if (projectState.folderPath) {
+          window.api.openPath(projectState.folderPath);
+        }
+        break;
+      case 'delete':
+        projectState.selectFile(file.id);
+        showDeleteFile = true;
+        break;
+      case 'clearTags':
+        if (file.tags && file.tags.length > 0) {
+          clearTagsFile = file;
+          showClearTags = true;
+        }
+        break;
+      case 'preview':
+        handleTogglePreview();
+        break;
+      case 'convertToHtml': {
+        const result = await window.api.convertToHtml(file.filename, file.name);
+        if (result) {
+          window.api.openPath(result.downloadsDir);
+        }
+        break;
+      }
+    }
+  }
+
+  async function handleClearTagsConfirm() {
+    const file = clearTagsFile;
+    showClearTags = false;
+    clearTagsFile = null;
+    if (!file) return;
+    const storeFile = projectState.index.files.find(f => f.id === file.id);
+    if (storeFile) {
+      storeFile.tags = [];
+      await window.api.saveIndex($state.snapshot(projectState.index));
+    }
   }
 </script>
 
@@ -254,6 +341,15 @@
   />
 {/if}
 
+{#if showClearTags && clearTagsFile}
+  <ClearTagsModal
+    fileName={clearTagsFile.name}
+    tagCount={clearTagsFile.tags ? clearTagsFile.tags.length : 0}
+    onConfirm={handleClearTagsConfirm}
+    onCancel={() => { showClearTags = false; clearTagsFile = null; }}
+  />
+{/if}
+
 {#if showProjectSettings}
   <ProjectSettingsModal
     required={projectSettingsRequired}
@@ -281,11 +377,11 @@
     onShowProjectSettings={handleShowProjectSettings}
     onShowSync={handleShowSync}
     projectOpen={projectState.isOpen}
-    logVisible={showLog}
-    sidebarVisible={showSidebar}
-    outlineVisible={showOutline}
-    tagGroupsVisible={showTagGroups}
-    attachmentsVisible={showAttachments}
+    logVisible={layout.showLog}
+    sidebarVisible={layout.showSidebar}
+    outlineVisible={layout.showOutline}
+    tagGroupsVisible={layout.showTagGroups}
+    attachmentsVisible={layout.showAttachments}
   />
 
   {#if !projectState.isOpen}
@@ -298,22 +394,26 @@
     </div>
   {:else}
     <div class="main-area">
-      <div class="content-area" class:with-log={showLog}>
-        {#if showSidebar}
-          <div class="sidebar" style="width: {sidebarWidth}px">
+      <div class="content-area" class:with-log={layout.showLog}>
+        {#if layout.showSidebar}
+          <div class="sidebar" style="width: {layout.sidebarWidth}px">
             <Sidebar
-              bind:width={sidebarWidth}
               {tagAction}
-              outlineVisible={showOutline}
-              tagGroupsVisible={showTagGroups}
+              outlineVisible={layout.showOutline}
+              tagGroupsVisible={layout.showTagGroups}
+              tagGroupsHeight={layout.tagGroupsHeight}
+              outlineHeight={layout.outlineHeight}
+              tagsHeight={layout.tagsHeight}
+              onPaneResize={handlePaneResize}
+              onContextAction={handleContextAction}
             />
           </div>
           <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
           <div class="resizer sidebar-resizer" role="separator" aria-orientation="vertical" tabindex="-1" onmousedown={(e) => {
             const startX = e.clientX;
-            const startWidth = sidebarWidth;
+            const startWidth = layout.sidebarWidth;
             const onMouseMove = (e) => {
-              sidebarWidth = Math.max(180, Math.min(500, startWidth + e.clientX - startX));
+              layout.sidebarWidth = Math.max(180, Math.min(500, startWidth + e.clientX - startX));
             };
             const onMouseUp = () => {
               window.removeEventListener('mousemove', onMouseMove);
@@ -324,21 +424,21 @@
           }}></div>
         {/if}
         <div class="editor-area">
-          <Editor onTogglePreview={handleTogglePreview} showPreview={showPreview} onGitConfigRequired={() => { projectSettingsRequired = true; showProjectSettings = true; }} />
+          <Editor onTogglePreview={handleTogglePreview} showPreview={layout.showPreview} onGitConfigRequired={() => { projectSettingsRequired = true; showProjectSettings = true; }} />
         </div>
-        {#if showPreview}
+        {#if layout.showPreview}
           <div class="resizer preview-resizer"></div>
           <div class="preview-area">
             <Preview onClose={handleTogglePreview} />
           </div>
         {/if}
-        {#if showAttachments}
+        {#if layout.showAttachments}
           <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
           <div class="resizer attachment-resizer" role="separator" aria-orientation="vertical" tabindex="-1" onmousedown={(e) => {
             const startX = e.clientX;
-            const startWidth = attachmentPanelWidth;
+            const startWidth = layout.attachmentPanelWidth;
             const onMouseMove = (e) => {
-              attachmentPanelWidth = Math.max(160, Math.min(400, startWidth - (e.clientX - startX)));
+              layout.attachmentPanelWidth = Math.max(160, Math.min(400, startWidth - (e.clientX - startX)));
             };
             const onMouseUp = () => {
               window.removeEventListener('mousemove', onMouseMove);
@@ -347,18 +447,18 @@
             window.addEventListener('mousemove', onMouseMove);
             window.addEventListener('mouseup', onMouseUp);
           }}></div>
-          <div class="attachment-area" style="width: {attachmentPanelWidth}px">
+          <div class="attachment-area" style="width: {layout.attachmentPanelWidth}px">
             <AttachmentPanel />
           </div>
         {/if}
       </div>
-      {#if showLog}
+      {#if layout.showLog}
         <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
         <div class="log-resizer" role="separator" aria-orientation="horizontal" tabindex="-1" onmousedown={(e) => {
           const startY = e.clientY;
-          const startHeight = logPanelHeight;
+          const startHeight = layout.logPanelHeight;
           const onMouseMove = (e) => {
-            logPanelHeight = Math.max(20, Math.min(500, startHeight - (e.clientY - startY)));
+            layout.logPanelHeight = Math.max(20, Math.min(500, startHeight - (e.clientY - startY)));
           };
           const onMouseUp = () => {
             window.removeEventListener('mousemove', onMouseMove);
@@ -367,7 +467,7 @@
           window.addEventListener('mousemove', onMouseMove);
           window.addEventListener('mouseup', onMouseUp);
         }}></div>
-        <div class="log-area" style="height: {logPanelHeight}px">
+        <div class="log-area" style="height: {layout.logPanelHeight}px">
           <LogPanel />
         </div>
       {/if}

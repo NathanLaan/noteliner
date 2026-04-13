@@ -41,9 +41,17 @@ contextBridge.exposeInMainWorld('api', {
   addRecentProject: (folderPath) => ipcRenderer.invoke('projects:addRecent', folderPath),
   removeRecentProject: (folderPath) => ipcRenderer.invoke('projects:removeRecent', folderPath),
 
+  // Convert
+  convertToHtml: (filename, name) => ipcRenderer.invoke('file:convertToHtml', filename, name),
+
   // System
   getSystemInfo: () => ipcRenderer.invoke('system:getInfo'),
   ensureDir: (dirPath) => ipcRenderer.invoke('fs:ensureDir', dirPath),
+
+  // Window state
+  getWindowState: (folderPath) => ipcRenderer.invoke('window-state:getLayout', folderPath),
+  saveWindowState: (folderPath, layout) => ipcRenderer.invoke('window-state:saveLayout', folderPath, layout),
+  restoreWindowBounds: (folderPath) => ipcRenderer.invoke('window-state:restoreBounds', folderPath),
 
   // Events
   onGitLog: (callback) => {

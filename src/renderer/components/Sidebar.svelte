@@ -6,15 +6,19 @@
   import TagsPane from './TagsPane.svelte';
   import OutlinePane from './OutlinePane.svelte';
 
-  let { tagAction = null, outlineVisible = false, tagGroupsVisible = false } = $props();
+  let {
+    tagAction = null,
+    outlineVisible = false,
+    tagGroupsVisible = false,
+    tagGroupsHeight = 150,
+    outlineHeight = 150,
+    tagsHeight = 100,
+    onPaneResize,
+    onContextAction,
+  } = $props();
 
   let editingId = $state(null);
   let editingName = $state('');
-
-  // Resizable pane heights (pixels, 0 = use flex default)
-  let tagGroupsHeight = $state(150);
-  let outlineHeight = $state(150);
-  let tagsHeight = $state(100);
 
   function startRename(fileId, currentName) {
     editingId = fileId;
@@ -106,13 +110,14 @@
     await window.api.saveIndex($state.snapshot(projectState.index));
   }
 
-  function startResize(getter, setter, minH) {
+  function startResize(paneName, currentHeight, minH) {
     return (e) => {
       e.preventDefault();
       const startY = e.clientY;
-      const startHeight = getter();
+      const startHeight = currentHeight;
       const onMouseMove = (e) => {
-        setter(Math.max(minH, startHeight - (e.clientY - startY)));
+        const newHeight = Math.max(minH, startHeight - (e.clientY - startY));
+        if (onPaneResize) onPaneResize(paneName, newHeight);
       };
       const onMouseUp = () => {
         window.removeEventListener('mousemove', onMouseMove);
@@ -141,12 +146,13 @@
       onDelete={handleDelete}
       onDrop={handleDrop}
       onEditingNameChange={(val) => editingName = val}
+      {onContextAction}
     />
   </div>
 
   {#if tagGroupsVisible}
     <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
-    <div class="pane-resizer" role="separator" aria-orientation="horizontal" tabindex="-1" onmousedown={startResize(() => tagGroupsHeight, (v) => tagGroupsHeight = v, 60)}></div>
+    <div class="pane-resizer" role="separator" aria-orientation="horizontal" tabindex="-1" onmousedown={startResize('tagGroupsHeight', tagGroupsHeight, 60)}></div>
     <div class="resizable-pane" style="height: {tagGroupsHeight}px">
       <TagGroupsPane selectedId={projectState.selectedFileId} onSelect={handleSelect} onTagsChanged={handleTagsChanged} />
     </div>
@@ -154,14 +160,14 @@
 
   {#if outlineVisible}
     <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
-    <div class="pane-resizer" role="separator" aria-orientation="horizontal" tabindex="-1" onmousedown={startResize(() => outlineHeight, (v) => outlineHeight = v, 60)}></div>
+    <div class="pane-resizer" role="separator" aria-orientation="horizontal" tabindex="-1" onmousedown={startResize('outlineHeight', outlineHeight, 60)}></div>
     <div class="resizable-pane" style="height: {outlineHeight}px">
       <OutlinePane />
     </div>
   {/if}
 
   <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
-  <div class="pane-resizer" role="separator" aria-orientation="horizontal" tabindex="-1" onmousedown={startResize(() => tagsHeight, (v) => tagsHeight = v, 50)}></div>
+  <div class="pane-resizer" role="separator" aria-orientation="horizontal" tabindex="-1" onmousedown={startResize('tagsHeight', tagsHeight, 50)}></div>
   <div class="resizable-pane" style="height: {tagsHeight}px">
     <TagsPane onTagsChanged={handleTagsChanged} {tagAction} />
   </div>
