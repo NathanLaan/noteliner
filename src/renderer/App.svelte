@@ -127,6 +127,12 @@
       } else if (e.ctrlKey && e.key === 'b') {
         e.preventDefault();
         handleToggleAttachments();
+      } else if (e.ctrlKey && e.key === 'PageUp') {
+        e.preventDefault();
+        if (projectState.isOpen) projectState.selectPrevFile();
+      } else if (e.ctrlKey && e.key === 'PageDown') {
+        e.preventDefault();
+        if (projectState.isOpen) projectState.selectNextFile();
       } else if (e.ctrlKey && e.key === 'i') {
         e.preventDefault();
         showAbout = true;
