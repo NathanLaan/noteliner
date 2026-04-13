@@ -14,6 +14,7 @@
     outlineHeight = 150,
     tagsHeight = 100,
     onPaneResize,
+    onContextAction,
   } = $props();
 
   let editingId = $state(null);
@@ -145,6 +146,7 @@
       onDelete={handleDelete}
       onDrop={handleDrop}
       onEditingNameChange={(val) => editingName = val}
+      {onContextAction}
     />
   </div>
 

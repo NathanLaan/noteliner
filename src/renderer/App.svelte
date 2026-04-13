@@ -12,6 +12,7 @@
   import ProjectSettingsModal from './components/ProjectSettingsModal.svelte';
   import NewProjectModal from './components/NewProjectModal.svelte';
   import DeleteFileModal from './components/DeleteFileModal.svelte';
+  import ClearTagsModal from './components/ClearTagsModal.svelte';
   import SyncModal from './components/SyncModal.svelte';
   import AttachmentPanel from './components/AttachmentPanel.svelte';
   import { projectState } from './stores/project.svelte.js';
@@ -42,6 +43,8 @@
   let showNewProject = $state(false);
   let showSync = $state(false);
   let showDeleteFile = $state(false);
+  let showClearTags = $state(false);
+  let clearTagsFile = $state(null);
   let projectSettingsRequired = $state(false);
   let tagAction = $state(null);
   let setupFolderPath = $state('');
@@ -263,6 +266,48 @@
   function handleShowSync() {
     showSync = true;
   }
+
+  async function handleContextAction(action, file) {
+    switch (action) {
+      case 'openInFileSystem':
+        if (projectState.folderPath) {
+          window.api.openPath(projectState.folderPath);
+        }
+        break;
+      case 'delete':
+        projectState.selectFile(file.id);
+        showDeleteFile = true;
+        break;
+      case 'clearTags':
+        if (file.tags && file.tags.length > 0) {
+          clearTagsFile = file;
+          showClearTags = true;
+        }
+        break;
+      case 'preview':
+        handleTogglePreview();
+        break;
+      case 'convertToHtml': {
+        const result = await window.api.convertToHtml(file.filename, file.name);
+        if (result) {
+          window.api.openPath(result.downloadsDir);
+        }
+        break;
+      }
+    }
+  }
+
+  async function handleClearTagsConfirm() {
+    const file = clearTagsFile;
+    showClearTags = false;
+    clearTagsFile = null;
+    if (!file) return;
+    const storeFile = projectState.index.files.find(f => f.id === file.id);
+    if (storeFile) {
+      storeFile.tags = [];
+      await window.api.saveIndex($state.snapshot(projectState.index));
+    }
+  }
 </script>
 
 {#if showAbout}
@@ -293,6 +338,15 @@
     fileName={projectState.selectedFile.name}
     onConfirm={handleDeleteFileConfirm}
     onCancel={() => showDeleteFile = false}
+  />
+{/if}
+
+{#if showClearTags && clearTagsFile}
+  <ClearTagsModal
+    fileName={clearTagsFile.name}
+    tagCount={clearTagsFile.tags ? clearTagsFile.tags.length : 0}
+    onConfirm={handleClearTagsConfirm}
+    onCancel={() => { showClearTags = false; clearTagsFile = null; }}
   />
 {/if}
 
@@ -351,6 +405,7 @@
               outlineHeight={layout.outlineHeight}
               tagsHeight={layout.tagsHeight}
               onPaneResize={handlePaneResize}
+              onContextAction={handleContextAction}
             />
           </div>
           <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
