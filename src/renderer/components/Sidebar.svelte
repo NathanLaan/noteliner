@@ -313,19 +313,21 @@
 
       <div class="pane-body">
         {#if paneKey === 'files'}
-          <FileTree
-            parentId={null}
-            selectedId={projectState.selectedFileId}
-            {editingId}
-            {editingName}
-            onSelect={handleSelect}
-            onStartRename={startRename}
-            onCommitRename={commitRename}
-            onDelete={handleDelete}
-            onDrop={handleDrop}
-            onEditingNameChange={(val) => editingName = val}
-            {onContextAction}
-          />
+          <div class="file-list">
+            <FileTree
+              parentId={null}
+              selectedId={projectState.selectedFileId}
+              {editingId}
+              {editingName}
+              onSelect={handleSelect}
+              onStartRename={startRename}
+              onCommitRename={commitRename}
+              onDelete={handleDelete}
+              onDrop={handleDrop}
+              onEditingNameChange={(val) => editingName = val}
+              {onContextAction}
+            />
+          </div>
         {:else if paneKey === 'tagGroups'}
           <TagGroupsPane selectedId={projectState.selectedFileId} onSelect={handleSelect} onTagsChanged={handleTagsChanged} />
         {:else if paneKey === 'outline'}
@@ -367,6 +369,13 @@
     overflow: hidden;
     display: flex;
     flex-direction: column;
+  }
+
+  .file-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 4px 0;
+    min-height: 0;
   }
 
   .pane-resizer {
