@@ -22,13 +22,19 @@
   let editingId = $state(null);
   let editingName = $state('');
 
+  // Header height (matches .pane-header in global.css)
+  const HEADER_H = 44;
+  const RESIZER_H = 4;
+
   // Pane definitions — title and height key per pane
   const PANE_META = {
-    files: { title: 'FILES', heightKey: 'filesHeight', minH: 80 },
-    tagGroups: { title: 'TAG GROUPS', heightKey: 'tagGroupsHeight', minH: 60 },
-    outline: { title: 'OUTLINE', heightKey: 'outlineHeight', minH: 60 },
-    tags: { title: 'TAGS', heightKey: 'tagsHeight', minH: 50 },
+    files: { title: 'FILES', heightKey: 'filesHeight', minH: HEADER_H },
+    tagGroups: { title: 'TAG GROUPS', heightKey: 'tagGroupsHeight', minH: HEADER_H },
+    outline: { title: 'OUTLINE', heightKey: 'outlineHeight', minH: HEADER_H },
+    tags: { title: 'TAGS', heightKey: 'tagsHeight', minH: HEADER_H },
   };
+
+  let sidebarEl;
 
   function isPaneVisible(key) {
     if (key === 'files' || key === 'tags') return true;
@@ -48,6 +54,44 @@
   }
 
   let visiblePanes = $derived(paneOrder.filter(isPaneVisible));
+
+  // Clamp pane heights whenever the available space or pane set changes so
+  // the total doesn't exceed the sidebar height (e.g., after window resize).
+  function clampHeights() {
+    if (!sidebarEl || !onPaneResize) return;
+    const totalH = sidebarEl.clientHeight;
+    if (totalH <= 0) return;
+    const resizerCount = Math.max(0, visiblePanes.length - 1);
+    // All panes except the last are fixed-height; last is flex.
+    const nonFlex = visiblePanes.slice(0, -1);
+    // Reserve min-height for flex pane
+    const lastMin = visiblePanes.length > 0 ? PANE_META[visiblePanes[visiblePanes.length - 1]].minH : 0;
+    let budget = totalH - resizerCount * RESIZER_H - lastMin;
+    // Shrink fixed panes proportionally if they exceed the budget
+    let sum = 0;
+    for (const key of nonFlex) sum += getHeightForPane(key);
+    if (sum > budget && sum > 0) {
+      const scale = budget / sum;
+      for (const key of nonFlex) {
+        const meta = PANE_META[key];
+        const scaled = Math.max(meta.minH, Math.floor(getHeightForPane(key) * scale));
+        onPaneResize(meta.heightKey, scaled);
+      }
+    }
+  }
+
+  $effect(() => {
+    // Track visible pane set and sizes
+    visiblePanes;
+    clampHeights();
+  });
+
+  $effect(() => {
+    if (!sidebarEl) return;
+    const ro = new ResizeObserver(() => clampHeights());
+    ro.observe(sidebarEl);
+    return () => ro.disconnect();
+  });
 
   function startRename(fileId, currentName) {
     editingId = fileId;
@@ -151,9 +195,20 @@
       // .app-layout (zoom: var(--ui-zoom)). Divide delta by zoom so pane
       // height tracks the cursor at any UI scale.
       const zoom = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--ui-zoom')) || 1;
+
+      // Compute max height for this pane: available space minus every other
+      // visible pane's minimum height and the resizers between them.
+      const totalH = sidebarEl ? sidebarEl.clientHeight : 0;
+      const resizerCount = Math.max(0, visiblePanes.length - 1);
+      let reservedForOthers = resizerCount * RESIZER_H;
+      for (const key of visiblePanes) {
+        if (key !== paneKeyAbove) reservedForOthers += PANE_META[key].minH;
+      }
+      const maxH = Math.max(meta.minH, totalH - reservedForOthers);
+
       const onMouseMove = (ev) => {
         const deltaY = (ev.clientY - startY) / zoom;
-        const newHeight = Math.max(meta.minH, startHeight + deltaY);
+        const newHeight = Math.min(maxH, Math.max(meta.minH, startHeight + deltaY));
         if (onPaneResize) onPaneResize(meta.heightKey, newHeight);
       };
       const onMouseUp = () => {
@@ -220,7 +275,7 @@
 </script>
 
 <!-- svelte-ignore a11y_no_static_element_interactions -->
-<div class="sidebar-content" class:drop-target={externalDragOver} ondragover={handleExternalDragOver} ondragleave={handleExternalDragLeave} ondrop={handleExternalDrop}>
+<div class="sidebar-content" bind:this={sidebarEl} class:drop-target={externalDragOver} ondragover={handleExternalDragOver} ondragleave={handleExternalDragLeave} ondrop={handleExternalDrop}>
   {#each visiblePanes as paneKey, i (paneKey)}
     {@const isLast = i === visiblePanes.length - 1}
     {#if i > 0}
@@ -280,6 +335,7 @@
     display: flex;
     flex-direction: column;
     height: 100%;
+    overflow: hidden;
   }
 
   .resizable-pane {
@@ -287,11 +343,12 @@
     overflow: hidden;
     display: flex;
     flex-direction: column;
+    min-height: 44px;
   }
 
   .resizable-pane.flex-pane {
     flex: 1;
-    min-height: 100px;
+    min-height: 44px;
   }
 
   .pane-body {
