@@ -265,6 +265,10 @@
     layout.paneOrder = normalizePaneOrder(newOrder);
   }
 
+  function triggerTagAction(type) {
+    tagAction = { type, ts: Date.now() };
+  }
+
   function handleShowAbout() {
     showAbout = true;
   }
@@ -424,6 +428,7 @@
               onPaneResize={handlePaneResize}
               onPaneReorder={handlePaneReorder}
               onContextAction={handleContextAction}
+              onTagAction={triggerTagAction}
             />
           </div>
           <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->

@@ -139,3 +139,31 @@ input, textarea {
   letter-spacing: 0.5px;
   color: var(--text-muted);
 }
+
+.pane-header-actions {
+  display: flex;
+  gap: 2px;
+  cursor: default;
+}
+
+.pane-header-btn {
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  color: var(--text-muted);
+  font-size: 11px;
+  transition: background 0.15s, color 0.15s;
+}
+
+.pane-header-btn:hover:not(:disabled) {
+  background: var(--bg-button-hover);
+  color: var(--text-primary);
+}
+
+.pane-header-btn:disabled {
+  opacity: 0.3;
+  cursor: default;
+}

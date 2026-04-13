@@ -17,6 +17,7 @@
     onPaneResize,
     onPaneReorder,
     onContextAction,
+    onTagAction,
   } = $props();
 
   let editingId = $state(null);
@@ -298,6 +299,16 @@
         ondrop={(e) => handleHeaderDrop(e, paneKey)}
       >
         <span class="pane-title">{PANE_META[paneKey].title}</span>
+        {#if paneKey === 'tags'}
+          <div class="pane-header-actions" draggable="false" ondragstart={(e) => e.preventDefault()}>
+            <button class="pane-header-btn" onclick={() => onTagAction?.('add')} disabled={!projectState.selectedFileId} title="Add Tag (Ctrl+T)">
+              <i class="fas fa-plus"></i>
+            </button>
+            <button class="pane-header-btn" onclick={() => onTagAction?.('remove')} disabled={!projectState.selectedFileId || projectState.selectedFileTags.length === 0} title="Remove Tag (Ctrl+Y)">
+              <i class="fas fa-minus"></i>
+            </button>
+          </div>
+        {/if}
       </div>
 
       <div class="pane-body">
