@@ -100,3 +100,42 @@ input, textarea {
   flex: 1;
   overflow-y: auto;
 }
+
+/* Shared sidebar pane header styles */
+
+.pane-header {
+  padding: 8px 12px;
+  min-height: 44px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--bg-base);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+  user-select: none;
+  cursor: grab;
+}
+
+.pane-header:active {
+  cursor: grabbing;
+}
+
+.pane-header.drag-over-before {
+  border-top: 2px solid var(--accent);
+}
+
+.pane-header.drag-over-after {
+  border-bottom: 2px solid var(--accent);
+}
+
+.pane-header.dragging {
+  opacity: 0.5;
+}
+
+.pane-title {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  color: var(--text-muted);
+}

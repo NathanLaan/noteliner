@@ -1,5 +1,4 @@
 <script>
-  import { onMount, tick } from 'svelte';
   import { projectState } from '../stores/project.svelte.js';
   import FileTree from './FileTree.svelte';
   import TagGroupsPane from './TagGroupsPane.svelte';
@@ -10,15 +9,45 @@
     tagAction = null,
     outlineVisible = false,
     tagGroupsVisible = false,
+    filesHeight = 200,
     tagGroupsHeight = 150,
     outlineHeight = 150,
     tagsHeight = 100,
+    paneOrder = ['files', 'tagGroups', 'outline', 'tags'],
     onPaneResize,
+    onPaneReorder,
     onContextAction,
   } = $props();
 
   let editingId = $state(null);
   let editingName = $state('');
+
+  // Pane definitions — title and height key per pane
+  const PANE_META = {
+    files: { title: 'FILES', heightKey: 'filesHeight', minH: 80 },
+    tagGroups: { title: 'TAG GROUPS', heightKey: 'tagGroupsHeight', minH: 60 },
+    outline: { title: 'OUTLINE', heightKey: 'outlineHeight', minH: 60 },
+    tags: { title: 'TAGS', heightKey: 'tagsHeight', minH: 50 },
+  };
+
+  function isPaneVisible(key) {
+    if (key === 'files' || key === 'tags') return true;
+    if (key === 'tagGroups') return tagGroupsVisible;
+    if (key === 'outline') return outlineVisible;
+    return false;
+  }
+
+  function getHeightForPane(key) {
+    switch (key) {
+      case 'files': return filesHeight;
+      case 'tagGroups': return tagGroupsHeight;
+      case 'outline': return outlineHeight;
+      case 'tags': return tagsHeight;
+      default: return 100;
+    }
+  }
+
+  let visiblePanes = $derived(paneOrder.filter(isPaneVisible));
 
   function startRename(fileId, currentName) {
     editingId = fileId;
@@ -110,14 +139,17 @@
     await window.api.saveIndex($state.snapshot(projectState.index));
   }
 
-  function startResize(paneName, currentHeight, minH) {
+  // Pane resizing — the resizer adjusts the pane ABOVE it (which has a fixed
+  // height). The last pane is flex and absorbs the freed/taken space.
+  function startResize(paneKeyAbove) {
     return (e) => {
       e.preventDefault();
+      const meta = PANE_META[paneKeyAbove];
       const startY = e.clientY;
-      const startHeight = currentHeight;
-      const onMouseMove = (e) => {
-        const newHeight = Math.max(minH, startHeight - (e.clientY - startY));
-        if (onPaneResize) onPaneResize(paneName, newHeight);
+      const startHeight = getHeightForPane(paneKeyAbove);
+      const onMouseMove = (ev) => {
+        const newHeight = Math.max(meta.minH, startHeight + (ev.clientY - startY));
+        if (onPaneResize) onPaneResize(meta.heightKey, newHeight);
       };
       const onMouseUp = () => {
         window.removeEventListener('mousemove', onMouseMove);
@@ -127,50 +159,115 @@
       window.addEventListener('mouseup', onMouseUp);
     };
   }
+
+  // Pane reorder via drag-and-drop on headers
+  const PANE_MIME = 'application/x-noteliner-pane';
+  let draggingPane = $state(null);
+  let dragOverPane = $state(null);
+  let dragOverPosition = $state(null); // 'before' | 'after'
+
+  function handleHeaderDragStart(e, paneKey) {
+    e.dataTransfer.setData(PANE_MIME, paneKey);
+    e.dataTransfer.effectAllowed = 'move';
+    draggingPane = paneKey;
+  }
+
+  function handleHeaderDragEnd() {
+    draggingPane = null;
+    dragOverPane = null;
+    dragOverPosition = null;
+  }
+
+  function handleHeaderDragOver(e, paneKey) {
+    if (!e.dataTransfer.types.includes(PANE_MIME)) return;
+    e.preventDefault();
+    e.stopPropagation();
+    e.dataTransfer.dropEffect = 'move';
+    const rect = e.currentTarget.getBoundingClientRect();
+    const y = e.clientY - rect.top;
+    dragOverPosition = y < rect.height / 2 ? 'before' : 'after';
+    dragOverPane = paneKey;
+  }
+
+  function handleHeaderDragLeave() {
+    dragOverPane = null;
+  }
+
+  function handleHeaderDrop(e, targetKey) {
+    if (!e.dataTransfer.types.includes(PANE_MIME)) return;
+    e.preventDefault();
+    e.stopPropagation();
+    const draggedKey = e.dataTransfer.getData(PANE_MIME);
+    const position = dragOverPosition;
+    dragOverPane = null;
+    dragOverPosition = null;
+    draggingPane = null;
+    if (!draggedKey || draggedKey === targetKey) return;
+
+    const newOrder = paneOrder.filter(k => k !== draggedKey);
+    const targetIndex = newOrder.indexOf(targetKey);
+    if (targetIndex === -1) return;
+    const insertAt = position === 'before' ? targetIndex : targetIndex + 1;
+    newOrder.splice(insertAt, 0, draggedKey);
+
+    if (onPaneReorder) onPaneReorder(newOrder);
+  }
 </script>
 
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <div class="sidebar-content" class:drop-target={externalDragOver} ondragover={handleExternalDragOver} ondragleave={handleExternalDragLeave} ondrop={handleExternalDrop}>
-  <div class="sidebar-header">
-    <span class="sidebar-title">FILES</span>
-  </div>
-  <div class="file-list">
-    <FileTree
-      parentId={null}
-      selectedId={projectState.selectedFileId}
-      {editingId}
-      {editingName}
-      onSelect={handleSelect}
-      onStartRename={startRename}
-      onCommitRename={commitRename}
-      onDelete={handleDelete}
-      onDrop={handleDrop}
-      onEditingNameChange={(val) => editingName = val}
-      {onContextAction}
-    />
-  </div>
+  {#each visiblePanes as paneKey, i (paneKey)}
+    {@const isLast = i === visiblePanes.length - 1}
+    {#if i > 0}
+      <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+      <div class="pane-resizer" role="separator" aria-orientation="horizontal" tabindex="-1" onmousedown={startResize(visiblePanes[i - 1])}></div>
+    {/if}
+    <div
+      class="resizable-pane"
+      class:flex-pane={isLast}
+      style={isLast ? '' : `height: ${getHeightForPane(paneKey)}px`}
+    >
+      <!-- svelte-ignore a11y_no_static_element_interactions -->
+      <div
+        class="pane-header"
+        class:dragging={draggingPane === paneKey}
+        class:drag-over-before={dragOverPane === paneKey && dragOverPosition === 'before'}
+        class:drag-over-after={dragOverPane === paneKey && dragOverPosition === 'after'}
+        draggable="true"
+        ondragstart={(e) => handleHeaderDragStart(e, paneKey)}
+        ondragend={handleHeaderDragEnd}
+        ondragover={(e) => handleHeaderDragOver(e, paneKey)}
+        ondragleave={handleHeaderDragLeave}
+        ondrop={(e) => handleHeaderDrop(e, paneKey)}
+      >
+        <span class="pane-title">{PANE_META[paneKey].title}</span>
+      </div>
 
-  {#if tagGroupsVisible}
-    <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
-    <div class="pane-resizer" role="separator" aria-orientation="horizontal" tabindex="-1" onmousedown={startResize('tagGroupsHeight', tagGroupsHeight, 60)}></div>
-    <div class="resizable-pane" style="height: {tagGroupsHeight}px">
-      <TagGroupsPane selectedId={projectState.selectedFileId} onSelect={handleSelect} onTagsChanged={handleTagsChanged} />
+      <div class="pane-body">
+        {#if paneKey === 'files'}
+          <FileTree
+            parentId={null}
+            selectedId={projectState.selectedFileId}
+            {editingId}
+            {editingName}
+            onSelect={handleSelect}
+            onStartRename={startRename}
+            onCommitRename={commitRename}
+            onDelete={handleDelete}
+            onDrop={handleDrop}
+            onEditingNameChange={(val) => editingName = val}
+            {onContextAction}
+          />
+        {:else if paneKey === 'tagGroups'}
+          <TagGroupsPane selectedId={projectState.selectedFileId} onSelect={handleSelect} onTagsChanged={handleTagsChanged} />
+        {:else if paneKey === 'outline'}
+          <OutlinePane />
+        {:else if paneKey === 'tags'}
+          <TagsPane onTagsChanged={handleTagsChanged} {tagAction} />
+        {/if}
+      </div>
     </div>
-  {/if}
-
-  {#if outlineVisible}
-    <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
-    <div class="pane-resizer" role="separator" aria-orientation="horizontal" tabindex="-1" onmousedown={startResize('outlineHeight', outlineHeight, 60)}></div>
-    <div class="resizable-pane" style="height: {outlineHeight}px">
-      <OutlinePane />
-    </div>
-  {/if}
-
-  <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
-  <div class="pane-resizer" role="separator" aria-orientation="horizontal" tabindex="-1" onmousedown={startResize('tagsHeight', tagsHeight, 50)}></div>
-  <div class="resizable-pane" style="height: {tagsHeight}px">
-    <TagsPane onTagsChanged={handleTagsChanged} {tagAction} />
-  </div>
+  {/each}
 </div>
 
 <style>
@@ -180,34 +277,21 @@
     height: 100%;
   }
 
-  .sidebar-header {
-    padding: 8px 12px;
-    min-height: 44px;
-    box-sizing: border-box;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    background: var(--bg-base);
-    border-bottom: 1px solid var(--border);
-    flex-shrink: 0;
-  }
-
-  .sidebar-title {
-    font-size: 11px;
-    font-weight: 600;
-    letter-spacing: 0.5px;
-    color: var(--text-muted);
-  }
-
-  .file-list {
-    flex: 1;
-    overflow-y: auto;
-    padding: 4px 0;
-    min-height: 80px;
-  }
-
   .resizable-pane {
     flex-shrink: 0;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .resizable-pane.flex-pane {
+    flex: 1;
+    min-height: 100px;
+  }
+
+  .pane-body {
+    flex: 1;
+    min-height: 0;
     overflow: hidden;
     display: flex;
     flex-direction: column;

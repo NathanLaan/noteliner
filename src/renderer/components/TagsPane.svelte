@@ -93,16 +93,13 @@
 </script>
 
 <div class="tags-pane">
-  <div class="tags-header">
-    <span class="tags-title">TAGS</span>
-    <div class="tags-actions">
-      <button class="tags-btn" onclick={handleAdd} disabled={!hasSelection} title="Add Tag (Ctrl+T)">
-        <i class="fas fa-plus"></i>
-      </button>
-      <button class="tags-btn" onclick={handleRemove} disabled={!hasSelection || tags.length === 0} title="Remove Tag (Ctrl+Y)">
-        <i class="fas fa-minus"></i>
-      </button>
-    </div>
+  <div class="tags-toolbar">
+    <button class="tags-btn" onclick={handleAdd} disabled={!hasSelection} title="Add Tag (Ctrl+T)">
+      <i class="fas fa-plus"></i>
+    </button>
+    <button class="tags-btn" onclick={handleRemove} disabled={!hasSelection || tags.length === 0} title="Remove Tag (Ctrl+Y)">
+      <i class="fas fa-minus"></i>
+    </button>
   </div>
   <div class="tags-body">
     {#if adding}
@@ -144,25 +141,14 @@
     height: 100%;
   }
 
-  .tags-header {
-    padding: 6px 12px;
+  .tags-toolbar {
+    padding: 4px 8px;
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    background: var(--bg-base);
-    flex-shrink: 0;
-  }
-
-  .tags-title {
-    font-size: 11px;
-    font-weight: 600;
-    letter-spacing: 0.5px;
-    color: var(--text-muted);
-  }
-
-  .tags-actions {
-    display: flex;
+    justify-content: flex-end;
     gap: 2px;
+    flex-shrink: 0;
+    border-bottom: 1px solid var(--border);
   }
 
   .tags-btn {
