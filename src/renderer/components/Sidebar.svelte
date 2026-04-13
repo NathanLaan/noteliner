@@ -147,8 +147,13 @@
       const meta = PANE_META[paneKeyAbove];
       const startY = e.clientY;
       const startHeight = getHeightForPane(paneKeyAbove);
+      // Mouse coords are in viewport pixels, but panes live inside the zoomed
+      // .app-layout (zoom: var(--ui-zoom)). Divide delta by zoom so pane
+      // height tracks the cursor at any UI scale.
+      const zoom = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--ui-zoom')) || 1;
       const onMouseMove = (ev) => {
-        const newHeight = Math.max(meta.minH, startHeight + (ev.clientY - startY));
+        const deltaY = (ev.clientY - startY) / zoom;
+        const newHeight = Math.max(meta.minH, startHeight + deltaY);
         if (onPaneResize) onPaneResize(meta.heightKey, newHeight);
       };
       const onMouseUp = () => {
