@@ -79,9 +79,10 @@
     e.preventDefault();
     e.stopPropagation();
     onSelect(file.id);
+    const zoom = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--ui-zoom')) || 1;
     contextMenu = {
-      x: e.clientX,
-      y: e.clientY,
+      x: e.clientX / zoom,
+      y: e.clientY / zoom,
       items: [
         { label: 'Open in File System', icon: 'fa-folder-open', action: () => onContextAction('openInFileSystem', file) },
         { separator: true },
