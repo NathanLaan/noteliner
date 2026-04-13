@@ -4,6 +4,8 @@
   import { themeState } from '../stores/theme.svelte.js';
   import { logState } from '../stores/log.svelte.js';
   import { EditorView, basicSetup } from 'codemirror';
+  import { keymap } from '@codemirror/view';
+  import { indentWithTab } from '@codemirror/commands';
   import { markdown } from '@codemirror/lang-markdown';
   import { languages } from '@codemirror/language-data';
   import { EditorState } from '@codemirror/state';
@@ -55,6 +57,7 @@
       doc: projectState.editorContent || '',
       extensions: [
         basicSetup,
+        keymap.of([indentWithTab]),
         markdown({ codeLanguages: languages }),
         getEditorTheme(),
         customTheme,
