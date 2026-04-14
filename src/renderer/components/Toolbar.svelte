@@ -3,11 +3,9 @@
 </script>
 
 <div class="toolbar">
-  {#if projectOpen}
-    <button class="toolbar-btn" onclick={onGoHome} title="Home">
-      <i class="fas fa-house"></i>
-    </button>
-  {/if}
+  <button class="toolbar-btn" class:active={!projectOpen} onclick={onGoHome} disabled={!projectOpen} title="Home">
+    <i class="fas fa-house"></i>
+  </button>
 
   <button class="toolbar-btn" onclick={onOpenFolder} title="Open Folder (Ctrl+O)">
     <i class="fas fa-folder-open"></i>
