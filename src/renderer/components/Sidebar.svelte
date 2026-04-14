@@ -179,42 +179,74 @@
     await window.api.saveIndex($state.snapshot(projectState.index));
   }
 
-  // Pane resizing — the resizer adjusts the pane ABOVE it (which has a fixed
-  // height). The last pane is flex and absorbs the freed/taken space.
-  function startResize(paneKeyAbove) {
+  // Pane resizing — when the pane below the divider is the last (flex) pane,
+  // only the pane above is resized and the flex pane absorbs the change.
+  // Otherwise, both the pane above and below the divider resize inversely,
+  // keeping all other panes (including the flex pane) unchanged.
+  function startResize(paneKeyAbove, paneKeyBelow, isBelowLast) {
     return (e) => {
       e.preventDefault();
-      const meta = PANE_META[paneKeyAbove];
+      const metaAbove = PANE_META[paneKeyAbove];
       const startY = e.clientY;
-      const startHeight = getHeightForPane(paneKeyAbove);
+      const startHeightAbove = getHeightForPane(paneKeyAbove);
       // Mouse coords are in viewport pixels, but panes live inside the zoomed
       // .app-layout (zoom: var(--ui-zoom)). Divide delta by zoom so pane
       // height tracks the cursor at any UI scale.
       const zoom = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--ui-zoom')) || 1;
 
-      // Compute max height for this pane: the available space minus every
-      // other visible pane's CURRENT height and the resizers. Using current
-      // heights (not minH) ensures resize only affects this pane; the others
-      // stay put.
-      const totalH = sidebarEl ? sidebarEl.clientHeight : 0;
-      const resizerCount = Math.max(0, visiblePanes.length - 1);
-      let reservedForOthers = resizerCount * RESIZER_H;
-      for (const key of visiblePanes) {
-        if (key !== paneKeyAbove) reservedForOthers += getHeightForPane(key);
-      }
-      const maxH = Math.max(meta.minH, totalH - reservedForOthers);
+      if (!isBelowLast) {
+        // Resize both panes on either side of the divider inversely.
+        const metaBelow = PANE_META[paneKeyBelow];
+        const startHeightBelow = getHeightForPane(paneKeyBelow);
+        const combinedHeight = startHeightAbove + startHeightBelow;
 
-      const onMouseMove = (ev) => {
-        const deltaY = (ev.clientY - startY) / zoom;
-        const newHeight = Math.min(maxH, Math.max(meta.minH, startHeight + deltaY));
-        if (onPaneResize) onPaneResize(meta.heightKey, newHeight);
-      };
-      const onMouseUp = () => {
-        window.removeEventListener('mousemove', onMouseMove);
-        window.removeEventListener('mouseup', onMouseUp);
-      };
-      window.addEventListener('mousemove', onMouseMove);
-      window.addEventListener('mouseup', onMouseUp);
+        const onMouseMove = (ev) => {
+          const deltaY = (ev.clientY - startY) / zoom;
+          let newAbove = startHeightAbove + deltaY;
+          let newBelow = startHeightBelow - deltaY;
+
+          // Clamp to minimums, giving the remainder to the other pane.
+          if (newAbove < metaAbove.minH) {
+            newAbove = metaAbove.minH;
+            newBelow = combinedHeight - newAbove;
+          } else if (newBelow < metaBelow.minH) {
+            newBelow = metaBelow.minH;
+            newAbove = combinedHeight - newBelow;
+          }
+
+          if (onPaneResize) {
+            onPaneResize(metaAbove.heightKey, newAbove);
+            onPaneResize(metaBelow.heightKey, newBelow);
+          }
+        };
+        const onMouseUp = () => {
+          window.removeEventListener('mousemove', onMouseMove);
+          window.removeEventListener('mouseup', onMouseUp);
+        };
+        window.addEventListener('mousemove', onMouseMove);
+        window.addEventListener('mouseup', onMouseUp);
+      } else {
+        // Last pane is flex — only resize the pane above.
+        const totalH = sidebarEl ? sidebarEl.clientHeight : 0;
+        const resizerCount = Math.max(0, visiblePanes.length - 1);
+        let reservedForOthers = resizerCount * RESIZER_H;
+        for (const key of visiblePanes) {
+          if (key !== paneKeyAbove) reservedForOthers += getHeightForPane(key);
+        }
+        const maxH = Math.max(metaAbove.minH, totalH - reservedForOthers);
+
+        const onMouseMove = (ev) => {
+          const deltaY = (ev.clientY - startY) / zoom;
+          const newHeight = Math.min(maxH, Math.max(metaAbove.minH, startHeightAbove + deltaY));
+          if (onPaneResize) onPaneResize(metaAbove.heightKey, newHeight);
+        };
+        const onMouseUp = () => {
+          window.removeEventListener('mousemove', onMouseMove);
+          window.removeEventListener('mouseup', onMouseUp);
+        };
+        window.addEventListener('mousemove', onMouseMove);
+        window.addEventListener('mouseup', onMouseUp);
+      }
     };
   }
 
@@ -278,7 +310,7 @@
     {@const isLast = i === visiblePanes.length - 1}
     {#if i > 0}
       <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
-      <div class="pane-resizer" role="separator" aria-orientation="horizontal" tabindex="-1" onmousedown={startResize(visiblePanes[i - 1])}></div>
+      <div class="pane-resizer" role="separator" aria-orientation="horizontal" tabindex="-1" onmousedown={startResize(visiblePanes[i - 1], paneKey, isLast)}></div>
     {/if}
     <div
       class="resizable-pane"
