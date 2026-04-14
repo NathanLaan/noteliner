@@ -14,6 +14,7 @@
   import DeleteFileModal from './components/DeleteFileModal.svelte';
   import ClearTagsModal from './components/ClearTagsModal.svelte';
   import SyncModal from './components/SyncModal.svelte';
+  import SyncingModal from './components/SyncingModal.svelte';
   import AttachmentPanel from './components/AttachmentPanel.svelte';
   import { projectState } from './stores/project.svelte.js';
   import { themeState } from './stores/theme.svelte.js';
@@ -53,6 +54,7 @@
   let showNewProject = $state(false);
   let showSync = $state(false);
   let showDeleteFile = $state(false);
+  let showSyncing = $state(false);
   let showClearTags = $state(false);
   let clearTagsFile = $state(null);
   let projectSettingsRequired = $state(false);
@@ -292,6 +294,27 @@
     showSync = true;
   }
 
+  async function handleGoHome() {
+    if (!projectState.isOpen) return;
+
+    // Save layout before closing
+    if (layoutSaveTimer) {
+      clearTimeout(layoutSaveTimer);
+      layoutSaveTimer = null;
+      await window.api.saveWindowState(projectState.folderPath, { ...layout });
+    }
+
+    // Show syncing modal, flush pending push, then close
+    showSyncing = true;
+    try {
+      await window.api.closeProject();
+    } finally {
+      showSyncing = false;
+    }
+    projectState.close();
+    layout = { ...DEFAULT_LAYOUT };
+  }
+
   async function handleContextAction(action, file) {
     switch (action) {
       case 'openInFileSystem':
@@ -386,8 +409,13 @@
   <SyncModal onClose={() => showSync = false} />
 {/if}
 
+{#if showSyncing}
+  <SyncingModal />
+{/if}
+
 <div class="app-layout">
   <Toolbar
+    onGoHome={handleGoHome}
     onOpenFolder={handleOpenFolder}
     onNewFile={handleNewFile}
     onDeleteFile={handleDeleteFile}

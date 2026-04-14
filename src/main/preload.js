@@ -6,6 +6,7 @@ contextBridge.exposeInMainWorld('api', {
 
   // Project
   openProject: (folderPath) => ipcRenderer.invoke('project:open', folderPath),
+  closeProject: () => ipcRenderer.invoke('project:close'),
   initProject: (folderPath, remoteUrl) => ipcRenderer.invoke('project:init', folderPath, remoteUrl),
   getIndex: () => ipcRenderer.invoke('project:getIndex'),
   saveIndex: (index) => ipcRenderer.invoke('project:saveIndex', index),

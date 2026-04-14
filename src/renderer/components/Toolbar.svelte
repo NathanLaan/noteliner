@@ -1,8 +1,14 @@
 <script>
-  let { onOpenFolder, onNewFile, onDeleteFile, onToggleSidebar, onToggleOutline, onToggleTagGroups, onToggleLog, onToggleAttachments, onShowAbout, onShowSettings, onShowProjectSettings, onShowSync, projectOpen, hasSelectedFile = false, logVisible = false, sidebarVisible = true, outlineVisible = false, tagGroupsVisible = false, attachmentsVisible = false } = $props();
+  let { onGoHome, onOpenFolder, onNewFile, onDeleteFile, onToggleSidebar, onToggleOutline, onToggleTagGroups, onToggleLog, onToggleAttachments, onShowAbout, onShowSettings, onShowProjectSettings, onShowSync, projectOpen, hasSelectedFile = false, logVisible = false, sidebarVisible = true, outlineVisible = false, tagGroupsVisible = false, attachmentsVisible = false } = $props();
 </script>
 
 <div class="toolbar">
+  {#if projectOpen}
+    <button class="toolbar-btn" onclick={onGoHome} title="Home">
+      <i class="fas fa-house"></i>
+    </button>
+  {/if}
+
   <button class="toolbar-btn" onclick={onOpenFolder} title="Open Folder (Ctrl+O)">
     <i class="fas fa-folder-open"></i>
   </button>

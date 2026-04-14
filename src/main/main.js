@@ -165,6 +165,13 @@ ipcMain.handle('project:init', async (_event, folderPath, remoteUrl) => {
   return await projectService.initProject(folderPath, remoteUrl);
 });
 
+ipcMain.handle('project:close', async () => {
+  if (!projectService.projectPath) return;
+  await gitService.flushPush(projectService.projectPath);
+  projectService.projectPath = null;
+  projectService.index = null;
+});
+
 ipcMain.handle('project:getIndex', async () => {
   return projectService.getIndex();
 });

@@ -205,6 +205,17 @@ class GitService {
       }
     }, this.pushDebounceMs);
   }
+
+  async flushPush(folderPath) {
+    if (this.pushTimer) {
+      clearTimeout(this.pushTimer);
+      this.pushTimer = null;
+    }
+    const hasRemote = await this.hasRemote(folderPath);
+    if (hasRemote) {
+      await this.push(folderPath);
+    }
+  }
 }
 
 module.exports = { GitService };
