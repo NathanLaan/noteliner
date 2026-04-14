@@ -26,6 +26,7 @@
     showLog: false,
     showSidebar: true,
     showOutline: false,
+    showTags: true,
     showTagGroups: false,
     showAttachments: false,
     sidebarWidth: 260,
@@ -117,6 +118,9 @@
         if (projectState.isOpen && projectState.selectedFileId) {
           tagAction = { type: 'remove', ts: Date.now() };
         }
+      } else if (e.ctrlKey && e.shiftKey && e.code === 'KeyT') {
+        e.preventDefault();
+        if (projectState.isOpen) handleToggleTags();
       } else if (e.ctrlKey && e.key === 'g') {
         e.preventDefault();
         if (projectState.isOpen) handleToggleTagGroups();
@@ -255,6 +259,10 @@
 
   function handleToggleOutline() {
     layout.showOutline = !layout.showOutline;
+  }
+
+  function handleToggleTags() {
+    layout.showTags = !layout.showTags;
   }
 
   function handleToggleTagGroups() {
@@ -423,6 +431,7 @@
     onToggleLog={handleToggleLog}
     onToggleSidebar={handleToggleSidebar}
     onToggleOutline={handleToggleOutline}
+    onToggleTags={handleToggleTags}
     onToggleTagGroups={handleToggleTagGroups}
     onToggleAttachments={handleToggleAttachments}
     onShowAbout={handleShowAbout}
@@ -433,6 +442,7 @@
     logVisible={layout.showLog}
     sidebarVisible={layout.showSidebar}
     outlineVisible={layout.showOutline}
+    tagsVisible={layout.showTags}
     tagGroupsVisible={layout.showTagGroups}
     attachmentsVisible={layout.showAttachments}
   />
@@ -453,6 +463,7 @@
             <Sidebar
               {tagAction}
               outlineVisible={layout.showOutline}
+              tagsVisible={layout.showTags}
               tagGroupsVisible={layout.showTagGroups}
               tagGroupsHeight={layout.tagGroupsHeight}
               outlineHeight={layout.outlineHeight}
