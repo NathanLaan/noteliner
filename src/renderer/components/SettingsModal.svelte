@@ -14,6 +14,7 @@
     { keys: 'Ctrl+P', action: 'Toggle Preview' },
     { keys: 'Ctrl+E', action: 'Toggle Files Panel' },
     { keys: 'Ctrl+Shift+O', action: 'Toggle Outline' },
+    { keys: 'Ctrl+Shift+T', action: 'Toggle Tags' },
     { keys: 'Ctrl+G', action: 'Toggle Tag Groups' },
     { keys: 'Ctrl+B', action: 'Toggle Attachments' },
     { keys: 'Ctrl+L', action: 'Toggle Log Panel' },
