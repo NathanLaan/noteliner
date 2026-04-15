@@ -71,7 +71,7 @@
     if (layoutSaveTimer) clearTimeout(layoutSaveTimer);
     layoutSaveTimer = setTimeout(() => {
       layoutSaveTimer = null;
-      window.api.saveWindowState(projectState.folderPath, { ...layout });
+      window.api.saveWindowState(projectState.folderPath, $state.snapshot(layout));
     }, 1000);
   }
 
@@ -314,7 +314,7 @@
     if (layoutSaveTimer) {
       clearTimeout(layoutSaveTimer);
       layoutSaveTimer = null;
-      await window.api.saveWindowState(projectState.folderPath, { ...layout });
+      await window.api.saveWindowState(projectState.folderPath, $state.snapshot(layout));
     }
 
     // Show syncing modal, flush pending push, then close

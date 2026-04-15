@@ -54,7 +54,7 @@
 
       {#if allTags.length > 0}
         <div class="field">
-          <label>Tags:</label>
+          <div class="field-label">Tags:</div>
           <div class="tag-list">
             {#each allTags as tag (tag)}
               <button
@@ -91,7 +91,8 @@
     margin-bottom: 14px;
   }
 
-  .field label {
+  .field label,
+  .field .field-label {
     display: block;
     font-size: 12px;
     color: var(--text-secondary);
