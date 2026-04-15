@@ -124,7 +124,8 @@ class ProjectService {
     this.gitService.schedulePush(this.projectPath);
   }
 
-  async createFile(name) {
+  async createFile(name, tags) {
+    if (!name || !name.trim()) throw new Error('File name cannot be empty');
     const id = uuidv4();
     const filename = this.slugify(name) + '.md';
 
@@ -134,7 +135,7 @@ class ProjectService {
       filename,
       parentId: null,
       order: this.index.files.length,
-      tags: [],
+      tags: Array.isArray(tags) ? tags : [],
       attachments: []
     };
 
@@ -178,6 +179,7 @@ class ProjectService {
   }
 
   async renameFile(fileId, newName) {
+    if (!newName || !newName.trim()) return;
     const entry = this.index.files.find(f => f.id === fileId);
     if (!entry) return;
 
