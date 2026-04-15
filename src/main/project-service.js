@@ -124,7 +124,7 @@ class ProjectService {
     this.gitService.schedulePush(this.projectPath);
   }
 
-  async createFile(name) {
+  async createFile(name, tags) {
     const id = uuidv4();
     const filename = this.slugify(name) + '.md';
 
@@ -134,7 +134,7 @@ class ProjectService {
       filename,
       parentId: null,
       order: this.index.files.length,
-      tags: [],
+      tags: Array.isArray(tags) ? tags : [],
       attachments: []
     };
 

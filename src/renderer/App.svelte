@@ -11,6 +11,7 @@
   import SettingsModal from './components/SettingsModal.svelte';
   import ProjectSettingsModal from './components/ProjectSettingsModal.svelte';
   import NewProjectModal from './components/NewProjectModal.svelte';
+  import NewFileModal from './components/NewFileModal.svelte';
   import DeleteFileModal from './components/DeleteFileModal.svelte';
   import ClearTagsModal from './components/ClearTagsModal.svelte';
   import SyncModal from './components/SyncModal.svelte';
@@ -54,6 +55,7 @@
   let showProjectSettings = $state(false);
   let showNewProject = $state(false);
   let showSync = $state(false);
+  let showNewFile = $state(false);
   let showDeleteFile = $state(false);
   let showSyncing = $state(false);
   let showClearTags = $state(false);
@@ -223,11 +225,14 @@
     }
   }
 
-  async function handleNewFile() {
+  function handleNewFile() {
     if (!projectState.isOpen) return;
+    showNewFile = true;
+  }
 
-    const name = 'Untitled';
-    const entry = await window.api.createFile(name);
+  async function handleNewFileConfirm({ name, tags }) {
+    showNewFile = false;
+    const entry = await window.api.createFile(name, tags);
     projectState.addFile(entry);
     projectState.selectFile(entry.id);
   }
@@ -386,6 +391,13 @@
   <NewProjectModal
     onConfirm={handleNewProjectConfirm}
     onCancel={() => showNewProject = false}
+  />
+{/if}
+
+{#if showNewFile}
+  <NewFileModal
+    onConfirm={handleNewFileConfirm}
+    onCancel={() => showNewFile = false}
   />
 {/if}
 

@@ -193,9 +193,9 @@ ipcMain.handle('file:write', async (_event, filePath, content) => {
   }
 });
 
-ipcMain.handle('file:create', async (_event, name) => {
+ipcMain.handle('file:create', async (_event, name, tags) => {
   try {
-    return await projectService.createFile(name);
+    return await projectService.createFile(name, tags);
   } catch (err) {
     if (err.code === 'GIT_CONFIG_REQUIRED') return { error: 'git_config_required' };
     throw err;
