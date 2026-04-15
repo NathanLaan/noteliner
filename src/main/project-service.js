@@ -125,6 +125,7 @@ class ProjectService {
   }
 
   async createFile(name, tags) {
+    if (!name || !name.trim()) throw new Error('File name cannot be empty');
     const id = uuidv4();
     const filename = this.slugify(name) + '.md';
 
@@ -178,6 +179,7 @@ class ProjectService {
   }
 
   async renameFile(fileId, newName) {
+    if (!newName || !newName.trim()) return;
     const entry = this.index.files.find(f => f.id === fileId);
     if (!entry) return;
 

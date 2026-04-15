@@ -17,9 +17,11 @@
     node.select();
   }
 
+  let canSubmit = $derived(fileName.trim().length > 0);
+
   function handleKeydown(e) {
     if (e.key === 'Escape') onCancel();
-    if (e.key === 'Enter' && !e.shiftKey) handleOk();
+    if (e.key === 'Enter' && !e.shiftKey && canSubmit) handleOk();
   }
 
   function toggleTag(tag) {
@@ -33,7 +35,8 @@
   }
 
   function handleOk() {
-    const name = fileName.trim() || 'Untitled';
+    const name = fileName.trim();
+    if (!name) return;
     onConfirm({ name, tags: [...selectedTags] });
   }
 </script>
@@ -69,7 +72,7 @@
 
       <div class="modal-footer">
         <button class="cancel-btn" onclick={onCancel}>Cancel</button>
-        <button class="ok-btn" onclick={handleOk}>OK</button>
+        <button class="ok-btn" onclick={handleOk} disabled={!canSubmit}>OK</button>
       </div>
     </div>
   </div>
@@ -188,8 +191,13 @@
     transition: background 0.15s, color 0.15s;
   }
 
-  .ok-btn:hover {
+  .ok-btn:hover:not(:disabled) {
     background: var(--accent);
     color: var(--accent-on);
+  }
+
+  .ok-btn:disabled {
+    opacity: 0.4;
+    cursor: default;
   }
 </style>
