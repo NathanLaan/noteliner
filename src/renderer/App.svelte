@@ -20,7 +20,7 @@
   import { projectState } from './stores/project.svelte.js';
   import { themeState } from './stores/theme.svelte.js';
 
-  const VALID_PANE_KEYS = ['files', 'tagGroups', 'outline', 'tags'];
+  const VALID_PANE_KEYS = ['files', 'tagGroups', 'outline', 'tags', 'search'];
 
   const DEFAULT_LAYOUT = {
     showPreview: false,
@@ -30,6 +30,7 @@
     showTags: true,
     showTagGroups: false,
     showAttachments: false,
+    showSearch: false,
     sidebarWidth: 260,
     logPanelHeight: 300,
     attachmentPanelWidth: 220,
@@ -37,7 +38,8 @@
     tagGroupsHeight: 150,
     outlineHeight: 150,
     tagsHeight: 100,
-    paneOrder: ['files', 'tagGroups', 'outline', 'tags'],
+    searchHeight: 200,
+    paneOrder: ['files', 'tagGroups', 'outline', 'tags', 'search'],
   };
 
   function normalizePaneOrder(order) {
@@ -62,6 +64,7 @@
   let clearTagsFile = $state(null);
   let projectSettingsRequired = $state(false);
   let tagAction = $state(null);
+  let searchFocusTs = $state(null);
   let setupFolderPath = $state('');
 
   // Debounced layout save
@@ -135,6 +138,9 @@
       } else if (e.ctrlKey && e.key === 'b') {
         e.preventDefault();
         handleToggleAttachments();
+      } else if (e.ctrlKey && !e.shiftKey && e.key === 'f') {
+        e.preventDefault();
+        if (projectState.isOpen) handleToggleSearch();
       } else if (e.ctrlKey && e.key === 'PageUp') {
         e.preventDefault();
         if (projectState.isOpen) projectState.selectPrevFile();
@@ -285,6 +291,13 @@
 
   function handleToggleAttachments() {
     layout.showAttachments = !layout.showAttachments;
+  }
+
+  function handleToggleSearch() {
+    layout.showSearch = !layout.showSearch;
+    if (layout.showSearch) {
+      searchFocusTs = Date.now();
+    }
   }
 
   function handlePaneResize(paneName, value) {
@@ -451,6 +464,7 @@
     onToggleTags={handleToggleTags}
     onToggleTagGroups={handleToggleTagGroups}
     onToggleAttachments={handleToggleAttachments}
+    onToggleSearch={handleToggleSearch}
     onShowAbout={handleShowAbout}
     onShowSettings={handleShowSettings}
     onShowProjectSettings={handleShowProjectSettings}
@@ -462,6 +476,7 @@
     tagsVisible={layout.showTags}
     tagGroupsVisible={layout.showTagGroups}
     attachmentsVisible={layout.showAttachments}
+    searchVisible={layout.showSearch}
   />
 
   {#if !projectState.isOpen}
@@ -482,9 +497,12 @@
               outlineVisible={layout.showOutline}
               tagsVisible={layout.showTags}
               tagGroupsVisible={layout.showTagGroups}
+              searchVisible={layout.showSearch}
+              searchFocusRequest={searchFocusTs}
               tagGroupsHeight={layout.tagGroupsHeight}
               outlineHeight={layout.outlineHeight}
               tagsHeight={layout.tagsHeight}
+              searchHeight={layout.searchHeight}
               filesHeight={layout.filesHeight}
               paneOrder={layout.paneOrder}
               onPaneResize={handlePaneResize}

@@ -279,6 +279,39 @@ class ProjectService {
     return path.join(this.attachmentsDir(), filename);
   }
 
+  search(query, options = {}) {
+    if (!this.projectPath || !query) return [];
+    const caseSensitive = options.caseSensitive || false;
+    const searchStr = caseSensitive ? query : query.toLowerCase();
+    const results = [];
+
+    for (const file of this.index.files) {
+      const filePath = path.join(this.projectPath, file.filename);
+      if (!fs.existsSync(filePath)) continue;
+      const content = fs.readFileSync(filePath, 'utf-8');
+      const lines = content.split('\n');
+      const matches = [];
+
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i];
+        const compareLine = caseSensitive ? line : line.toLowerCase();
+        if (compareLine.includes(searchStr)) {
+          matches.push({ line: i + 1, text: line.trimEnd() });
+        }
+      }
+
+      if (matches.length > 0) {
+        results.push({
+          fileId: file.id,
+          fileName: file.name,
+          filename: file.filename,
+          matches,
+        });
+      }
+    }
+    return results;
+  }
+
   slugify(text) {
     return text
       .toLowerCase()
