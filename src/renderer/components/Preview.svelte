@@ -1,8 +1,12 @@
 <script>
   import { projectState } from '../stores/project.svelte.js';
   import { marked } from 'marked';
+  import ContextMenu from './ContextMenu.svelte';
 
-  let { onClose = () => {} } = $props();
+  let { onClose = () => {}, onSaveToHtml = () => {} } = $props();
+
+  let previewContentEl;
+  let contextMenu = $state(null);
 
   function resolveAttachmentUrls(rawHtml) {
     return rawHtml.replace(
@@ -10,6 +14,34 @@
       (match, filename) => match.replace(`./_attachments/${filename}`, `attachment:///${encodeURIComponent(filename)}`)
         .replace(`_attachments/${filename}`, `attachment:///${encodeURIComponent(filename)}`)
     );
+  }
+
+  function handleSelectAll() {
+    if (!previewContentEl) return;
+    const sel = window.getSelection();
+    const range = document.createRange();
+    range.selectNodeContents(previewContentEl);
+    sel.removeAllRanges();
+    sel.addRange(range);
+  }
+
+  function handleCopy() {
+    document.execCommand('copy');
+  }
+
+  function handleContextMenu(e) {
+    e.preventDefault();
+    const zoom = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--ui-zoom')) || 1;
+    contextMenu = {
+      x: e.clientX / zoom,
+      y: e.clientY / zoom,
+      items: [
+        { label: 'Select All', icon: 'fa-object-group', action: handleSelectAll },
+        { label: 'Copy', icon: 'fa-copy', action: handleCopy },
+        { separator: true },
+        { label: 'Save to HTML', icon: 'fa-file-code', action: onSaveToHtml },
+      ]
+    };
   }
 
   let html = $derived(projectState.editorContent
@@ -24,10 +56,20 @@
       <i class="fas fa-xmark"></i>
     </button>
   </div>
-  <div class="preview-content">
+  <!-- svelte-ignore a11y_no_static_element_interactions -->
+  <div class="preview-content" bind:this={previewContentEl} oncontextmenu={handleContextMenu}>
     {@html html}
   </div>
 </div>
+
+{#if contextMenu}
+  <ContextMenu
+    x={contextMenu.x}
+    y={contextMenu.y}
+    items={contextMenu.items}
+    onClose={() => contextMenu = null}
+  />
+{/if}
 
 <style>
   .preview-wrapper {

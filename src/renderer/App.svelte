@@ -258,6 +258,15 @@
     layout.showPreview = !layout.showPreview;
   }
 
+  async function handleSaveToHtml() {
+    const file = projectState.selectedFile;
+    if (!file) return;
+    const result = await window.api.convertToHtml(file.filename, file.name);
+    if (result) {
+      window.api.openPath(result.downloadsDir);
+    }
+  }
+
   function handleToggleSidebar() {
     layout.showSidebar = !layout.showSidebar;
   }
@@ -348,13 +357,9 @@
       case 'preview':
         handleTogglePreview();
         break;
-      case 'convertToHtml': {
-        const result = await window.api.convertToHtml(file.filename, file.name);
-        if (result) {
-          window.api.openPath(result.downloadsDir);
-        }
+      case 'convertToHtml':
+        handleSaveToHtml();
         break;
-      }
     }
   }
 
@@ -509,7 +514,7 @@
         {#if layout.showPreview}
           <div class="resizer preview-resizer"></div>
           <div class="preview-area">
-            <Preview onClose={handleTogglePreview} />
+            <Preview onClose={handleTogglePreview} onSaveToHtml={handleSaveToHtml} />
           </div>
         {/if}
         {#if layout.showAttachments}
