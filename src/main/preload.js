@@ -45,6 +45,10 @@ contextBridge.exposeInMainWorld('api', {
   // Search
   searchFiles: (query, options) => ipcRenderer.invoke('search:query', query, options),
 
+  // File history
+  getFileHistory: (filename) => ipcRenderer.invoke('file:getHistory', filename),
+  getFileHistoryContent: (commit, filename) => ipcRenderer.invoke('file:getHistoryContent', commit, filename),
+
   // Convert
   convertToHtml: (filename, name) => ipcRenderer.invoke('file:convertToHtml', filename, name),
 

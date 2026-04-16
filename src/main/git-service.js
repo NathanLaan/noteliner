@@ -206,6 +206,31 @@ class GitService {
     }, this.pushDebounceMs);
   }
 
+  async getFileLog(folderPath, filename) {
+    try {
+      const raw = await this.exec([
+        'log', '--follow',
+        '--pretty=format:%H|%ai|%an|%s',
+        '--', filename
+      ], folderPath);
+      if (!raw) return [];
+      return raw.split('\n').filter(Boolean).map(line => {
+        const [hash, date, author, ...msgParts] = line.split('|');
+        return { hash, date, author, message: msgParts.join('|') };
+      });
+    } catch {
+      return [];
+    }
+  }
+
+  async getFileAtCommit(folderPath, commit, filename) {
+    try {
+      return await this.exec(['show', `${commit}:${filename}`], folderPath);
+    } catch {
+      return null;
+    }
+  }
+
   async flushPush(folderPath) {
     if (this.pushTimer) {
       clearTimeout(this.pushTimer);

@@ -394,6 +394,18 @@ ipcMain.handle('file:convertToHtml', async (_event, filename, name) => {
   return { outputPath, downloadsDir };
 });
 
+// File history
+
+ipcMain.handle('file:getHistory', async (_event, filename) => {
+  if (!projectService.projectPath) return [];
+  return await gitService.getFileLog(projectService.projectPath, filename);
+});
+
+ipcMain.handle('file:getHistoryContent', async (_event, commit, filename) => {
+  if (!projectService.projectPath) return null;
+  return await gitService.getFileAtCommit(projectService.projectPath, commit, filename);
+});
+
 // Window state
 
 ipcMain.handle('window-state:getLayout', async (_event, folderPath) => {
