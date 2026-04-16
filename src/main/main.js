@@ -10,6 +10,14 @@ const { marked } = require('marked');
 // Set app name early so Linux WM_CLASS is correct (for dock icon in dev mode)
 app.setName('NoteLiner');
 
+// Wayland + Vulkan is an incompatible combination in Chromium — GPU surfaces
+// can't survive a screen-lock/unlock cycle, leaving a blank white screen.
+// Disabling Vulkan lets Chromium fall back to OpenGL/GLES which handles
+// Wayland surface lifecycle correctly.
+if (process.platform === 'linux') {
+  app.commandLine.appendSwitch('disable-vulkan');
+}
+
 const RECENT_PROJECTS_FILE = 'recent-projects.json';
 const MAX_RECENT = 5;
 
@@ -117,6 +125,15 @@ function createWindow() {
       const isMax = mainWindow.isMaximized();
       const bounds = isMax ? mainWindow.getNormalBounds() : mainWindow.getBounds();
       windowStateService.setBoundsSync(projectService.projectPath, bounds, isMax);
+    }
+  });
+
+  // If the renderer crashes (e.g. GPU context lost), reload automatically
+  // instead of leaving a permanent blank screen.
+  mainWindow.webContents.on('render-process-gone', (_event, details) => {
+    console.log(`Renderer process gone (reason: ${details.reason}), reloading...`);
+    if (!mainWindow.isDestroyed()) {
+      mainWindow.webContents.reload();
     }
   });
 }
