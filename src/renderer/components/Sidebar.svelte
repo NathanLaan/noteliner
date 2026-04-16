@@ -4,17 +4,21 @@
   import TagGroupsPane from './TagGroupsPane.svelte';
   import TagsPane from './TagsPane.svelte';
   import OutlinePane from './OutlinePane.svelte';
+  import SearchPane from './SearchPane.svelte';
 
   let {
     tagAction = null,
     outlineVisible = false,
     tagGroupsVisible = false,
     tagsVisible = true,
+    searchVisible = false,
+    searchFocusRequest = null,
     filesHeight = 200,
     tagGroupsHeight = 150,
     outlineHeight = 150,
     tagsHeight = 100,
-    paneOrder = ['files', 'tagGroups', 'outline', 'tags'],
+    searchHeight = 200,
+    paneOrder = ['files', 'tagGroups', 'outline', 'tags', 'search'],
     onPaneResize,
     onPaneReorder,
     onContextAction,
@@ -34,6 +38,7 @@
     tagGroups: { title: 'TAG GROUPS', heightKey: 'tagGroupsHeight', minH: HEADER_H },
     outline: { title: 'OUTLINE', heightKey: 'outlineHeight', minH: HEADER_H },
     tags: { title: 'TAGS', heightKey: 'tagsHeight', minH: HEADER_H },
+    search: { title: 'SEARCH', heightKey: 'searchHeight', minH: HEADER_H },
   };
 
   let sidebarEl;
@@ -43,6 +48,7 @@
     if (key === 'tags') return tagsVisible;
     if (key === 'tagGroups') return tagGroupsVisible;
     if (key === 'outline') return outlineVisible;
+    if (key === 'search') return searchVisible;
     return false;
   }
 
@@ -52,6 +58,7 @@
       case 'tagGroups': return tagGroupsHeight;
       case 'outline': return outlineHeight;
       case 'tags': return tagsHeight;
+      case 'search': return searchHeight;
       default: return 100;
     }
   }
@@ -368,6 +375,8 @@
           <OutlinePane />
         {:else if paneKey === 'tags'}
           <TagsPane onTagsChanged={handleTagsChanged} {tagAction} />
+        {:else if paneKey === 'search'}
+          <SearchPane focusRequest={searchFocusRequest} />
         {/if}
       </div>
     </div>

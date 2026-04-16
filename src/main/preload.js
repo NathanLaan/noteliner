@@ -42,6 +42,9 @@ contextBridge.exposeInMainWorld('api', {
   addRecentProject: (folderPath) => ipcRenderer.invoke('projects:addRecent', folderPath),
   removeRecentProject: (folderPath) => ipcRenderer.invoke('projects:removeRecent', folderPath),
 
+  // Search
+  searchFiles: (query, options) => ipcRenderer.invoke('search:query', query, options),
+
   // Convert
   convertToHtml: (filename, name) => ipcRenderer.invoke('file:convertToHtml', filename, name),
 

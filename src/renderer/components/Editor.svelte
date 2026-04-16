@@ -10,6 +10,7 @@
   import { languages } from '@codemirror/language-data';
   import { EditorState } from '@codemirror/state';
   import { oneDark } from '@codemirror/theme-one-dark';
+  import { openSearchPanel } from '@codemirror/search';
 
   const lightTheme = EditorView.theme({
     '&': { backgroundColor: '#ffffff', color: '#1a1a1a' },
@@ -57,7 +58,7 @@
       doc: projectState.editorContent || '',
       extensions: [
         basicSetup,
-        keymap.of([indentWithTab]),
+        keymap.of([indentWithTab, { key: 'Mod-Shift-f', run: openSearchPanel }]),
         markdown({ codeLanguages: languages }),
         getEditorTheme(),
         customTheme,

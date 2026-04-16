@@ -348,6 +348,13 @@ ipcMain.handle('fs:ensureDir', async (_event, dirPath) => {
   fs.mkdirSync(dirPath, { recursive: true });
 });
 
+// Search
+
+ipcMain.handle('search:query', async (_event, query, options) => {
+  if (!projectService.projectPath) return [];
+  return projectService.search(query, options);
+});
+
 // Convert to HTML
 
 ipcMain.handle('file:convertToHtml', async (_event, filename, name) => {
