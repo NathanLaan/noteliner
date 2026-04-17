@@ -139,9 +139,13 @@ class ProjectService {
       attachments: []
     };
 
-    // Create the file on disk
+    // Create the file on disk with a heading
     const filePath = path.join(this.projectPath, filename);
-    fs.writeFileSync(filePath, '', 'utf-8');
+    const now = new Date();
+    const yyyy = now.getFullYear();
+    const mm = String(now.getMonth() + 1).padStart(2, '0');
+    const dd = String(now.getDate()).padStart(2, '0');
+    fs.writeFileSync(filePath, `# ${name} ${yyyy}-${mm}-${dd}\n`, 'utf-8');
 
     // Update index
     this.index.files.push(entry);
