@@ -278,6 +278,18 @@ ipcMain.handle('git:pushUpstream', async () => {
   return await gitService.setUpstreamAndPush(projectService.projectPath, branch);
 });
 
+ipcMain.handle('git:resetToRemote', async () => {
+  if (!projectService.projectPath) return null;
+  const branch = await gitService.getCurrentBranch(projectService.projectPath);
+  await gitService.resetToRemote(projectService.projectPath, branch);
+  // Reload index since noteliner.json may have changed
+  const indexPath = path.join(projectService.projectPath, 'noteliner.json');
+  if (fs.existsSync(indexPath)) {
+    projectService.index = JSON.parse(fs.readFileSync(indexPath, 'utf-8'));
+  }
+  return { index: projectService.index };
+});
+
 // Git config
 
 ipcMain.handle('git:getConfig', async () => {

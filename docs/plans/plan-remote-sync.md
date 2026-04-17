@@ -1,122 +1,160 @@
-# Remote Sync
+# Remote Sync — Enhancements
 
 ## Overview
 
-Add a "Remote Sync" feature that lets users configure a remote Git URL (GitHub/GitLab), manually push/pull, and see the sync status of their project. This surfaces the existing `git-service.js` push/pull/remote capabilities through a dedicated UI instead of relying on the silent background auto-push.
+Two enhancements to the existing Remote Sync modal:
+
+1. **Disconnect confirmation** — The "Disconnect remote" button (x next to URL) now opens a compact confirmation dialog before removing the remote.
+2. **Reset from remote** — A new "Reset from Remote" button overwrites the local repository with the latest version from the remote. Opens a compact confirmation dialog with a strong warning before executing.
+
+Both confirmation dialogs use the `.modal-overlay-compact` / `.modal-compact` style (centered, auto-sized, not full-window).
 
 ## Current State
 
-The app already has significant git plumbing in place:
+- **SyncModal.svelte** — Has `handleDisconnect()` which directly calls `gitRemoveRemote()` with no confirmation. Has Pull/Push buttons but no "force overwrite" option.
+- **git-service.js** — Has `removeRemote()`, `push()`, `pull()`. Does not have a `resetToRemote()` or `fetchAndReset()` method.
+- **Compact modal pattern** — `.modal-overlay-compact` and `.modal-compact` already exist in `global.css` (added for RemoveRecentModal).
 
-- **`git-service.js`** — `push()`, `pull()`, `addRemote()`, `hasRemote()`, `schedulePush()` (30s debounced auto-push after every file save)
-- **`project-service.js`** — Every file write/create/delete/rename calls `commit()` then `schedulePush()`. Opening an existing project calls `pull()`.
-- **`preload.js`** — Exposes `gitPush()` and `gitPull()` to the renderer.
-- **Auto-push** — Already works silently if a remote exists, but the user has no way to configure the remote from the UI, no visibility into sync state, and no manual push/pull controls.
+## Design
 
-The gap: there is no UI to set up a remote, trigger sync on demand, or see whether local and remote have diverged.
+### Disconnect confirmation
+
+When the user clicks the `[x]` disconnect button next to the Remote URL, a compact modal appears:
+
+```
++------------------------------------------+
+| DISCONNECT REMOTE                        |
++------------------------------------------+
+|                                          |
+| Disconnect from the remote repository?   |
+|                                          |
+| https://github.com/user/repo.git         |
+|                                          |
+| Your local files will not be deleted.    |
+|                                          |
+|                   [Cancel]  [Disconnect]  |
++------------------------------------------+
+```
+
+Cancel dismisses. Disconnect calls `gitRemoveRemote()` and clears the URL/status.
+
+### Reset from remote
+
+A new button in the sync actions area: "Reset from Remote" with a warning-colored style. Only visible when a remote is configured.
+
+When clicked, a compact confirmation modal appears:
+
+```
++-------------------------------------------+
+| RESET FROM REMOTE                         |
++-------------------------------------------+
+|                                           |
+| ⚠ This will discard ALL local changes    |
+| and replace your project with the latest  |
+| version from the remote repository.       |
+|                                           |
+| This action cannot be undone.             |
+|                                           |
+|                    [Cancel]  [Reset]       |
++-------------------------------------------+
+```
+
+The "Reset" button is styled red (destructive action).
+
+### Git command for reset
+
+The most appropriate git command sequence:
+
+```
+git fetch origin
+git reset --hard origin/<branch>
+```
+
+`git fetch origin` updates remote refs without touching the working tree. `git reset --hard origin/<branch>` moves HEAD to the remote's latest commit and overwrites the working tree and index entirely. This is the standard way to force-overwrite local with remote.
+
+After reset, the project's `noteliner.json` may have changed, so the renderer must reload the project index.
 
 ## Implementation Steps
 
-### Step 1: Backend — New git-service methods
+### Step 1: Git service — Add resetToRemote method
 
 **File:** `src/main/git-service.js`
 
-Add methods to support the sync modal:
+```js
+async resetToRemote(folderPath, branch) {
+  await this.exec(['fetch', 'origin'], folderPath);
+  return await this.exec(['reset', '--hard', `origin/${branch}`], folderPath);
+}
+```
 
-1. **`getRemoteUrl(folderPath)`** — Run `git remote get-url origin`. Returns the URL string or `null` if no remote.
-
-2. **`setRemoteUrl(folderPath, url)`** — If origin exists, run `git remote set-url origin <url>`. If not, run `git remote add origin <url>`. This replaces the current `addRemote()` which fails if origin already exists.
-
-3. **`removeRemote(folderPath)`** — Run `git remote remove origin`.
-
-4. **`getSyncStatus(folderPath)`** — Determine local vs remote divergence:
-   - Run `git fetch origin` (silent, to update remote refs without merging).
-   - Run `git rev-parse HEAD` to get local commit hash.
-   - Run `git rev-parse @{u}` (upstream tracking ref) to get remote commit hash. If this fails, there is no upstream — return `{ status: 'no-upstream' }`.
-   - Run `git merge-base HEAD @{u}` to find the common ancestor.
-   - Compare the three hashes:
-     - local == remote → `{ status: 'synced' }`
-     - base == remote → `{ status: 'ahead', count: N }` (local has commits not on remote)
-     - base == local → `{ status: 'behind', count: N }` (remote has commits not on local)
-     - Otherwise → `{ status: 'diverged', ahead: N, behind: N }`
-   - Use `git rev-list --count` for commit counts.
-   - Wrap the whole thing in a try/catch — network errors return `{ status: 'error', message: '...' }`.
-
-5. **`getCurrentBranch(folderPath)`** — Run `git branch --show-current`. Returns branch name string.
-
-6. **`setUpstreamAndPush(folderPath, branch)`** — Run `git push -u origin <branch>`. This is needed the first time a local repo pushes to a newly configured remote.
-
-### Step 2: Backend — New IPC handlers
+### Step 2: IPC handler and preload
 
 **File:** `src/main/main.js`
 
-Add handlers that delegate to git-service and project-service:
-
+```js
+ipcMain.handle('git:resetToRemote', async () => {
+  if (!projectService.projectPath) return;
+  const branch = await gitService.getCurrentBranch(projectService.projectPath);
+  await gitService.resetToRemote(projectService.projectPath, branch);
+  // Reload the index since it may have changed
+  const indexPath = path.join(projectService.projectPath, 'noteliner.json');
+  if (fs.existsSync(indexPath)) {
+    projectService.index = JSON.parse(fs.readFileSync(indexPath, 'utf-8'));
+  }
+  return { index: projectService.index };
+});
 ```
-git:getRemoteUrl   ()         -> string | null
-git:setRemoteUrl   (url)      -> void
-git:removeRemote   ()         -> void
-git:getSyncStatus  ()         -> { status, count?, ahead?, behind?, message? }
-git:getBranch      ()         -> string
-git:pushUpstream   ()         -> void
-```
-
-All handlers should use `projectService.projectPath` as the folder path (same pattern as existing `git:push` / `git:pull` handlers).
 
 **File:** `src/main/preload.js`
 
-Expose on `window.api`:
+```js
+gitResetToRemote: () => ipcRenderer.invoke('git:resetToRemote'),
+```
+
+### Step 3: SyncModal — Add inline confirmation modals and reset button
+
+**File:** `src/renderer/components/SyncModal.svelte`
+
+Add local state for the two confirmation dialogs:
 
 ```js
-gitGetRemoteUrl:  () => ipcRenderer.invoke('git:getRemoteUrl'),
-gitSetRemoteUrl:  (url) => ipcRenderer.invoke('git:setRemoteUrl', url),
-gitRemoveRemote:  () => ipcRenderer.invoke('git:removeRemote'),
-gitGetSyncStatus: () => ipcRenderer.invoke('git:getSyncStatus'),
-gitGetBranch:     () => ipcRenderer.invoke('git:getBranch'),
-gitPushUpstream:  () => ipcRenderer.invoke('git:pushUpstream'),
+let showDisconnectConfirm = $state(false);
+let showResetConfirm = $state(false);
 ```
 
-### Step 3: Sync toolbar button
+**Disconnect flow change:**
+- The `[x]` button now sets `showDisconnectConfirm = true` instead of calling `handleDisconnect()` directly.
+- A compact confirmation dialog renders inside SyncModal (using `.modal-overlay-compact` / `.modal-compact`).
+- Confirm calls `handleDisconnect()` then closes the dialog.
+- Cancel just closes the dialog.
 
-**File:** `src/renderer/components/Toolbar.svelte`
+**Reset from Remote button:**
+- Added to the sync actions area, after Pull/Push.
+- Styled as a warning/destructive action (text color or subtle red styling).
+- Clicking sets `showResetConfirm = true`.
+- A compact confirmation dialog with a strong warning renders inside SyncModal.
+- Confirm calls `handleResetFromRemote()`:
+  ```js
+  async function handleResetFromRemote() {
+    showResetConfirm = false;
+    error = '';
+    operating = 'Resetting...';
+    try {
+      const result = await window.api.gitResetToRemote();
+      if (result && result.index) {
+        projectState.load(projectState.folderPath, result.index);
+      }
+      await refreshStatus();
+    } catch (err) {
+      error = `Reset failed: ${err.message}`;
+    } finally {
+      operating = '';
+    }
+  }
+  ```
+- After reset, `projectState.load()` reloads the index in the renderer (since the file tree may have changed).
 
-Add a Sync button in the project-open section, between the Attachments button and the spacer:
-
-```svelte
-<button class="toolbar-btn" onclick={onShowSync} title="Remote Sync (Ctrl+Shift+S)">
-  <i class="fas fa-cloud-arrow-up"></i>
-</button>
-```
-
-The `fa-cloud-arrow-up` icon communicates "cloud sync" clearly. Alternative: `fa-arrows-rotate` for a more generic sync look.
-
-Add `onShowSync` to the destructured props.
-
-### Step 4: Remote Sync modal
-
-**New file:** `src/renderer/components/SyncModal.svelte`
-
-A modal dialog for configuring and triggering remote sync.
-
-**Layout — No remote configured:**
-
-```
-+----------------------------------------------+
-| REMOTE SYNC                                  |
-+----------------------------------------------+
-|                                              |
-| No remote repository configured.             |
-|                                              |
-| Remote URL:                                  |
-| [ https://github.com/user/repo.git    ]      |
-|                                              |
-| Branch: main                                 |
-|                                              |
-|                        [Cancel]  [Connect]    |
-+----------------------------------------------+
-```
-
-**Layout — Remote configured and synced:**
+### Step 4: Updated SyncModal layout
 
 ```
 +----------------------------------------------+
@@ -128,118 +166,31 @@ A modal dialog for configuring and triggering remote sync.
 |                                              |
 | Branch: main                                 |
 |                                              |
-| Status: [*] Synced — local and remote match  |
+| Status: [*] Synced                           |
 |                                              |
-| [Pull]  [Push]              [Close]           |
+| [Pull]  [Push]  [Reset from Remote]  [Close] |
 +----------------------------------------------+
 ```
 
-**Layout — Diverged state:**
-
-```
-+----------------------------------------------+
-| REMOTE SYNC                                  |
-+----------------------------------------------+
-|                                              |
-| Remote URL:                                  |
-| [ https://github.com/user/repo.git    ] [x]  |
-|                                              |
-| Branch: main                                 |
-|                                              |
-| Status: [!] Local is 3 commits ahead         |
-|                                              |
-| [Pull]  [Push]              [Close]           |
-+----------------------------------------------+
-```
-
-**Behavior:**
-
-- **On mount:** Fetch `gitGetRemoteUrl()`, `gitGetBranch()`. If remote exists, also fetch `gitGetSyncStatus()`.
-- **Remote URL field:** Editable text input. The `[x]` button calls `gitRemoveRemote()` to disconnect.
-- **Connect button:** Calls `gitSetRemoteUrl(url)`, then `gitPushUpstream()` (to set upstream tracking), then refreshes status.
-- **Pull button:** Calls `gitPull()`, then refreshes status. Show a spinner/progress indicator while running.
-- **Push button:** Calls `gitPush()`, then refreshes status. Show spinner while running.
-- **Status indicator:** A colored dot + text:
-  - Green dot + "Synced" for `synced`
-  - Blue dot + "N commits ahead" for `ahead`
-  - Orange dot + "N commits behind" for `behind`
-  - Red dot + "Diverged (N ahead, N behind)" for `diverged`
-  - Grey dot + "No upstream configured" for `no-upstream`
-  - Red dot + error message for `error`
-- **Refresh button** (small icon next to status): Re-runs `gitGetSyncStatus()`.
-- **Progress feedback:** While push/pull is running, disable buttons and show "Pushing..." or "Pulling..." text. The existing `onGitLog` event stream will also show progress in the Log Panel if it's open.
-
-**Keyboard handling:**
-- Escape closes the modal.
-- No Enter-to-submit (too dangerous — accidental push/pull).
-
-**Style:** Follow the existing modal patterns from `ProjectSettingsModal.svelte` — same overlay, border-radius, header/body structure, CSS variable usage.
-
-### Step 5: App integration
-
-**File:** `src/renderer/App.svelte`
-
-1. Add `showSync` state: `let showSync = $state(false);`
-2. Add handler: `function handleShowSync() { showSync = true; }`
-3. Add keyboard shortcut in the `handleKeydown` function:
-   ```js
-   } else if (e.ctrlKey && e.shiftKey && e.code === 'KeyS') {
-     e.preventDefault();
-     if (projectState.isOpen) showSync = true;
-   }
-   ```
-4. Import and render the modal:
-   ```svelte
-   {#if showSync}
-     <SyncModal onClose={() => showSync = false} />
-   {/if}
-   ```
-5. Pass `onShowSync={handleShowSync}` to the Toolbar component.
-
-## Hostname Branch Strategy — Pros and Cons
-
-The question: should noteliner automatically create a branch named after the local hostname (e.g., `desktop-PC`, `laptop`) so that each device works on its own branch?
-
-### Pros
-
-1. **No merge conflicts.** Each device pushes to its own branch, so concurrent edits on different machines never conflict on push.
-2. **Full history per device.** You can see exactly what changed on each machine independently.
-3. **Data safety.** Even if merging fails, no work is lost — each branch is a complete snapshot of that device's state.
-
-### Cons
-
-1. **Merge is still required.** Branches don't sync themselves. You'd need a merge step (either manual or automatic) to unify changes, which is the hard part. This just defers the conflict rather than solving it.
-2. **Complexity for the user.** Noteliner targets note-taking, not software development. Exposing branches, merges, and divergent states to non-technical users is confusing.
-3. **Stale branches accumulate.** Old hostnames (renamed machines, temporary devices) leave orphan branches that clutter the remote.
-4. **The common case doesn't need it.** Most users edit on one device at a time. The current linear main-branch model with auto-push/pull-on-open handles this well. Branches add complexity for an edge case.
-5. **Merge automation is fragile.** Auto-merging `noteliner.json` (the index file) is non-trivial — it's a JSON file with UUIDs and ordering. Git's text merge will produce conflicts or corrupt JSON on concurrent structural changes (reorder, add, delete). You'd need a custom merge driver or application-level conflict resolution.
-
-### Recommendation
-
-**Don't use hostname branches for v1.** Instead, rely on the existing single-branch model (`main`) with these safeguards:
-
-- **Pull before push.** The sync modal's Push action should pull first (`git pull --rebase`), then push. This handles the 90% case where edits are sequential across devices.
-- **Conflict detection.** If pull fails due to conflicts, show a clear error in the sync modal rather than silently corrupting data. The user can then use the Log Panel or an external git tool to resolve.
-- **Future option.** If multi-device concurrent editing becomes a real need, consider a proper CRDT or operational-transform approach at the document level rather than git branching, since the problem is fundamentally about data merging, not version control.
-
-If the hostname branch approach is still desired as a future option, it could be added as an opt-in setting in the sync modal (a "Branch per device" toggle) without affecting the default flow.
+The "Reset from Remote" button is visually distinct — muted/warning style to signal it's destructive.
 
 ## File Change Summary
 
 | File | Change |
 |---|---|
-| `src/main/git-service.js` | Add `getRemoteUrl`, `setRemoteUrl`, `removeRemote`, `getSyncStatus`, `getCurrentBranch`, `setUpstreamAndPush` |
-| `src/main/main.js` | 6 new IPC handlers |
-| `src/main/preload.js` | 6 new API methods |
-| `src/renderer/components/Toolbar.svelte` | Add Sync button with `onShowSync` prop |
-| `src/renderer/components/SyncModal.svelte` | **New file** — Remote sync modal |
-| `src/renderer/App.svelte` | New state, handler, keyboard shortcut, modal rendering, Toolbar prop |
+| `src/main/git-service.js` | Add `resetToRemote(folderPath, branch)` method |
+| `src/main/main.js` | Add `git:resetToRemote` IPC handler (fetches, resets, reloads index) |
+| `src/main/preload.js` | Add `gitResetToRemote` API method |
+| `src/renderer/components/SyncModal.svelte` | Add disconnect confirmation, reset button + confirmation, inline compact modals |
 
 ## Design Decisions
 
-1. **Modal, not a panel.** Sync is an infrequent, deliberate action. A modal focuses attention and avoids cluttering the always-visible layout. The Log Panel already provides ongoing sync visibility.
-2. **Manual push/pull, not just auto-sync.** The existing auto-push works well for single-device use, but multi-device needs explicit control. Users should see the state and choose when to sync, especially when there's divergence.
-3. **Single remote (origin).** Noteliner doesn't need multi-remote support. One origin is enough. The URL field edits origin's URL directly.
-4. **`git fetch` for status checks.** Fetch updates remote refs without modifying the working tree, making it safe to call any time for status display.
-5. **No hostname branching in v1.** See analysis above. The complexity cost outweighs the benefit for the target use case.
-6. **Ctrl+Shift+S shortcut.** Mnemonically "Sync" while avoiding conflict with Ctrl+S (which isn't used — files auto-save — but is a muscle-memory hazard).
+1. **Inline compact modals within SyncModal.** The confirmations render inside the SyncModal component itself (as overlapping `.modal-overlay-compact` dialogs). This keeps the confirmation state local to SyncModal — no App.svelte wiring needed.
+
+2. **`git fetch` + `git reset --hard` for remote reset.** This is the standard, well-understood git idiom for "make local match remote exactly." It's a single atomic operation after fetch — no merge conflicts, no ambiguity. The `--hard` flag ensures both index and working tree are overwritten.
+
+3. **Reload index after reset.** The `noteliner.json` file may have changed after reset. The IPC handler reads it fresh from disk and returns it, so the renderer can call `projectState.load()` to refresh the file tree.
+
+4. **Red/warning styling for Reset button.** The button is destructive and irreversible (local commits are lost). A visual distinction prevents accidental clicks. The confirmation dialog reinforces this with explicit warning text.
+
+5. **Compact modal for confirmations.** Both confirmations are simple yes/no decisions that don't need the full-window modal treatment. The `.modal-overlay-compact` style centers a small dialog over the existing SyncModal, creating a clear layered UI.
