@@ -24,7 +24,7 @@
     '.cm-foldPlaceholder': { backgroundColor: '#e8e8e8', color: '#666666' },
   }, { dark: false });
 
-  let { onTogglePreview, showPreview, onGitConfigRequired = () => {} } = $props();
+  let { onTogglePreview, showPreview, onToggleHistory, showHistory, onGitConfigRequired = () => {} } = $props();
 
   const IMAGE_EXTENSIONS = ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.svg'];
   const MAX_SIZE = 30 * 1024 * 1024;
@@ -292,6 +292,14 @@
       <span class="no-file">No file selected</span>
     {/if}
     <div class="editor-actions">
+      <button
+        class="editor-btn"
+        class:active={showHistory}
+        onclick={onToggleHistory}
+        title="Toggle History (Ctrl+H)"
+      >
+        <i class="fas fa-clock-rotate-left"></i>
+      </button>
       <button
         class="editor-btn"
         class:active={showPreview}

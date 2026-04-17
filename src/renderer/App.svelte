@@ -16,6 +16,7 @@
   import ClearTagsModal from './components/ClearTagsModal.svelte';
   import SyncModal from './components/SyncModal.svelte';
   import SyncingModal from './components/SyncingModal.svelte';
+  import HistoryPanel from './components/HistoryPanel.svelte';
   import AttachmentPanel from './components/AttachmentPanel.svelte';
   import { projectState } from './stores/project.svelte.js';
   import { themeState } from './stores/theme.svelte.js';
@@ -24,6 +25,7 @@
 
   const DEFAULT_LAYOUT = {
     showPreview: false,
+    showHistory: false,
     showLog: false,
     showSidebar: true,
     showOutline: false,
@@ -100,6 +102,9 @@
       } else if (e.ctrlKey && e.key === 'p') {
         e.preventDefault();
         handleTogglePreview();
+      } else if (e.ctrlKey && e.key === 'h') {
+        e.preventDefault();
+        if (projectState.isOpen) handleToggleHistory();
       } else if (e.ctrlKey && e.shiftKey && e.code === 'Comma') {
         e.preventDefault();
         showProjectSettings = true;
@@ -262,6 +267,10 @@
 
   function handleTogglePreview() {
     layout.showPreview = !layout.showPreview;
+  }
+
+  function handleToggleHistory() {
+    layout.showHistory = !layout.showHistory;
   }
 
   async function handleSaveToHtml() {
@@ -527,8 +536,14 @@
           }}></div>
         {/if}
         <div class="editor-area">
-          <Editor onTogglePreview={handleTogglePreview} showPreview={layout.showPreview} onGitConfigRequired={() => { projectSettingsRequired = true; showProjectSettings = true; }} />
+          <Editor onTogglePreview={handleTogglePreview} showPreview={layout.showPreview} onToggleHistory={handleToggleHistory} showHistory={layout.showHistory} onGitConfigRequired={() => { projectSettingsRequired = true; showProjectSettings = true; }} />
         </div>
+        {#if layout.showHistory}
+          <div class="resizer history-resizer"></div>
+          <div class="history-area">
+            <HistoryPanel onClose={handleToggleHistory} />
+          </div>
+        {/if}
         {#if layout.showPreview}
           <div class="resizer preview-resizer"></div>
           <div class="preview-area">
@@ -620,6 +635,14 @@
   .preview-area {
     flex: 1;
     overflow-y: auto;
+    background: var(--bg-surface);
+    border-left: 1px solid var(--border);
+    max-width: 50%;
+  }
+
+  .history-area {
+    flex: 1;
+    overflow: hidden;
     background: var(--bg-surface);
     border-left: 1px solid var(--border);
     max-width: 50%;
