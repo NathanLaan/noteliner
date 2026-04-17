@@ -1,9 +1,11 @@
 <script>
   import { onMount } from 'svelte';
+  import RemoveRecentModal from './RemoveRecentModal.svelte';
 
   let { onOpenFolder, onNewProject, onOpenRecent } = $props();
 
   let recentProjects = $state([]);
+  let removeTarget = $state(null);
 
   onMount(async () => {
     try {
@@ -18,6 +20,19 @@
       return home + p.slice(('/home/' + parts[2]).length);
     }
     return p;
+  }
+
+  function handleRemoveClick(e, project) {
+    e.stopPropagation();
+    removeTarget = project;
+  }
+
+  async function handleRemoveConfirm() {
+    const project = removeTarget;
+    removeTarget = null;
+    if (!project) return;
+    await window.api.removeRecentProject(project.path);
+    recentProjects = recentProjects.filter(p => p.path !== project.path);
   }
 </script>
 
@@ -42,19 +57,33 @@
         <span class="recent-label">Recent Projects</span>
         <div class="recent-list">
           {#each recentProjects as project (project.path)}
-            <button class="recent-item" onclick={() => onOpenRecent(project.path)}>
-              <i class="fas fa-folder"></i>
-              <div class="recent-info">
-                <span class="recent-name">{project.name}</span>
-                <span class="recent-path">{formatPath(project.path)}</span>
-              </div>
-            </button>
+            <div class="recent-item">
+              <button class="recent-item-btn" onclick={() => onOpenRecent(project.path)}>
+                <i class="fas fa-folder"></i>
+                <div class="recent-info">
+                  <span class="recent-name">{project.name}</span>
+                  <span class="recent-path">{formatPath(project.path)}</span>
+                </div>
+              </button>
+              <button class="recent-remove-btn" onclick={(e) => handleRemoveClick(e, project)} title="Remove from list">
+                <i class="fas fa-xmark"></i>
+              </button>
+            </div>
           {/each}
         </div>
       </div>
     {/if}
   </div>
 </div>
+
+{#if removeTarget}
+  <RemoveRecentModal
+    projectName={removeTarget.name}
+    projectPath={removeTarget.path}
+    onConfirm={handleRemoveConfirm}
+    onCancel={() => removeTarget = null}
+  />
+{/if}
 
 <style>
   .open-screen {
@@ -127,11 +156,7 @@
   .recent-item {
     display: flex;
     align-items: center;
-    gap: 12px;
-    padding: 10px 12px;
     border-radius: 6px;
-    text-align: left;
-    color: var(--text-primary);
     transition: background 0.1s;
   }
 
@@ -139,10 +164,45 @@
     background: var(--bg-item-hover);
   }
 
-  .recent-item i {
+  .recent-item-btn {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 12px;
+    flex: 1;
+    text-align: left;
+    color: var(--text-primary);
+    overflow: hidden;
+  }
+
+  .recent-item-btn i {
     font-size: 16px;
     color: var(--text-muted);
     flex-shrink: 0;
+  }
+
+  .recent-remove-btn {
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    color: var(--text-muted);
+    font-size: 11px;
+    flex-shrink: 0;
+    margin-right: 8px;
+    opacity: 0;
+    transition: opacity 0.15s, background 0.15s, color 0.15s;
+  }
+
+  .recent-item:hover .recent-remove-btn {
+    opacity: 1;
+  }
+
+  .recent-remove-btn:hover {
+    background: var(--bg-button-hover);
+    color: #e06060;
   }
 
   .recent-info {
