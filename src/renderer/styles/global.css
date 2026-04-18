@@ -79,6 +79,33 @@ input, textarea {
   animation: modal-slide-up 0.3s ease-out;
 }
 
+/* Compact modal — centered, auto-sized, does not fill the window */
+
+.modal-overlay-compact {
+  position: fixed;
+  inset: 0;
+  background: var(--modal-overlay);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  zoom: var(--ui-zoom, 1);
+  height: var(--ui-zoom-height, 100vh);
+  width: var(--ui-zoom-width, 100vw);
+}
+
+.modal-compact {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  min-width: 340px;
+  max-width: 500px;
+  animation: modal-slide-up 0.3s ease-out;
+}
+
 .modal-header {
   display: flex;
   align-items: center;

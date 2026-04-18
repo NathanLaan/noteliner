@@ -1,5 +1,6 @@
 <script>
   import { onMount } from 'svelte';
+  import { projectState } from '../stores/project.svelte.js';
 
   let { onClose } = $props();
 
@@ -10,6 +11,8 @@
   let loading = $state(true);
   let operating = $state('');
   let error = $state('');
+  let showDisconnectConfirm = $state(false);
+  let showResetConfirm = $state(false);
 
   function focusOnMount(node) {
     node.focus();
@@ -111,6 +114,23 @@
     }
   }
 
+  async function handleResetFromRemote() {
+    showResetConfirm = false;
+    error = '';
+    operating = 'Resetting...';
+    try {
+      const result = await window.api.gitResetToRemote();
+      if (result && result.index) {
+        projectState.load(projectState.folderPath, result.index);
+      }
+      await refreshStatus();
+    } catch (err) {
+      error = `Reset failed: ${err.message}`;
+    } finally {
+      operating = '';
+    }
+  }
+
   function statusDotClass(status) {
     if (!status) return '';
     switch (status.status) {
@@ -168,7 +188,7 @@
               disabled={busy}
             />
             {#if hasRemote}
-              <button class="icon-btn" onclick={handleDisconnect} title="Disconnect remote" disabled={busy}>
+              <button class="icon-btn" onclick={() => showDisconnectConfirm = true} title="Disconnect remote" disabled={busy}>
                 <i class="fas fa-xmark"></i>
               </button>
             {/if}
@@ -206,6 +226,9 @@
               <button class="action-btn" onclick={handlePush} disabled={busy}>
                 <i class="fas fa-cloud-arrow-up"></i> Push
               </button>
+              <button class="action-btn reset-btn" onclick={() => showResetConfirm = true} disabled={busy}>
+                <i class="fas fa-rotate-left"></i> Reset from Remote
+              </button>
             </div>
             <button class="close-btn" onclick={onClose}>Close</button>
           {:else}
@@ -217,6 +240,43 @@
     </div>
   </div>
 </div>
+
+{#if showDisconnectConfirm}
+  <div class="modal-overlay-compact" onclick={(e) => { if (e.target === e.currentTarget) showDisconnectConfirm = false; }} onkeydown={(e) => { if (e.key === 'Escape') showDisconnectConfirm = false; }} role="dialog" aria-modal="true" tabindex="-1">
+    <div class="modal-compact">
+      <div class="modal-header">
+        <h2>Disconnect Remote</h2>
+      </div>
+      <div class="modal-body">
+        <p class="confirm-prompt">Disconnect from the remote repository?</p>
+        <p class="confirm-detail">{savedUrl}</p>
+        <p class="confirm-note">Your local files will not be deleted.</p>
+        <div class="confirm-footer">
+          <button class="confirm-cancel-btn" onclick={() => showDisconnectConfirm = false}>Cancel</button>
+          <button class="confirm-danger-btn" onclick={() => { showDisconnectConfirm = false; handleDisconnect(); }}>Disconnect</button>
+        </div>
+      </div>
+    </div>
+  </div>
+{/if}
+
+{#if showResetConfirm}
+  <div class="modal-overlay-compact" onclick={(e) => { if (e.target === e.currentTarget) showResetConfirm = false; }} onkeydown={(e) => { if (e.key === 'Escape') showResetConfirm = false; }} role="dialog" aria-modal="true" tabindex="-1">
+    <div class="modal-compact">
+      <div class="modal-header">
+        <h2>Reset from Remote</h2>
+      </div>
+      <div class="modal-body">
+        <p class="confirm-warning">This will discard ALL local changes and replace your project with the latest version from the remote repository.</p>
+        <p class="confirm-warning-sub">This action cannot be undone.</p>
+        <div class="confirm-footer">
+          <button class="confirm-cancel-btn" onclick={() => showResetConfirm = false}>Cancel</button>
+          <button class="confirm-danger-btn" onclick={handleResetFromRemote}>Reset</button>
+        </div>
+      </div>
+    </div>
+  </div>
+{/if}
 
 <style>
   .loading-msg {
@@ -415,6 +475,87 @@
   .connect-btn:hover:not(:disabled) {
     background: var(--accent);
     color: var(--accent-on);
+  }
+
+  .connect-btn:disabled {
+    opacity: 0.4;
+    cursor: default;
+  }
+
+  .reset-btn {
+    color: #e06060;
+  }
+
+  .reset-btn:hover:not(:disabled) {
+    color: #e06060;
+    background: var(--bg-button-hover);
+  }
+
+  .confirm-prompt {
+    color: var(--text-primary);
+    font-size: 14px;
+    margin-bottom: 6px;
+    line-height: 1.5;
+  }
+
+  .confirm-detail {
+    color: var(--text-muted);
+    font-size: 12px;
+    font-family: monospace;
+    margin-bottom: 12px;
+    word-break: break-all;
+  }
+
+  .confirm-note {
+    color: var(--text-secondary);
+    font-size: 12px;
+    margin-bottom: 24px;
+  }
+
+  .confirm-warning {
+    color: var(--text-primary);
+    font-size: 14px;
+    line-height: 1.5;
+    margin-bottom: 8px;
+    padding: 10px 12px;
+    background: var(--bg-base);
+    border-radius: 6px;
+    border-left: 3px solid #e06060;
+  }
+
+  .confirm-warning-sub {
+    color: var(--text-muted);
+    font-size: 12px;
+    margin-bottom: 24px;
+  }
+
+  .confirm-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+  }
+
+  .confirm-cancel-btn {
+    padding: 8px 20px;
+    color: var(--text-muted);
+    border-radius: 6px;
+    transition: color 0.15s;
+  }
+
+  .confirm-cancel-btn:hover {
+    color: var(--text-secondary);
+  }
+
+  .confirm-danger-btn {
+    padding: 8px 24px;
+    background: #e06060;
+    color: #ffffff;
+    border-radius: 6px;
+    transition: background 0.15s;
+  }
+
+  .confirm-danger-btn:hover {
+    background: #c84040;
   }
 
   .connect-btn:disabled {

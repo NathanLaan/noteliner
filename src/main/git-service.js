@@ -206,6 +206,11 @@ class GitService {
     }, this.pushDebounceMs);
   }
 
+  async resetToRemote(folderPath, branch) {
+    await this.exec(['fetch', 'origin'], folderPath);
+    return await this.exec(['reset', '--hard', `origin/${branch}`], folderPath);
+  }
+
   async getFileLog(folderPath, filename) {
     try {
       const raw = await this.exec([

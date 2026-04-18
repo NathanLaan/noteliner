@@ -29,6 +29,7 @@ contextBridge.exposeInMainWorld('api', {
   gitGetSyncStatus: () => ipcRenderer.invoke('git:getSyncStatus'),
   gitGetBranch: () => ipcRenderer.invoke('git:getBranch'),
   gitPushUpstream: () => ipcRenderer.invoke('git:pushUpstream'),
+  gitResetToRemote: () => ipcRenderer.invoke('git:resetToRemote'),
 
   // Attachments
   addAttachment: (fileId, buffer, originalName) => ipcRenderer.invoke('file:addAttachment', fileId, buffer, originalName),
