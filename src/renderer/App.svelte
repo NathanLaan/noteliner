@@ -325,6 +325,10 @@
     showAbout = true;
   }
 
+  function handleShowHelp() {
+    // TODO: implement help
+  }
+
   function handleShowSettings() {
     showSettings = true;
   }
@@ -475,6 +479,7 @@
     onToggleAttachments={handleToggleAttachments}
     onToggleSearch={handleToggleSearch}
     onShowAbout={handleShowAbout}
+    onShowHelp={handleShowHelp}
     onShowSettings={handleShowSettings}
     onShowProjectSettings={handleShowProjectSettings}
     onShowSync={handleShowSync}
