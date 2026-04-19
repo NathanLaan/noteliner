@@ -1,5 +1,5 @@
 <script>
-  let { onGoHome, onOpenFolder, onNewFile, onDeleteFile, onToggleSidebar, onToggleOutline, onToggleTags, onToggleTagGroups, onToggleLog, onToggleAttachments, onToggleSearch, onShowAbout, onShowSettings, onShowProjectSettings, onShowSync, projectOpen, hasSelectedFile = false, logVisible = false, sidebarVisible = true, outlineVisible = false, tagsVisible = true, tagGroupsVisible = false, attachmentsVisible = false, searchVisible = false } = $props();
+  let { onGoHome, onOpenFolder, onNewFile, onDeleteFile, onToggleSidebar, onToggleOutline, onToggleTags, onToggleTagGroups, onToggleLog, onToggleAttachments, onToggleSearch, onShowAbout, onShowSettings, onShowProjectSettings, onShowSync, onShowHelp, projectOpen, hasSelectedFile = false, logVisible = false, sidebarVisible = true, outlineVisible = false, tagsVisible = true, tagGroupsVisible = false, attachmentsVisible = false, searchVisible = false } = $props();
 </script>
 
 <div class="toolbar">
@@ -12,6 +12,8 @@
   </button>
 
   {#if projectOpen}
+    <div class="toolbar-divider"></div>
+
     <button class="toolbar-btn" onclick={onNewFile} title="New File (Ctrl+N)">
       <i class="fas fa-file-circle-plus"></i>
     </button>
@@ -19,6 +21,8 @@
     <button class="toolbar-btn" onclick={onDeleteFile} disabled={!hasSelectedFile} title="Delete File (Ctrl+D)">
       <i class="fas fa-file-circle-minus"></i>
     </button>
+
+    <div class="toolbar-divider"></div>
 
     <button class="toolbar-btn" class:active={sidebarVisible} onclick={onToggleSidebar} title="Toggle Files Panel (Ctrl+E)">
       <i class="fas fa-bars-staggered"></i>
@@ -40,20 +44,26 @@
       <i class="fas fa-paperclip"></i>
     </button>
 
+    <div class="toolbar-divider"></div>
+
     <button class="toolbar-btn" class:active={searchVisible} onclick={onToggleSearch} title="Search (Ctrl+F)">
       <i class="fas fa-magnifying-glass"></i>
-    </button>
-
-    <button class="toolbar-btn" onclick={onShowSync} title="Remote Sync (Ctrl+Shift+S)">
-      <i class="fas fa-cloud-arrow-up"></i>
     </button>
   {/if}
 
   <div class="toolbar-spacer"></div>
 
+  {#if projectOpen}
+    <button class="toolbar-btn" onclick={onShowSync} title="Remote Sync (Ctrl+Shift+S)">
+      <i class="fas fa-cloud-arrow-up"></i>
+    </button>
+  {/if}
+
   <button class="toolbar-btn" class:active={logVisible} onclick={onToggleLog} title="Show Log (Ctrl+L)">
     <i class="fas fa-terminal"></i>
   </button>
+
+  <div class="toolbar-divider"></div>
 
   {#if projectOpen}
     <button class="toolbar-btn" onclick={onShowProjectSettings} title="Project Settings (Ctrl+Shift+,)">
@@ -67,6 +77,10 @@
 
   <button class="toolbar-btn" onclick={onShowAbout} title="About (Ctrl+I)">
     <i class="fas fa-circle-info"></i>
+  </button>
+
+  <button class="toolbar-btn" onclick={onShowHelp} title="Help">
+    <i class="fas fa-circle-question"></i>
   </button>
 </div>
 
@@ -114,6 +128,13 @@
     background: var(--bg-selected);
     outline: 1px solid var(--accent);
     color: var(--accent);
+  }
+
+  .toolbar-divider {
+    width: 24px;
+    height: 1px;
+    background: var(--border);
+    margin: 2px 0;
   }
 
   .toolbar-spacer {
