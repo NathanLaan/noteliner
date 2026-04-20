@@ -46,6 +46,7 @@
     { keys: 'Ctrl+P', action: 'Toggle Preview' },
     { keys: 'Ctrl+H', action: 'Toggle History' },
     { keys: 'Ctrl+E', action: 'Toggle Files Panel' },
+    { keys: 'Ctrl+Shift+E', action: 'Toggle Toolbar' },
     { keys: 'Ctrl+Shift+O', action: 'Toggle Outline' },
     { keys: 'Ctrl+Shift+T', action: 'Toggle Tags' },
     { keys: 'Ctrl+G', action: 'Toggle Tag Groups' },

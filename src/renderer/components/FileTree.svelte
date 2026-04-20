@@ -139,6 +139,9 @@
     {:else}
       <i class="fas fa-file-lines file-icon"></i>
       <span class="file-name">{file.name}</span>
+      {#if file.attachments && file.attachments.length > 0}
+        <i class="fas fa-paperclip attachment-indicator" title="Has attachments"></i>
+      {/if}
       {#if file.tags && file.tags.length > 0}
         <span class="tag-count">{file.tags.length}</span>
       {/if}
@@ -215,6 +218,12 @@
     text-overflow: ellipsis;
     white-space: nowrap;
     font-size: 13px;
+  }
+
+  .attachment-indicator {
+    font-size: 11px;
+    color: var(--text-muted);
+    flex-shrink: 0;
   }
 
   .tag-count {

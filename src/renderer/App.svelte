@@ -151,6 +151,9 @@
       } else if (e.ctrlKey && e.key === 'g') {
         e.preventDefault();
         if (projectState.isOpen) handleToggleTagGroups();
+      } else if (e.ctrlKey && e.shiftKey && e.code === 'KeyE') {
+        e.preventDefault();
+        handleToggleToolbar();
       } else if (e.ctrlKey && e.key === 'e') {
         e.preventDefault();
         if (projectState.isOpen) handleToggleSidebar();
@@ -535,7 +538,7 @@
   {:else}
     <div class="main-area">
       <div class="content-area" class:with-log={layout.showLog}>
-        {#if layout.showSidebar || layout.showOutline || layout.showTags || layout.showTagGroups}
+        {#if layout.showSidebar || layout.showOutline || layout.showTags || layout.showTagGroups || layout.showSearch}
           <div class="sidebar" style="width: {layout.sidebarWidth}px">
             <Sidebar
               {tagAction}
@@ -603,7 +606,7 @@
             window.addEventListener('mouseup', onMouseUp);
           }}></div>
           <div class="attachment-area" style="width: {layout.attachmentPanelWidth}px">
-            <AttachmentPanel />
+            <AttachmentPanel onClose={handleToggleAttachments} />
           </div>
         {/if}
       </div>

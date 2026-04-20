@@ -28,7 +28,7 @@
     class="titlebar-btn toolbar-toggle"
     class:active={toolbarVisible}
     onclick={onToggleToolbar}
-    title="Toolbar"
+    title="Toolbar (Ctrl+Shift+E)"
   >
     <i class="fas fa-bars"></i>
   </button>
