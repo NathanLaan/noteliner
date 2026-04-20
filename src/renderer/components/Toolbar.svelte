@@ -24,7 +24,7 @@
 
     <div class="toolbar-divider"></div>
 
-    <button class="toolbar-btn" class:active={sidebarVisible} onclick={onToggleSidebar} title="Files Panel (Ctrl+E)">
+    <button class="toolbar-btn" class:active={sidebarVisible} onclick={onToggleSidebar} title="Files (Ctrl+E)">
       <i class="fas fa-bars-staggered"></i>
     </button>
 
