@@ -151,6 +151,9 @@
       } else if (e.ctrlKey && e.key === 'g') {
         e.preventDefault();
         if (projectState.isOpen) handleToggleTagGroups();
+      } else if (e.ctrlKey && e.shiftKey && e.code === 'KeyE') {
+        e.preventDefault();
+        handleToggleToolbar();
       } else if (e.ctrlKey && e.key === 'e') {
         e.preventDefault();
         if (projectState.isOpen) handleToggleSidebar();
