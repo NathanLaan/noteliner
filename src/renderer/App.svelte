@@ -90,7 +90,7 @@
   });
 
   onMount(() => {
-    themeState.init();
+    // themeState.init() runs at module scope in main.js before mount — don't repeat here.
 
     if (window.api?.getUIPrefs) {
       window.api.getUIPrefs().then((prefs) => {

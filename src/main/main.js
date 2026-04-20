@@ -198,7 +198,7 @@ ipcMain.handle('ui:setPrefs', (_event, prefs) => {
 
 ipcMain.handle('app:relaunch', () => {
   app.relaunch();
-  app.exit(0);
+  app.quit();
 });
 
 ipcMain.handle('window:minimize', () => mainWindow?.minimize());
