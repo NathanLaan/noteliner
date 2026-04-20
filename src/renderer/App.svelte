@@ -504,10 +504,11 @@
   {:else}
     <div class="main-area">
       <div class="content-area" class:with-log={layout.showLog}>
-        {#if layout.showSidebar}
+        {#if layout.showSidebar || layout.showOutline || layout.showTags || layout.showTagGroups}
           <div class="sidebar" style="width: {layout.sidebarWidth}px">
             <Sidebar
               {tagAction}
+              filesVisible={layout.showSidebar}
               outlineVisible={layout.showOutline}
               tagsVisible={layout.showTags}
               tagGroupsVisible={layout.showTagGroups}

@@ -8,6 +8,7 @@
 
   let {
     tagAction = null,
+    filesVisible = true,
     outlineVisible = false,
     tagGroupsVisible = false,
     tagsVisible = true,
@@ -44,7 +45,7 @@
   let sidebarEl;
 
   function isPaneVisible(key) {
-    if (key === 'files') return true;
+    if (key === 'files') return filesVisible;
     if (key === 'tags') return tagsVisible;
     if (key === 'tagGroups') return tagGroupsVisible;
     if (key === 'outline') return outlineVisible;
