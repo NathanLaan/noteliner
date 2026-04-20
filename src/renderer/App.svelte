@@ -89,8 +89,16 @@
     if (projectState.isOpen) scheduleLayoutSave();
   });
 
+  $effect(() => {
+    // Expose the custom titlebar's height to CSS so modals can offset below it.
+    document.documentElement.style.setProperty(
+      '--titlebar-height',
+      customTitlebar ? '32px' : '0px'
+    );
+  });
+
   onMount(() => {
-    themeState.init();
+    // themeState.init() runs at module scope in main.js before mount — don't repeat here.
 
     if (window.api?.getUIPrefs) {
       window.api.getUIPrefs().then((prefs) => {
