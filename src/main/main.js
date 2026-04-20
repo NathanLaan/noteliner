@@ -10,6 +10,14 @@ const { marked } = require('marked');
 // Set app name early so Linux WM_CLASS is correct (for dock icon in dev mode)
 app.setName('NoteLiner');
 
+// Enforce single-instance — a second launch would share the userData dir
+// but fail to open the LevelDB that holds localStorage (theme, scale, etc.),
+// silently falling back to an empty in-memory store. Exit immediately instead.
+if (!app.requestSingleInstanceLock()) {
+  app.quit();
+  process.exit(0);
+}
+
 // Wayland + Vulkan is an incompatible combination in Chromium — GPU surfaces
 // can't survive a screen-lock/unlock cycle, leaving a blank white screen.
 // Disabling Vulkan lets Chromium fall back to OpenGL/GLES which handles
