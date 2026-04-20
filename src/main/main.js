@@ -19,7 +19,26 @@ if (process.platform === 'linux') {
 }
 
 const RECENT_PROJECTS_FILE = 'recent-projects.json';
+const UI_PREFS_FILE = 'ui-preferences.json';
 const MAX_RECENT = 5;
+
+function getUIPrefsPath() {
+  return path.join(app.getPath('userData'), UI_PREFS_FILE);
+}
+
+function loadUIPrefs() {
+  try {
+    const filePath = getUIPrefsPath();
+    if (fs.existsSync(filePath)) {
+      return { customTitlebar: false, ...JSON.parse(fs.readFileSync(filePath, 'utf-8')) };
+    }
+  } catch { /* ignore */ }
+  return { customTitlebar: false };
+}
+
+function saveUIPrefs(prefs) {
+  fs.writeFileSync(getUIPrefsPath(), JSON.stringify(prefs, null, 2));
+}
 
 function getRecentProjectsPath() {
   return path.join(app.getPath('userData'), RECENT_PROJECTS_FILE);
@@ -60,12 +79,15 @@ let boundsTimer = null;
 const isDev = !app.isPackaged;
 
 function createWindow() {
+  const uiPrefs = loadUIPrefs();
+
   mainWindow = new BrowserWindow({
     width: 1200,
     height: 800,
     minWidth: 800,
     minHeight: 600,
     icon: path.join(__dirname, '..', '..', 'assets', 'icon.png'),
+    frame: !uiPrefs.customTitlebar,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
@@ -109,11 +131,13 @@ function createWindow() {
   mainWindow.on('resize', saveBoundsDebounced);
   mainWindow.on('move', saveBoundsDebounced);
   mainWindow.on('maximize', () => {
+    mainWindow.webContents.send('window:maximized', true);
     if (projectService.projectPath) {
       windowStateService.setBounds(projectService.projectPath, mainWindow.getNormalBounds(), true);
     }
   });
   mainWindow.on('unmaximize', () => {
+    mainWindow.webContents.send('window:maximized', false);
     if (projectService.projectPath) {
       const bounds = mainWindow.getBounds();
       windowStateService.setBounds(projectService.projectPath, bounds, false);
@@ -165,6 +189,27 @@ app.on('window-all-closed', () => {
 });
 
 // --- IPC Handlers ---
+
+ipcMain.handle('ui:getPrefs', () => loadUIPrefs());
+ipcMain.handle('ui:setPrefs', (_event, prefs) => {
+  const current = loadUIPrefs();
+  saveUIPrefs({ ...current, ...prefs });
+  return true;
+});
+
+ipcMain.handle('app:relaunch', () => {
+  app.relaunch();
+  app.exit(0);
+});
+
+ipcMain.handle('window:minimize', () => mainWindow?.minimize());
+ipcMain.handle('window:maximize', () => {
+  if (!mainWindow) return;
+  if (mainWindow.isMaximized()) mainWindow.unmaximize();
+  else mainWindow.maximize();
+});
+ipcMain.handle('window:close', () => mainWindow?.close());
+ipcMain.handle('window:isMaximized', () => !!mainWindow?.isMaximized());
 
 ipcMain.handle('dialog:openFolder', async () => {
   const result = await dialog.showOpenDialog(mainWindow, {
