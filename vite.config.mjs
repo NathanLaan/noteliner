@@ -14,6 +14,10 @@ export default defineConfig({
   plugins: [svelte()],
   base: './',
   root: 'src/renderer',
+  server: {
+    port: 5173,
+    strictPort: true,
+  },
   define: {
     __APP_VERSION__: JSON.stringify(`${pkg.version}-${gitHash}`)
   },

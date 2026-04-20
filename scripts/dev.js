@@ -1,12 +1,36 @@
 const { spawn } = require('child_process');
 const path = require('path');
+const os = require('os');
 
-// Start Vite dev server
+const isWindows = os.platform() === 'win32';
+
+// Start Vite dev server.
+// `detached: true` on Unix makes the shell a process-group leader, so we can
+// later signal the whole group (shell + npx + vite) at once. Without this,
+// killing the shell leaves npx+vite orphaned and holding port 5173.
 const vite = spawn('npx', ['vite'], {
   cwd: path.resolve(__dirname, '..'),
   stdio: 'pipe',
-  shell: true
+  shell: true,
+  detached: !isWindows,
 });
+
+let viteKilled = false;
+function killVite() {
+  if (viteKilled || !vite.pid) return;
+  viteKilled = true;
+  try {
+    if (isWindows) {
+      // Windows: taskkill recursively terminates the child tree
+      spawn('taskkill', ['/pid', String(vite.pid), '/f', '/t']);
+    } else {
+      // Unix: negative PID = signal the entire process group
+      process.kill(-vite.pid, 'SIGTERM');
+    }
+  } catch {
+    // Process already gone — fine
+  }
+}
 
 vite.stdout.on('data', (data) => {
   const output = data.toString();
@@ -23,7 +47,7 @@ vite.stdout.on('data', (data) => {
     });
 
     electron.on('close', () => {
-      vite.kill();
+      killVite();
       process.exit();
     });
   }
@@ -36,3 +60,8 @@ vite.stderr.on('data', (data) => {
 vite.on('close', (code) => {
   process.exit(code);
 });
+
+// Ensure Vite is cleaned up no matter how dev.js itself exits
+process.on('SIGINT', () => { killVite(); process.exit(0); });
+process.on('SIGTERM', () => { killVite(); process.exit(0); });
+process.on('exit', killVite);
