@@ -62,6 +62,24 @@ contextBridge.exposeInMainWorld('api', {
   saveWindowState: (folderPath, layout) => ipcRenderer.invoke('window-state:saveLayout', folderPath, layout),
   restoreWindowBounds: (folderPath) => ipcRenderer.invoke('window-state:restoreBounds', folderPath),
 
+  // UI preferences (global, persisted to ui-preferences.json)
+  getUIPrefs: () => ipcRenderer.invoke('ui:getPrefs'),
+  setUIPrefs: (prefs) => ipcRenderer.invoke('ui:setPrefs', prefs),
+
+  // App lifecycle
+  relaunchApp: () => ipcRenderer.invoke('app:relaunch'),
+
+  // Custom window controls
+  windowMinimize: () => ipcRenderer.invoke('window:minimize'),
+  windowMaximize: () => ipcRenderer.invoke('window:maximize'),
+  windowClose: () => ipcRenderer.invoke('window:close'),
+  windowIsMaximized: () => ipcRenderer.invoke('window:isMaximized'),
+  onWindowMaximizedChange: (callback) => {
+    const listener = (_event, value) => callback(value);
+    ipcRenderer.on('window:maximized', listener);
+    return () => ipcRenderer.removeListener('window:maximized', listener);
+  },
+
   // Events
   onGitLog: (callback) => {
     const listener = (_event, msg) => callback(msg);

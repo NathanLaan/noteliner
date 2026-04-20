@@ -1,6 +1,7 @@
 <script>
   import { onMount } from 'svelte';
   import Toolbar from './components/Toolbar.svelte';
+  import TitleBar from './components/TitleBar.svelte';
   import Sidebar from './components/Sidebar.svelte';
   import Editor from './components/Editor.svelte';
   import Preview from './components/Preview.svelte';
@@ -27,6 +28,7 @@
     showPreview: false,
     showHistory: false,
     showLog: false,
+    showToolbar: true,
     showSidebar: true,
     showOutline: false,
     showTags: true,
@@ -68,6 +70,7 @@
   let tagAction = $state(null);
   let searchFocusTs = $state(null);
   let setupFolderPath = $state('');
+  let customTitlebar = $state(false);
 
   // Debounced layout save
   let layoutSaveTimer = null;
@@ -88,6 +91,12 @@
 
   onMount(() => {
     themeState.init();
+
+    if (window.api?.getUIPrefs) {
+      window.api.getUIPrefs().then((prefs) => {
+        customTitlebar = !!prefs?.customTitlebar;
+      }).catch(() => {});
+    }
 
     function handleKeydown(e) {
       if (e.ctrlKey && e.key === 'n') {
@@ -286,6 +295,10 @@
     layout.showSidebar = !layout.showSidebar;
   }
 
+  function handleToggleToolbar() {
+    layout.showToolbar = !layout.showToolbar;
+  }
+
   function handleToggleOutline() {
     layout.showOutline = !layout.showOutline;
   }
@@ -465,33 +478,43 @@
 {/if}
 
 <div class="app-layout">
-  <Toolbar
-    onGoHome={handleGoHome}
-    onOpenFolder={handleOpenFolder}
-    onNewFile={handleNewFile}
-    onDeleteFile={handleDeleteFile}
-    hasSelectedFile={!!projectState.selectedFileId}
-    onToggleLog={handleToggleLog}
-    onToggleSidebar={handleToggleSidebar}
-    onToggleOutline={handleToggleOutline}
-    onToggleTags={handleToggleTags}
-    onToggleTagGroups={handleToggleTagGroups}
-    onToggleAttachments={handleToggleAttachments}
-    onToggleSearch={handleToggleSearch}
-    onShowAbout={handleShowAbout}
-    onShowHelp={handleShowHelp}
-    onShowSettings={handleShowSettings}
-    onShowProjectSettings={handleShowProjectSettings}
-    onShowSync={handleShowSync}
-    projectOpen={projectState.isOpen}
-    logVisible={layout.showLog}
-    sidebarVisible={layout.showSidebar}
-    outlineVisible={layout.showOutline}
-    tagsVisible={layout.showTags}
-    tagGroupsVisible={layout.showTagGroups}
-    attachmentsVisible={layout.showAttachments}
-    searchVisible={layout.showSearch}
-  />
+  {#if customTitlebar}
+    <TitleBar
+      onToggleToolbar={handleToggleToolbar}
+      toolbarVisible={layout.showToolbar}
+    />
+  {/if}
+
+  <div class="app-body">
+    {#if layout.showToolbar}
+      <Toolbar
+        onGoHome={handleGoHome}
+        onOpenFolder={handleOpenFolder}
+        onNewFile={handleNewFile}
+        onDeleteFile={handleDeleteFile}
+        hasSelectedFile={!!projectState.selectedFileId}
+        onToggleLog={handleToggleLog}
+        onToggleSidebar={handleToggleSidebar}
+        onToggleOutline={handleToggleOutline}
+        onToggleTags={handleToggleTags}
+        onToggleTagGroups={handleToggleTagGroups}
+        onToggleAttachments={handleToggleAttachments}
+        onToggleSearch={handleToggleSearch}
+        onShowAbout={handleShowAbout}
+        onShowHelp={handleShowHelp}
+        onShowSettings={handleShowSettings}
+        onShowProjectSettings={handleShowProjectSettings}
+        onShowSync={handleShowSync}
+        projectOpen={projectState.isOpen}
+        logVisible={layout.showLog}
+        sidebarVisible={layout.showSidebar}
+        outlineVisible={layout.showOutline}
+        tagsVisible={layout.showTags}
+        tagGroupsVisible={layout.showTagGroups}
+        attachmentsVisible={layout.showAttachments}
+        searchVisible={layout.showSearch}
+      />
+    {/if}
 
   {#if !projectState.isOpen}
     <div class="main-area">
@@ -504,10 +527,11 @@
   {:else}
     <div class="main-area">
       <div class="content-area" class:with-log={layout.showLog}>
-        {#if layout.showSidebar}
+        {#if layout.showSidebar || layout.showOutline || layout.showTags || layout.showTagGroups}
           <div class="sidebar" style="width: {layout.sidebarWidth}px">
             <Sidebar
               {tagAction}
+              filesVisible={layout.showSidebar}
               outlineVisible={layout.showOutline}
               tagsVisible={layout.showTags}
               tagGroupsVisible={layout.showTagGroups}
@@ -596,14 +620,23 @@
       {/if}
     </div>
   {/if}
+  </div>
 </div>
 
 <style>
   .app-layout {
     display: flex;
+    flex-direction: column;
     zoom: var(--ui-zoom, 1);
     height: var(--ui-zoom-height, 100vh);
     width: var(--ui-zoom-width, 100vw);
+    overflow: hidden;
+  }
+
+  .app-body {
+    display: flex;
+    flex: 1;
+    min-height: 0;
     overflow: hidden;
   }
 

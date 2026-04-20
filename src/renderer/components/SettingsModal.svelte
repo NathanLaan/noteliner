@@ -1,9 +1,41 @@
 <script>
+  import { onMount } from 'svelte';
   import { themeState } from '../stores/theme.svelte.js';
 
   let { onClose } = $props();
 
   let activeTab = $state('ui');
+  let customTitlebar = $state(false);
+  let customTitlebarInitial = $state(false);
+  let prefsLoaded = $state(false);
+
+  onMount(async () => {
+    if (window.api?.getUIPrefs) {
+      try {
+        const prefs = await window.api.getUIPrefs();
+        customTitlebar = !!prefs?.customTitlebar;
+        customTitlebarInitial = customTitlebar;
+      } catch { /* ignore */ }
+    }
+    prefsLoaded = true;
+  });
+
+  async function toggleCustomTitlebar() {
+    customTitlebar = !customTitlebar;
+    if (window.api?.setUIPrefs) {
+      try {
+        await window.api.setUIPrefs({ customTitlebar });
+      } catch { /* ignore */ }
+    }
+  }
+
+  async function applyRestart() {
+    if (window.api?.relaunchApp) {
+      await window.api.relaunchApp();
+    }
+  }
+
+  let restartPending = $derived(prefsLoaded && customTitlebar !== customTitlebarInitial);
 
   const shortcuts = [
     { keys: 'Ctrl+N', action: 'New File' },
@@ -89,6 +121,31 @@
               </button>
             {/each}
           </div>
+        </div>
+
+        <div class="setting-group">
+          <span class="setting-label">Window</span>
+          <button
+            class="toggle-option"
+            class:active={customTitlebar}
+            onclick={toggleCustomTitlebar}
+            disabled={!prefsLoaded}
+          >
+            <span class="toggle-radio">
+              {#if customTitlebar}
+                <i class="fas fa-square-check"></i>
+              {:else}
+                <i class="far fa-square"></i>
+              {/if}
+            </span>
+            Custom Window Titlebar
+          </button>
+          {#if restartPending}
+            <div class="restart-banner">
+              <span>Restart required to apply titlebar change.</span>
+              <button class="restart-btn" onclick={applyRestart}>Restart now</button>
+            </div>
+          {/if}
         </div>
       {:else if activeTab === 'shortcuts'}
         <div class="shortcuts-list">
@@ -250,6 +307,73 @@
     padding: 3px 8px;
     border-radius: 4px;
     border: 1px solid var(--border);
+  }
+
+  .toggle-option {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    background: var(--bg-button);
+    color: var(--text-primary);
+    border-radius: 6px;
+    font-size: 14px;
+    text-align: left;
+    transition: background 0.15s;
+    width: 100%;
+  }
+
+  .toggle-option:hover:not(:disabled) {
+    background: var(--bg-button-hover);
+  }
+
+  .toggle-option.active {
+    background: var(--bg-selected);
+    outline: 1px solid var(--accent);
+  }
+
+  .toggle-option:disabled {
+    opacity: 0.5;
+    cursor: default;
+  }
+
+  .toggle-radio {
+    color: var(--text-muted);
+    font-size: 15px;
+    width: 18px;
+    text-align: center;
+  }
+
+  .toggle-option.active .toggle-radio {
+    color: var(--accent);
+  }
+
+  .restart-banner {
+    margin-top: 10px;
+    padding: 10px 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    background: var(--bg-selected);
+    border: 1px solid var(--accent);
+    border-radius: 6px;
+    font-size: 13px;
+    color: var(--text-primary);
+  }
+
+  .restart-btn {
+    padding: 6px 14px;
+    background: var(--accent);
+    color: var(--accent-on);
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 600;
+    transition: background 0.15s;
+  }
+
+  .restart-btn:hover {
+    background: var(--accent-hover);
   }
 
   .close-btn {

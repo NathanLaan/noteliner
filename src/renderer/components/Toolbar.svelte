@@ -24,19 +24,19 @@
 
     <div class="toolbar-divider"></div>
 
-    <button class="toolbar-btn" class:active={sidebarVisible} onclick={onToggleSidebar} title="Toggle Files Panel (Ctrl+E)">
+    <button class="toolbar-btn" class:active={sidebarVisible} onclick={onToggleSidebar} title="Files Panel (Ctrl+E)">
       <i class="fas fa-bars-staggered"></i>
     </button>
 
-    <button class="toolbar-btn" class:active={outlineVisible} onclick={onToggleOutline} title="Toggle Outline (Ctrl+Shift+O)">
+    <button class="toolbar-btn" class:active={outlineVisible} onclick={onToggleOutline} title="Outline (Ctrl+Shift+O)">
       <i class="fas fa-list-ol"></i>
     </button>
 
-    <button class="toolbar-btn" class:active={tagsVisible} onclick={onToggleTags} title="Toggle Tags (Ctrl+Shift+T)">
+    <button class="toolbar-btn" class:active={tagsVisible} onclick={onToggleTags} title="Tags (Ctrl+Shift+T)">
       <i class="fas fa-tag"></i>
     </button>
 
-    <button class="toolbar-btn" class:active={tagGroupsVisible} onclick={onToggleTagGroups} title="Toggle Tag Groups (Ctrl+G)">
+    <button class="toolbar-btn" class:active={tagGroupsVisible} onclick={onToggleTagGroups} title="Tag Groups (Ctrl+G)">
       <i class="fas fa-tags"></i>
     </button>
 
