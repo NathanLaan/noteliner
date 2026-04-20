@@ -15,7 +15,7 @@ export default defineConfig({
   base: './',
   root: 'src/renderer',
   define: {
-    __APP_VERSION__: JSON.stringify(`${pkg.version}.${gitHash}`)
+    __APP_VERSION__: JSON.stringify(`${pkg.version}-${gitHash}`)
   },
   build: {
     outDir: path.resolve(__dirname, 'dist'),
