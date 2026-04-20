@@ -58,12 +58,13 @@ input, textarea {
 .modal-overlay {
   position: fixed;
   inset: 0;
+  top: var(--titlebar-height, 0px);
   background: var(--modal-overlay);
   display: flex;
   z-index: 1000;
   padding: 10px 10px 10px 58px;
   zoom: var(--ui-zoom, 1);
-  height: var(--ui-zoom-height, 100vh);
+  height: calc(var(--ui-zoom-height, 100vh) - var(--titlebar-height, 0px));
   width: var(--ui-zoom-width, 100vw);
 }
 
