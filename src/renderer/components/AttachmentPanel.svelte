@@ -2,6 +2,8 @@
   import { projectState } from '../stores/project.svelte.js';
   import { logState } from '../stores/log.svelte.js';
 
+  let { onClose } = $props();
+
   const IMAGE_EXTENSIONS = ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.svg'];
   const MAX_SIZE = 30 * 1024 * 1024;
 
@@ -81,11 +83,16 @@
 <div class="attachment-panel">
   <div class="panel-header">
     <span class="panel-title">ATTACHMENTS</span>
-    {#if projectState.selectedFileId}
-      <button class="add-btn" onclick={handleAddFiles} title="Add attachment">
-        <i class="fas fa-plus"></i>
+    <div class="panel-actions">
+      {#if projectState.selectedFileId}
+        <button class="header-btn" onclick={handleAddFiles} title="Add attachment">
+          <i class="fas fa-plus"></i>
+        </button>
+      {/if}
+      <button class="header-btn" onclick={onClose} title="Close attachments">
+        <i class="fas fa-xmark"></i>
       </button>
-    {/if}
+    </div>
   </div>
   <div class="panel-body">
     {#if !projectState.selectedFileId}
@@ -147,7 +154,13 @@
     color: var(--text-muted);
   }
 
-  .add-btn {
+  .panel-actions {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .header-btn {
     width: 24px;
     height: 24px;
     display: flex;
@@ -158,7 +171,7 @@
     font-size: 12px;
   }
 
-  .add-btn:hover {
+  .header-btn:hover {
     background: var(--bg-button);
     color: var(--text-primary);
   }

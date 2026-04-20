@@ -603,7 +603,7 @@
             window.addEventListener('mouseup', onMouseUp);
           }}></div>
           <div class="attachment-area" style="width: {layout.attachmentPanelWidth}px">
-            <AttachmentPanel />
+            <AttachmentPanel onClose={handleToggleAttachments} />
           </div>
         {/if}
       </div>
