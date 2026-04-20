@@ -538,7 +538,7 @@
   {:else}
     <div class="main-area">
       <div class="content-area" class:with-log={layout.showLog}>
-        {#if layout.showSidebar || layout.showOutline || layout.showTags || layout.showTagGroups}
+        {#if layout.showSidebar || layout.showOutline || layout.showTags || layout.showTagGroups || layout.showSearch}
           <div class="sidebar" style="width: {layout.sidebarWidth}px">
             <Sidebar
               {tagAction}
