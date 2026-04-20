@@ -99,9 +99,8 @@ function createWindow() {
 
   if (isDev) {
     mainWindow.loadURL('http://localhost:5173');
-    mainWindow.webContents.on('console-message', (_event, level, message, line, sourceId) => {
-      const levels = ['LOG', 'WARN', 'ERROR'];
-      console.log(`[Renderer ${levels[level] || level}] ${message}`);
+    mainWindow.webContents.on('console-message', ({ level, message }) => {
+      console.log(`[Renderer ${level}] ${message}`);
     });
   } else {
     mainWindow.loadFile(path.join(__dirname, '..', '..', 'dist', 'index.html'));
