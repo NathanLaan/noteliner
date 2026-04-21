@@ -7,7 +7,7 @@ const isWindows = os.platform() === 'win32';
 // Start Vite dev server.
 // `detached: true` on Unix makes the shell a process-group leader, so we can
 // later signal the whole group (shell + npx + vite) at once. Without this,
-// killing the shell leaves npx+vite orphaned and holding port 5173.
+// killing the shell leaves npx+vite orphaned and holding port 5250.
 const vite = spawn('npx', ['vite'], {
   cwd: path.resolve(__dirname, '..'),
   stdio: 'pipe',

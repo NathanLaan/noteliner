@@ -52,6 +52,7 @@ contextBridge.exposeInMainWorld('api', {
 
   // Convert
   convertToHtml: (filename, name) => ipcRenderer.invoke('file:convertToHtml', filename, name),
+  convertToPdf: (filename, name) => ipcRenderer.invoke('file:convertToPdf', filename, name),
 
   // System
   getSystemInfo: () => ipcRenderer.invoke('system:getInfo'),

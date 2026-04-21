@@ -38,6 +38,7 @@
     sidebarWidth: 260,
     logPanelHeight: 300,
     attachmentPanelWidth: 220,
+    previewWidth: 500,
     filesHeight: 200,
     tagGroupsHeight: 150,
     outlineHeight: 150,
@@ -302,6 +303,15 @@
     }
   }
 
+  async function handleSaveToPdf() {
+    const file = projectState.selectedFile;
+    if (!file) return;
+    const result = await window.api.convertToPdf(file.filename, file.name);
+    if (result) {
+      window.api.openPath(result.downloadsDir);
+    }
+  }
+
   function handleToggleSidebar() {
     layout.showSidebar = !layout.showSidebar;
   }
@@ -409,6 +419,9 @@
         break;
       case 'convertToHtml':
         handleSaveToHtml();
+        break;
+      case 'convertToPdf':
+        handleSaveToPdf();
         break;
     }
   }
@@ -585,9 +598,22 @@
           </div>
         {/if}
         {#if layout.showPreview}
-          <div class="resizer preview-resizer"></div>
-          <div class="preview-area">
-            <Preview onClose={handleTogglePreview} onSaveToHtml={handleSaveToHtml} />
+          <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+          <div class="resizer preview-resizer" role="separator" aria-orientation="vertical" tabindex="-1" onmousedown={(e) => {
+            const startX = e.clientX;
+            const startWidth = layout.previewWidth;
+            const onMouseMove = (e) => {
+              layout.previewWidth = Math.max(200, Math.min(1600, startWidth - (e.clientX - startX)));
+            };
+            const onMouseUp = () => {
+              window.removeEventListener('mousemove', onMouseMove);
+              window.removeEventListener('mouseup', onMouseUp);
+            };
+            window.addEventListener('mousemove', onMouseMove);
+            window.addEventListener('mouseup', onMouseUp);
+          }}></div>
+          <div class="preview-area" style="width: {layout.previewWidth}px">
+            <Preview onClose={handleTogglePreview} onSaveToHtml={handleSaveToHtml} onSaveToPdf={handleSaveToPdf} />
           </div>
         {/if}
         {#if layout.showAttachments}
@@ -678,15 +704,14 @@
   .editor-area {
     flex: 1;
     overflow: hidden;
-    min-width: 200px;
+    min-width: 160px;
   }
 
   .preview-area {
-    flex: 1;
+    flex-shrink: 0;
     overflow-y: auto;
     background: var(--bg-surface);
     border-left: 1px solid var(--border);
-    max-width: 50%;
   }
 
   .history-area {
