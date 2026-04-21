@@ -2,6 +2,8 @@
   import { logState } from '../stores/log.svelte.js';
   import { tick } from 'svelte';
 
+  let { onClose } = $props();
+
   let logContainer;
 
   $effect(() => {
@@ -17,9 +19,14 @@
 <div class="log-wrapper">
   <div class="log-header">
     <span class="log-title">Sync Log</span>
-    <button class="clear-btn" onclick={() => logState.clear()} title="Clear log">
-      <i class="fas fa-trash-can"></i>
-    </button>
+    <div class="log-actions">
+      <button class="clear-btn" onclick={() => logState.clear()} title="Clear log">
+        <i class="fas fa-trash-can"></i>
+      </button>
+      <button class="clear-btn" onclick={onClose} title="Close pane">
+        <i class="fas fa-xmark"></i>
+      </button>
+    </div>
   </div>
   <div class="log-content" bind:this={logContainer}>
     {#each logState.entries as entry}
@@ -58,6 +65,12 @@
     text-transform: uppercase;
     letter-spacing: 0.05em;
     color: var(--text-muted);
+  }
+
+  .log-actions {
+    display: flex;
+    align-items: center;
+    gap: 4px;
   }
 
   .clear-btn {

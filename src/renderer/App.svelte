@@ -343,6 +343,16 @@
     }
   }
 
+  function handleClosePane(paneKey) {
+    switch (paneKey) {
+      case 'files': layout.showSidebar = false; break;
+      case 'outline': layout.showOutline = false; break;
+      case 'tags': layout.showTags = false; break;
+      case 'tagGroups': layout.showTagGroups = false; break;
+      case 'search': layout.showSearch = false; break;
+    }
+  }
+
   function handlePaneResize(paneName, value) {
     layout[paneName] = value;
   }
@@ -571,6 +581,7 @@
               onPaneReorder={handlePaneReorder}
               onContextAction={handleContextAction}
               onTagAction={triggerTagAction}
+              onClosePane={handleClosePane}
             />
           </div>
           <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
@@ -652,7 +663,7 @@
           window.addEventListener('mouseup', onMouseUp);
         }}></div>
         <div class="log-area" style="height: {layout.logPanelHeight}px">
-          <LogPanel />
+          <LogPanel onClose={handleToggleLog} />
         </div>
       {/if}
     </div>
