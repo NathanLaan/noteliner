@@ -3,7 +3,7 @@
   import { marked } from 'marked';
   import ContextMenu from './ContextMenu.svelte';
 
-  let { onClose = () => {}, onSaveToHtml = () => {} } = $props();
+  let { onClose = () => {}, onSaveToHtml = () => {}, onSaveToPdf = () => {} } = $props();
 
   let previewContentEl;
   let contextMenu = $state(null);
@@ -40,6 +40,7 @@
         { label: 'Copy', icon: 'fa-copy', action: handleCopy },
         { separator: true },
         { label: 'Save to HTML', icon: 'fa-file-code', action: onSaveToHtml },
+        { label: 'Save to PDF', icon: 'fa-file-pdf', action: onSaveToPdf },
       ]
     };
   }

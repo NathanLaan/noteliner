@@ -302,6 +302,15 @@
     }
   }
 
+  async function handleSaveToPdf() {
+    const file = projectState.selectedFile;
+    if (!file) return;
+    const result = await window.api.convertToPdf(file.filename, file.name);
+    if (result) {
+      window.api.openPath(result.downloadsDir);
+    }
+  }
+
   function handleToggleSidebar() {
     layout.showSidebar = !layout.showSidebar;
   }
@@ -409,6 +418,9 @@
         break;
       case 'convertToHtml':
         handleSaveToHtml();
+        break;
+      case 'convertToPdf':
+        handleSaveToPdf();
         break;
     }
   }
@@ -587,7 +599,7 @@
         {#if layout.showPreview}
           <div class="resizer preview-resizer"></div>
           <div class="preview-area">
-            <Preview onClose={handleTogglePreview} onSaveToHtml={handleSaveToHtml} />
+            <Preview onClose={handleTogglePreview} onSaveToHtml={handleSaveToHtml} onSaveToPdf={handleSaveToPdf} />
           </div>
         {/if}
         {#if layout.showAttachments}

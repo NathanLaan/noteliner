@@ -458,6 +458,67 @@ ipcMain.handle('file:convertToHtml', async (_event, filename, name) => {
   return { outputPath, downloadsDir };
 });
 
+// Convert to PDF
+
+ipcMain.handle('file:convertToPdf', async (_event, filename, name) => {
+  if (!projectService.projectPath) return null;
+  const mdContent = fs.readFileSync(path.join(projectService.projectPath, filename), 'utf-8');
+  let htmlBody = marked(mdContent);
+
+  // Resolve ./_attachments/ refs to absolute file:// URLs so images render in the PDF
+  const attachmentsDir = path.join(projectService.projectPath, '_attachments');
+  htmlBody = htmlBody.replace(
+    /(src|href)="\.?\/?_attachments\/([^"]+)"/g,
+    (_m, attr, file) => `${attr}="file://${attachmentsDir}/${file}"`
+  );
+
+  const fullHtml = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>${name}</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 0 24px; line-height: 1.6; color: #1a1a1a; }
+    h1, h2, h3, h4 { margin-top: 1.5em; }
+    code { background: #f0f0f0; padding: 2px 6px; border-radius: 3px; font-size: 0.9em; }
+    pre { background: #f0f0f0; padding: 16px; border-radius: 6px; overflow-x: auto; }
+    pre code { background: none; padding: 0; }
+    img { max-width: 100%; }
+    blockquote { border-left: 3px solid #ccc; margin-left: 0; padding-left: 16px; color: #555; }
+    table { border-collapse: collapse; width: 100%; }
+    th, td { border: 1px solid #ddd; padding: 8px 12px; text-align: left; }
+    th { background: #f5f5f5; }
+  </style>
+</head>
+<body>
+  <h1>${name}</h1>
+  ${htmlBody}
+</body>
+</html>`;
+
+  const pdfWindow = new BrowserWindow({
+    show: false,
+    webPreferences: { sandbox: true, contextIsolation: true, nodeIntegration: false }
+  });
+
+  try {
+    await pdfWindow.loadURL('data:text/html;charset=utf-8,' + encodeURIComponent(fullHtml));
+    const pdfData = await pdfWindow.webContents.printToPDF({
+      printBackground: true,
+      pageSize: 'Letter',
+      margins: { top: 0.5, bottom: 0.5, left: 0.5, right: 0.5 }
+    });
+
+    const downloadsDir = path.join(os.homedir(), 'Downloads');
+    const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+    const outputPath = path.join(downloadsDir, slug + '.pdf');
+    fs.writeFileSync(outputPath, pdfData);
+    return { outputPath, downloadsDir };
+  } finally {
+    pdfWindow.destroy();
+  }
+});
+
 // File history
 
 ipcMain.handle('file:getHistory', async (_event, filename) => {
