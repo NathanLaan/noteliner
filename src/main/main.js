@@ -106,7 +106,7 @@ function createWindow() {
   Menu.setApplicationMenu(null);
 
   if (isDev) {
-    mainWindow.loadURL('http://localhost:5173');
+    mainWindow.loadURL('http://localhost:5250');
     mainWindow.webContents.on('console-message', ({ level, message }) => {
       console.log(`[Renderer ${level}] ${message}`);
     });
