@@ -62,6 +62,16 @@
         markdown({ codeLanguages: languages }),
         getEditorTheme(),
         customTheme,
+        EditorView.domEventHandlers({
+          mouseup(event, view) {
+            if (event.detail !== 3) return false;
+            const pos = view.posAtCoords({ x: event.clientX, y: event.clientY });
+            if (pos == null) return false;
+            const line = view.state.doc.lineAt(pos);
+            view.dispatch({ selection: { anchor: line.from, head: line.to } });
+            return true;
+          }
+        }),
         EditorView.updateListener.of((update) => {
           if (update.docChanged && !isUpdating) {
             const content = update.state.doc.toString();
