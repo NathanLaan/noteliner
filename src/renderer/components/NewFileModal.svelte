@@ -8,10 +8,6 @@
 
   let allTags = $derived(projectState.allTags);
 
-  function focusOnMount(node) {
-    node.focus();
-  }
-
   function focusInput(node) {
     node.focus();
     node.select();
@@ -41,7 +37,7 @@
   }
 </script>
 
-<div class="modal-overlay" use:focusOnMount onclick={(e) => { if (e.target === e.currentTarget) onCancel(); }} onkeydown={handleKeydown} role="dialog" aria-modal="true" tabindex="-1">
+<div class="modal-overlay" onclick={(e) => { if (e.target === e.currentTarget) onCancel(); }} onkeydown={handleKeydown} role="dialog" aria-modal="true" tabindex="-1">
   <div class="modal new-file-modal">
     <div class="modal-header">
       <h2>New File</h2>
