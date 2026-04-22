@@ -57,8 +57,8 @@
     display: flex;
     align-items: center;
     height: 32px;
-    background: var(--bg-overlay);
-    border-bottom: 1px solid var(--border);
+    background: var(--accent);
+    border-bottom: 1px solid var(--accent);
     -webkit-app-region: drag;
     flex-shrink: 0;
     user-select: none;
@@ -71,32 +71,36 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    color: var(--text-secondary);
+    color: var(--accent-on);
+    opacity: 0.75;
     font-size: 12px;
     background: transparent;
     border: none;
-    transition: background 0.15s, color 0.15s;
+    transition: background 0.15s, opacity 0.15s;
   }
 
   .titlebar-btn:hover {
-    background: var(--bg-button);
-    color: var(--text-primary);
+    background: rgba(0, 0, 0, 0.18);
+    opacity: 1;
   }
 
   .titlebar-btn.active {
-    color: var(--accent);
+    opacity: 1;
+    background: rgba(0, 0, 0, 0.12);
   }
 
   .titlebar-btn.close:hover {
     background: #e81123;
     color: #ffffff;
+    opacity: 1;
   }
 
   .titlebar-title {
     flex: 1;
     text-align: center;
     font-size: 12px;
-    color: var(--text-secondary);
+    color: var(--accent-on);
+    opacity: 0.9;
     padding: 0 8px;
     overflow: hidden;
     white-space: nowrap;
