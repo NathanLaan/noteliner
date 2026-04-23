@@ -1,4 +1,9 @@
 <script>
+  // Import the SVG's raw markup rather than a URL — inlining via {@html} avoids
+  // any dev-server fs.allow / CSP / URL-resolution surprises that can leave the
+  // image broken on load.
+  import appIconSvg from '../../../assets/icon-n-purple-diamonds-2.svg?raw';
+
   let { onClose } = $props();
 
   function focusOnMount(node) {
@@ -16,6 +21,7 @@
       <h2>About</h2>
     </div>
     <div class="modal-body">
+      <div class="app-icon" role="img" aria-label="NoteLiner">{@html appIconSvg}</div>
       <p class="app-name">NoteLiner</p>
       <p class="version">Version {__APP_VERSION__}</p>
       <p class="desc">An outliner-style note-taking application built with Electron and Svelte.</p>
@@ -27,6 +33,21 @@
 </div>
 
 <style>
+  .app-icon {
+    display: block;
+    width: 96px;
+    height: 96px;
+    margin: 0 auto 16px;
+  }
+
+  /* The imported SVG has width/height="512" baked in; override via CSS so it
+     scales to the container size rather than rendering at its intrinsic size. */
+  .app-icon :global(svg) {
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+
   .app-name {
     font-size: 22px;
     font-weight: 400;

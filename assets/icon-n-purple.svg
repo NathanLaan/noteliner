@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <!-- Two-color purple gradient: #322D58 (top) to #221D48 (bottom) with an
+         interpolated mid-stop for a smoother transition. Both endpoints are at
+         near-black luminance, so the visible effect is a subtle vertical shading. -->
+    <linearGradient id="hexGradient" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%"   stop-color="#322D58"/>
+      <stop offset="55%"  stop-color="#2A2550"/>
+      <stop offset="100%" stop-color="#221D48"/>
+    </linearGradient>
+
+    <!-- Faceted diamond-triangle pattern. Opacities dialled down from the orange
+         variant because the dark base makes white tints read more strongly. -->
+    <pattern id="facets" x="0" y="0" width="48" height="41.57" patternUnits="userSpaceOnUse">
+      <polygon points="0,0 24,20.78 48,0"        fill="#ffffff" fill-opacity="0.04"/>
+      <polygon points="0,41.57 24,20.78 48,41.57" fill="#000000" fill-opacity="0.10"/>
+      <polygon points="0,0 0,41.57 24,20.78"     fill="#ffffff" fill-opacity="0.02"/>
+      <polygon points="48,0 48,41.57 24,20.78"   fill="#000000" fill-opacity="0.06"/>
+    </pattern>
+
+    <!-- Rounded-corner pointy-top hexagon. Identical geometry to icon-n.svg. -->
+    <clipPath id="hexClip">
+      <path d="M 264,40.619 L 438.526,141.381 A 16,16 0 0 1 446.526,155.238 L 446.526,356.762 A 16,16 0 0 1 438.526,370.619 L 264,471.381 A 16,16 0 0 1 248,471.381 L 73.474,370.619 A 16,16 0 0 1 65.474,356.762 L 65.474,155.238 A 16,16 0 0 1 73.474,141.381 L 248,40.619 A 16,16 0 0 1 264,40.619 Z"/>
+    </clipPath>
+
+    <!-- Soft drop shadow -->
+    <filter id="letterShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="3"/>
+      <feOffset dx="2" dy="5"/>
+      <feComponentTransfer><feFuncA type="linear" slope="0.35"/></feComponentTransfer>
+      <feMerge>
+        <feMergeNode/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Hexagon interior: gradient + faceted overlay, clipped to hexagon shape -->
+  <g clip-path="url(#hexClip)">
+    <rect width="512" height="512" fill="url(#hexGradient)"/>
+    <rect width="512" height="512" fill="url(#facets)"/>
+  </g>
+
+  <!-- White hexagon outline -->
+  <path d="M 264,40.619 L 438.526,141.381 A 16,16 0 0 1 446.526,155.238 L 446.526,356.762 A 16,16 0 0 1 438.526,370.619 L 264,471.381 A 16,16 0 0 1 248,471.381 L 73.474,370.619 A 16,16 0 0 1 65.474,356.762 L 65.474,155.238 A 16,16 0 0 1 73.474,141.381 L 248,40.619 A 16,16 0 0 1 264,40.619 Z"
+        fill="none" stroke="#ffffff" stroke-width="10" stroke-linejoin="round"/>
+
+  <!-- Letter "N": same geometry as icon-n.svg, white fill, drop shadow. -->
+  <g fill="#ffffff" filter="url(#letterShadow)">
+    <rect x="146" y="106" width="68" height="300"/>
+    <rect x="298" y="106" width="68" height="300"/>
+    <polygon points="146,106 214,106 366,406 298,406"/>
+  </g>
+</svg>
