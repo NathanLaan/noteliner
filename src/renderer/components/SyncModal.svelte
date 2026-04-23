@@ -161,8 +161,8 @@
   let busy = $derived(operating.length > 0);
 </script>
 
-<div class="modal-overlay" use:focusOnMount onclick={(e) => { if (e.target === e.currentTarget) onClose(); }} onkeydown={handleKeydown} role="dialog" aria-modal="true" tabindex="-1">
-  <div class="modal">
+<div class="modal-overlay sync-overlay" use:focusOnMount onclick={(e) => { if (e.target === e.currentTarget) onClose(); }} onkeydown={handleKeydown} role="dialog" aria-modal="true" tabindex="-1">
+  <div class="modal sync-modal">
     <div class="modal-header">
       <h2>Remote Sync</h2>
     </div>
@@ -416,11 +416,33 @@
     font-size: 12px;
   }
 
+  /* Main Sync modal: 50% × 50% of the overlay's padded area, pinned to bottom —
+     matches the About dialog's reduced-size drawer style. The shared .modal
+     class still provides the slide-up animation; only size and position change. */
+  .sync-overlay {
+    align-items: flex-end;
+    justify-content: center;
+  }
+
+  .sync-modal {
+    width: 50%;
+    height: 50%;
+    min-width: 480px;
+    min-height: 380px;
+  }
+
+  /* Flex-column body so the footer can be promoted to the bottom via auto margin. */
+  .modal-body {
+    display: flex;
+    flex-direction: column;
+  }
+
   .modal-footer {
     display: flex;
-    justify-content: space-between;
+    justify-content: flex-end;
     align-items: center;
-    margin-top: 8px;
+    gap: 8px;
+    margin-top: auto;
   }
 
   .sync-actions {
