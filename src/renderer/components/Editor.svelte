@@ -11,6 +11,7 @@
   import { EditorState } from '@codemirror/state';
   import { oneDark } from '@codemirror/theme-one-dark';
   import { openSearchPanel } from '@codemirror/search';
+  import { autocompletion } from '@codemirror/autocomplete';
 
   const lightTheme = EditorView.theme({
     '&': { backgroundColor: '#ffffff', color: '#1a1a1a' },
@@ -45,8 +46,39 @@
     '.cm-lineNumbers': { minWidth: '44px' },
   });
 
+  const LIGHT_EDITOR_THEMES = new Set(['light', 'lightPurple']);
+
   function getEditorTheme() {
-    return themeState.current === 'light' ? lightTheme : oneDark;
+    return LIGHT_EDITOR_THEMES.has(themeState.current) ? lightTheme : oneDark;
+  }
+
+  function wikilinkCompletions(context) {
+    // Match "[[" followed by any chars that aren't "]" — the opened wikilink.
+    const match = context.matchBefore(/\[\[[^\]]*/);
+    if (!match) return null;
+    const typed = match.text.slice(2).toLowerCase();
+    const currentId = projectState.selectedFileId;
+    const options = projectState.index.files
+      .filter(f => f.id !== currentId && f.name.toLowerCase().includes(typed))
+      .slice(0, 50)
+      .map(f => ({
+        label: f.name,
+        type: 'text',
+        // Custom apply so we (a) skip inserting `]]` if closeBrackets already did,
+        // and (b) place the cursor after the closing `]]` rather than inside them.
+        apply: (view, _completion, from, to) => {
+          const afterText = view.state.doc.sliceString(to, to + 2);
+          const hasClose = afterText === ']]';
+          const insert = hasClose ? f.name : `${f.name}]]`;
+          const cursorAfter = from + f.name.length + 2;
+          view.dispatch({
+            changes: { from, to, insert },
+            selection: { anchor: cursorAfter },
+          });
+        },
+      }));
+    if (options.length === 0) return null;
+    return { from: match.from + 2, options, validFor: /^[^\]]*$/ };
   }
 
   function createEditor() {
@@ -60,6 +92,7 @@
         basicSetup,
         keymap.of([indentWithTab, { key: 'Mod-Shift-f', run: openSearchPanel }]),
         markdown({ codeLanguages: languages }),
+        autocompletion({ override: [wikilinkCompletions] }),
         getEditorTheme(),
         customTheme,
         EditorView.domEventHandlers({

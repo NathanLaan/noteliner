@@ -95,6 +95,7 @@
         { label: 'Preview', icon: 'fa-eye', action: () => onContextAction('preview', file) },
         { label: 'Save to HTML', icon: 'fa-file-code', action: () => onContextAction('convertToHtml', file) },
         { label: 'Save to PDF', icon: 'fa-file-pdf', action: () => onContextAction('convertToPdf', file) },
+        { label: 'Save to Markdown', icon: 'fa-file-lines', action: () => onContextAction('convertToMarkdown', file) },
         { separator: true },
         { label: 'Rename', icon: 'fa-pen', action: () => onStartRename(file.id, file.name) },
         { label: 'Clear Tags', icon: 'fa-tags', action: () => onContextAction('clearTags', file) },

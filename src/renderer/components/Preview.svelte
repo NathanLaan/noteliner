@@ -3,10 +3,41 @@
   import { marked } from 'marked';
   import ContextMenu from './ContextMenu.svelte';
 
-  let { onClose = () => {}, onSaveToHtml = () => {}, onSaveToPdf = () => {} } = $props();
+  let { onClose = () => {}, onSaveToHtml = () => {}, onSaveToPdf = () => {}, onSaveToMarkdown = () => {}, onCreateFromWikilink = () => {} } = $props();
 
   let previewContentEl;
   let contextMenu = $state(null);
+
+  const nameToId = $derived.by(() => {
+    const map = new Map();
+    for (const f of projectState.index.files) map.set(f.name.toLowerCase(), f.id);
+    return map;
+  });
+
+  function escapeHtml(s) {
+    return s.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  }
+
+  const wikilinkExtension = {
+    name: 'wikilink',
+    level: 'inline',
+    start(src) { return src.indexOf('[['); },
+    tokenizer(src) {
+      const m = /^\[\[([^\[\]|]+)(?:\|([^\[\]]+))?\]\]/.exec(src);
+      if (m) {
+        return { type: 'wikilink', raw: m[0], targetName: m[1].trim(), alias: m[2]?.trim() };
+      }
+    },
+    renderer(token) {
+      const resolved = nameToId.has(token.targetName.toLowerCase());
+      const cls = resolved ? 'wikilink' : 'wikilink dangling';
+      const label = token.alias || token.targetName;
+      const title = resolved ? `Open ${token.targetName}` : `Create "${token.targetName}"`;
+      return `<a class="${cls}" data-wikilink="${escapeHtml(token.targetName)}" title="${escapeHtml(title)}">${escapeHtml(label)}</a>`;
+    }
+  };
+
+  marked.use({ extensions: [wikilinkExtension] });
 
   function resolveAttachmentUrls(rawHtml) {
     return rawHtml.replace(
@@ -14,6 +45,20 @@
       (match, filename) => match.replace(`./_attachments/${filename}`, `attachment:///${encodeURIComponent(filename)}`)
         .replace(`_attachments/${filename}`, `attachment:///${encodeURIComponent(filename)}`)
     );
+  }
+
+  function handlePreviewClick(e) {
+    const link = e.target.closest('.wikilink');
+    if (!link) return;
+    e.preventDefault();
+    const name = link.dataset.wikilink;
+    if (!name) return;
+    const id = nameToId.get(name.toLowerCase());
+    if (id) {
+      projectState.selectFile(id);
+    } else {
+      onCreateFromWikilink(name);
+    }
   }
 
   function handleSelectAll() {
@@ -41,6 +86,7 @@
         { separator: true },
         { label: 'Save to HTML', icon: 'fa-file-code', action: onSaveToHtml },
         { label: 'Save to PDF', icon: 'fa-file-pdf', action: onSaveToPdf },
+        { label: 'Save to Markdown', icon: 'fa-file-lines', action: onSaveToMarkdown },
       ]
     };
   }
@@ -58,7 +104,8 @@
     </button>
   </div>
   <!-- svelte-ignore a11y_no_static_element_interactions -->
-  <div class="preview-content" bind:this={previewContentEl} oncontextmenu={handleContextMenu}>
+  <!-- svelte-ignore a11y_click_events_have_key_events -->
+  <div class="preview-content" bind:this={previewContentEl} oncontextmenu={handleContextMenu} onclick={handlePreviewClick}>
     {@html html}
   </div>
 </div>
@@ -126,6 +173,10 @@
   .preview-content :global(h3) { font-size: 17px; margin-bottom: 8px; color: var(--text-primary); }
   .preview-content :global(p) { margin-bottom: 12px; color: var(--text-tertiary); }
   .preview-content :global(a) { color: var(--accent); }
+  .preview-content :global(.wikilink) { color: var(--accent); cursor: pointer; text-decoration: none; border-bottom: 1px solid transparent; }
+  .preview-content :global(.wikilink:hover) { border-bottom-color: var(--accent); }
+  .preview-content :global(.wikilink.dangling) { color: var(--text-muted); border-bottom: 1px dashed var(--text-muted); }
+  .preview-content :global(.wikilink.dangling:hover) { color: var(--text-secondary); border-bottom-style: dashed; }
   .preview-content :global(code) { background: var(--code-bg); padding: 2px 6px; border-radius: 4px; font-size: 13px; }
   .preview-content :global(pre) { background: var(--pre-bg); padding: 12px; border-radius: 6px; overflow-x: auto; margin-bottom: 12px; }
   .preview-content :global(pre code) { background: none; padding: 0; }

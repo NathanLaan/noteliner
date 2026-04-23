@@ -1,9 +1,12 @@
 <script>
   import { projectState } from '../stores/project.svelte.js';
 
-  let { onConfirm, onCancel } = $props();
+  let { onConfirm, onCancel, initialName = '' } = $props();
 
-  let fileName = $state('');
+  // Prop-initialized state: the parent always remounts this modal via {#if showNewFile},
+  // so the initial-capture semantics are exactly what we want — no re-sync needed.
+  // svelte-ignore state_referenced_locally
+  let fileName = $state(initialName);
   let selectedTags = $state(new Set());
 
   let allTags = $derived(projectState.allTags);

@@ -5,6 +5,7 @@ const os = require('os');
 const { GitService } = require('./git-service');
 const { ProjectService } = require('./project-service');
 const { WindowStateService } = require('./window-state-service');
+const { LinkGraphService } = require('./link-graph-service');
 const { marked } = require('marked');
 
 // Set app name early so Linux WM_CLASS is correct (for dock icon in dev mode)
@@ -81,6 +82,7 @@ function addRecentProject(folderPath) {
 let mainWindow;
 let gitService;
 let projectService;
+let linkGraphService;
 let windowStateService;
 let boundsTimer = null;
 
@@ -121,6 +123,7 @@ function createWindow() {
   });
 
   projectService = new ProjectService(gitService);
+  linkGraphService = new LinkGraphService(projectService);
   windowStateService = new WindowStateService(
     path.join(app.getPath('userData'), 'window-state.json')
   );
@@ -227,11 +230,15 @@ ipcMain.handle('dialog:openFolder', async () => {
 });
 
 ipcMain.handle('project:open', async (_event, folderPath) => {
-  return await projectService.openProject(folderPath);
+  const result = await projectService.openProject(folderPath);
+  if (result.status === 'loaded') await linkGraphService.rebuild();
+  return result;
 });
 
 ipcMain.handle('project:init', async (_event, folderPath, remoteUrl) => {
-  return await projectService.initProject(folderPath, remoteUrl);
+  const result = await projectService.initProject(folderPath, remoteUrl);
+  if (result.status === 'loaded') await linkGraphService.rebuild();
+  return result;
 });
 
 ipcMain.handle('project:close', async () => {
@@ -239,6 +246,7 @@ ipcMain.handle('project:close', async () => {
   await gitService.flushPush(projectService.projectPath);
   projectService.projectPath = null;
   projectService.index = null;
+  linkGraphService.reset();
 });
 
 ipcMain.handle('project:getIndex', async () => {
@@ -255,7 +263,10 @@ ipcMain.handle('file:read', async (_event, filePath) => {
 
 ipcMain.handle('file:write', async (_event, filePath, content) => {
   try {
-    return await projectService.writeFile(filePath, content);
+    const result = await projectService.writeFile(filePath, content);
+    const entry = projectService.index?.files.find(f => f.filename === filePath);
+    if (entry) await linkGraphService.scanFile(entry.id);
+    return result;
   } catch (err) {
     if (err.code === 'GIT_CONFIG_REQUIRED') return { error: 'git_config_required' };
     throw err;
@@ -264,7 +275,10 @@ ipcMain.handle('file:write', async (_event, filePath, content) => {
 
 ipcMain.handle('file:create', async (_event, name, tags) => {
   try {
-    return await projectService.createFile(name, tags);
+    const entry = await projectService.createFile(name, tags);
+    // New file may resolve pre-existing dangling links elsewhere; full rebuild is cheap.
+    await linkGraphService.rebuild();
+    return entry;
   } catch (err) {
     if (err.code === 'GIT_CONFIG_REQUIRED') return { error: 'git_config_required' };
     throw err;
@@ -273,7 +287,11 @@ ipcMain.handle('file:create', async (_event, name, tags) => {
 
 ipcMain.handle('file:delete', async (_event, fileId) => {
   try {
-    return await projectService.deleteFile(fileId);
+    const result = await projectService.deleteFile(fileId);
+    linkGraphService.removeFile(fileId);
+    // Re-scan sources that linked to this file so their outgoing links become dangling.
+    await linkGraphService.rebuild();
+    return result;
   } catch (err) {
     if (err.code === 'GIT_CONFIG_REQUIRED') return { error: 'git_config_required' };
     throw err;
@@ -282,11 +300,27 @@ ipcMain.handle('file:delete', async (_event, fileId) => {
 
 ipcMain.handle('file:rename', async (_event, fileId, newName) => {
   try {
-    return await projectService.renameFile(fileId, newName);
+    const entry = await projectService.renameFile(fileId, newName);
+    await linkGraphService.rebuild();
+    return entry;
   } catch (err) {
     if (err.code === 'GIT_CONFIG_REQUIRED') return { error: 'git_config_required' };
     throw err;
   }
+});
+
+// Link graph
+
+ipcMain.handle('links:getBacklinks', async (_event, fileId) => {
+  return linkGraphService.getBacklinkSnippets(fileId);
+});
+
+ipcMain.handle('links:getAllNames', async () => {
+  return linkGraphService.getAllNoteNames();
+});
+
+ipcMain.handle('links:rebuild', async () => {
+  await linkGraphService.rebuild();
 });
 
 ipcMain.handle('git:push', async () => {
@@ -455,6 +489,18 @@ ipcMain.handle('file:convertToHtml', async (_event, filename, name) => {
   const htmlFilename = slug + '.html';
   const outputPath = path.join(downloadsDir, htmlFilename);
   fs.writeFileSync(outputPath, fullHtml, 'utf-8');
+  return { outputPath, downloadsDir };
+});
+
+// Convert to Markdown
+
+ipcMain.handle('file:convertToMarkdown', async (_event, filename, name) => {
+  if (!projectService.projectPath) return null;
+  const mdContent = fs.readFileSync(path.join(projectService.projectPath, filename), 'utf-8');
+  const downloadsDir = path.join(os.homedir(), 'Downloads');
+  const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+  const outputPath = path.join(downloadsDir, slug + '.md');
+  fs.writeFileSync(outputPath, mdContent, 'utf-8');
   return { outputPath, downloadsDir };
 });
 

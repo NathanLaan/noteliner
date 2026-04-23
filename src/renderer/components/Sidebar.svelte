@@ -5,6 +5,7 @@
   import TagsPane from './TagsPane.svelte';
   import OutlinePane from './OutlinePane.svelte';
   import SearchPane from './SearchPane.svelte';
+  import BacklinksPane from './BacklinksPane.svelte';
 
   let {
     tagAction = null,
@@ -13,18 +14,21 @@
     tagGroupsVisible = false,
     tagsVisible = true,
     searchVisible = false,
+    backlinksVisible = false,
     searchFocusRequest = null,
     filesHeight = 200,
     tagGroupsHeight = 150,
     outlineHeight = 150,
     tagsHeight = 100,
     searchHeight = 200,
-    paneOrder = ['files', 'tagGroups', 'outline', 'tags', 'search'],
+    backlinksHeight = 180,
+    paneOrder = ['files', 'tagGroups', 'outline', 'tags', 'search', 'backlinks'],
     onPaneResize,
     onPaneReorder,
     onContextAction,
     onTagAction,
     onClosePane,
+    onBacklinkSelect,
   } = $props();
 
   let editingId = $state(null);
@@ -41,6 +45,7 @@
     outline: { title: 'OUTLINE', heightKey: 'outlineHeight', minH: HEADER_H },
     tags: { title: 'TAGS', heightKey: 'tagsHeight', minH: HEADER_H },
     search: { title: 'SEARCH', heightKey: 'searchHeight', minH: HEADER_H },
+    backlinks: { title: 'BACKLINKS', heightKey: 'backlinksHeight', minH: HEADER_H },
   };
 
   let sidebarEl;
@@ -51,6 +56,7 @@
     if (key === 'tagGroups') return tagGroupsVisible;
     if (key === 'outline') return outlineVisible;
     if (key === 'search') return searchVisible;
+    if (key === 'backlinks') return backlinksVisible;
     return false;
   }
 
@@ -61,6 +67,7 @@
       case 'outline': return outlineHeight;
       case 'tags': return tagsHeight;
       case 'search': return searchHeight;
+      case 'backlinks': return backlinksHeight;
       default: return 100;
     }
   }
@@ -382,6 +389,8 @@
           <TagsPane onTagsChanged={handleTagsChanged} {tagAction} />
         {:else if paneKey === 'search'}
           <SearchPane focusRequest={searchFocusRequest} />
+        {:else if paneKey === 'backlinks'}
+          <BacklinksPane onSelect={(id, line) => onBacklinkSelect?.(id, line)} />
         {/if}
       </div>
     </div>

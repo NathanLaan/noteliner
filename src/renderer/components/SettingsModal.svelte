@@ -51,6 +51,7 @@
     { keys: 'Ctrl+Shift+T', action: 'Toggle Tags' },
     { keys: 'Ctrl+G', action: 'Toggle Tag Groups' },
     { keys: 'Ctrl+B', action: 'Toggle Attachments' },
+    { keys: 'Ctrl+Shift+B', action: 'Toggle Backlinks' },
     { keys: 'Ctrl+F', action: 'Global Search' },
     { keys: 'Ctrl+Shift+F', action: 'Find in File' },
     { keys: 'Ctrl+L', action: 'Toggle Log Panel' },

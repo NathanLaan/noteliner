@@ -22,7 +22,7 @@
   import { projectState } from './stores/project.svelte.js';
   import { themeState } from './stores/theme.svelte.js';
 
-  const VALID_PANE_KEYS = ['files', 'tagGroups', 'outline', 'tags', 'search'];
+  const VALID_PANE_KEYS = ['files', 'tagGroups', 'outline', 'tags', 'search', 'backlinks'];
 
   const DEFAULT_LAYOUT = {
     showPreview: false,
@@ -35,6 +35,7 @@
     showTagGroups: false,
     showAttachments: false,
     showSearch: false,
+    showBacklinks: false,
     sidebarWidth: 260,
     logPanelHeight: 300,
     attachmentPanelWidth: 220,
@@ -44,7 +45,8 @@
     outlineHeight: 150,
     tagsHeight: 100,
     searchHeight: 200,
-    paneOrder: ['files', 'tagGroups', 'outline', 'tags', 'search'],
+    backlinksHeight: 180,
+    paneOrder: ['files', 'tagGroups', 'outline', 'tags', 'search', 'backlinks'],
   };
 
   function normalizePaneOrder(order) {
@@ -149,6 +151,9 @@
       } else if (e.ctrlKey && e.shiftKey && e.code === 'KeyT') {
         e.preventDefault();
         if (projectState.isOpen) handleToggleTags();
+      } else if (e.ctrlKey && e.shiftKey && e.code === 'KeyB') {
+        e.preventDefault();
+        if (projectState.isOpen) handleToggleBacklinks();
       } else if (e.ctrlKey && e.key === 'g') {
         e.preventDefault();
         if (projectState.isOpen) handleToggleTagGroups();
@@ -264,6 +269,7 @@
 
   async function handleNewFileConfirm({ name, tags }) {
     showNewFile = false;
+    createFromWikilinkName = '';
     const entry = await window.api.createFile(name, tags);
     projectState.addFile(entry);
     projectState.selectFile(entry.id);
@@ -312,6 +318,15 @@
     }
   }
 
+  async function handleSaveToMarkdown() {
+    const file = projectState.selectedFile;
+    if (!file) return;
+    const result = await window.api.convertToMarkdown(file.filename, file.name);
+    if (result) {
+      window.api.openPath(result.downloadsDir);
+    }
+  }
+
   function handleToggleSidebar() {
     layout.showSidebar = !layout.showSidebar;
   }
@@ -336,6 +351,24 @@
     layout.showAttachments = !layout.showAttachments;
   }
 
+  function handleToggleBacklinks() {
+    layout.showBacklinks = !layout.showBacklinks;
+  }
+
+  async function handleBacklinkSelect(sourceId, line) {
+    await projectState.selectFile(sourceId);
+    if (typeof line === 'number') {
+      projectState.scrollToLine = { line, ts: Date.now() };
+    }
+  }
+
+  let createFromWikilinkName = $state('');
+
+  function handleCreateFromWikilink(name) {
+    createFromWikilinkName = name;
+    showNewFile = true;
+  }
+
   function handleToggleSearch() {
     layout.showSearch = !layout.showSearch;
     if (layout.showSearch) {
@@ -350,6 +383,7 @@
       case 'tags': layout.showTags = false; break;
       case 'tagGroups': layout.showTagGroups = false; break;
       case 'search': layout.showSearch = false; break;
+      case 'backlinks': layout.showBacklinks = false; break;
     }
   }
 
@@ -433,6 +467,9 @@
       case 'convertToPdf':
         handleSaveToPdf();
         break;
+      case 'convertToMarkdown':
+        handleSaveToMarkdown();
+        break;
     }
   }
 
@@ -474,8 +511,9 @@
 
 {#if showNewFile}
   <NewFileModal
+    initialName={createFromWikilinkName}
     onConfirm={handleNewFileConfirm}
-    onCancel={() => showNewFile = false}
+    onCancel={() => { showNewFile = false; createFromWikilinkName = ''; }}
   />
 {/if}
 
@@ -534,6 +572,7 @@
         onToggleTagGroups={handleToggleTagGroups}
         onToggleAttachments={handleToggleAttachments}
         onToggleSearch={handleToggleSearch}
+        onToggleBacklinks={handleToggleBacklinks}
         onShowAbout={handleShowAbout}
         onShowHelp={handleShowHelp}
         onShowSettings={handleShowSettings}
@@ -547,6 +586,7 @@
         tagGroupsVisible={layout.showTagGroups}
         attachmentsVisible={layout.showAttachments}
         searchVisible={layout.showSearch}
+        backlinksVisible={layout.showBacklinks}
       />
     {/if}
 
@@ -561,7 +601,7 @@
   {:else}
     <div class="main-area">
       <div class="content-area" class:with-log={layout.showLog}>
-        {#if layout.showSidebar || layout.showOutline || layout.showTags || layout.showTagGroups || layout.showSearch}
+        {#if layout.showSidebar || layout.showOutline || layout.showTags || layout.showTagGroups || layout.showSearch || layout.showBacklinks}
           <div class="sidebar" style="width: {layout.sidebarWidth}px">
             <Sidebar
               {tagAction}
@@ -570,11 +610,13 @@
               tagsVisible={layout.showTags}
               tagGroupsVisible={layout.showTagGroups}
               searchVisible={layout.showSearch}
+              backlinksVisible={layout.showBacklinks}
               searchFocusRequest={searchFocusTs}
               tagGroupsHeight={layout.tagGroupsHeight}
               outlineHeight={layout.outlineHeight}
               tagsHeight={layout.tagsHeight}
               searchHeight={layout.searchHeight}
+              backlinksHeight={layout.backlinksHeight}
               filesHeight={layout.filesHeight}
               paneOrder={layout.paneOrder}
               onPaneResize={handlePaneResize}
@@ -582,6 +624,7 @@
               onContextAction={handleContextAction}
               onTagAction={triggerTagAction}
               onClosePane={handleClosePane}
+              onBacklinkSelect={handleBacklinkSelect}
             />
           </div>
           <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
@@ -624,7 +667,7 @@
             window.addEventListener('mouseup', onMouseUp);
           }}></div>
           <div class="preview-area" style="width: {layout.previewWidth}px">
-            <Preview onClose={handleTogglePreview} onSaveToHtml={handleSaveToHtml} onSaveToPdf={handleSaveToPdf} />
+            <Preview onClose={handleTogglePreview} onSaveToHtml={handleSaveToHtml} onSaveToPdf={handleSaveToPdf} onSaveToMarkdown={handleSaveToMarkdown} onCreateFromWikilink={handleCreateFromWikilink} />
           </div>
         {/if}
         {#if layout.showAttachments}
