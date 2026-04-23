@@ -3,6 +3,9 @@
 
   let { onConfirm, onCancel, initialName = '' } = $props();
 
+  // Prop-initialized state: the parent always remounts this modal via {#if showNewFile},
+  // so the initial-capture semantics are exactly what we want — no re-sync needed.
+  // svelte-ignore state_referenced_locally
   let fileName = $state(initialName);
   let selectedTags = $state(new Set());
 
