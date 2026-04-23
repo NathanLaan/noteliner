@@ -312,6 +312,15 @@
     }
   }
 
+  async function handleSaveToMarkdown() {
+    const file = projectState.selectedFile;
+    if (!file) return;
+    const result = await window.api.convertToMarkdown(file.filename, file.name);
+    if (result) {
+      window.api.openPath(result.downloadsDir);
+    }
+  }
+
   function handleToggleSidebar() {
     layout.showSidebar = !layout.showSidebar;
   }
@@ -432,6 +441,9 @@
         break;
       case 'convertToPdf':
         handleSaveToPdf();
+        break;
+      case 'convertToMarkdown':
+        handleSaveToMarkdown();
         break;
     }
   }
@@ -624,7 +636,7 @@
             window.addEventListener('mouseup', onMouseUp);
           }}></div>
           <div class="preview-area" style="width: {layout.previewWidth}px">
-            <Preview onClose={handleTogglePreview} onSaveToHtml={handleSaveToHtml} onSaveToPdf={handleSaveToPdf} />
+            <Preview onClose={handleTogglePreview} onSaveToHtml={handleSaveToHtml} onSaveToPdf={handleSaveToPdf} onSaveToMarkdown={handleSaveToMarkdown} />
           </div>
         {/if}
         {#if layout.showAttachments}

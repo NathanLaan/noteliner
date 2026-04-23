@@ -458,6 +458,18 @@ ipcMain.handle('file:convertToHtml', async (_event, filename, name) => {
   return { outputPath, downloadsDir };
 });
 
+// Convert to Markdown
+
+ipcMain.handle('file:convertToMarkdown', async (_event, filename, name) => {
+  if (!projectService.projectPath) return null;
+  const mdContent = fs.readFileSync(path.join(projectService.projectPath, filename), 'utf-8');
+  const downloadsDir = path.join(os.homedir(), 'Downloads');
+  const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+  const outputPath = path.join(downloadsDir, slug + '.md');
+  fs.writeFileSync(outputPath, mdContent, 'utf-8');
+  return { outputPath, downloadsDir };
+});
+
 // Convert to PDF
 
 ipcMain.handle('file:convertToPdf', async (_event, filename, name) => {
