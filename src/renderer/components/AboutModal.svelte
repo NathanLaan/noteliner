@@ -48,6 +48,8 @@
   .about-modal {
     width: 50%;
     height: 50%;
+    min-width: 480px;
+    min-height: 380px;
   }
 
   /* Flex-column the body so the OK button can be promoted to the bottom via
