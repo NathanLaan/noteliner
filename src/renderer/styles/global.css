@@ -110,7 +110,7 @@ input, textarea {
 .modal-header {
   display: flex;
   align-items: center;
-  background: var(--modal-header-bg);
+  background: var(--accent);
   padding: 16px 24px;
   flex-shrink: 0;
 }
@@ -118,7 +118,7 @@ input, textarea {
 .modal-header h2 {
   font-size: 14px;
   font-weight: 600;
-  color: var(--modal-header-text);
+  color: var(--accent-on);
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
