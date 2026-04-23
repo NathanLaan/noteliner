@@ -46,7 +46,7 @@
     '.cm-lineNumbers': { minWidth: '44px' },
   });
 
-  const LIGHT_EDITOR_THEMES = new Set(['light', 'lightPurple']);
+  const LIGHT_EDITOR_THEMES = new Set(['light', 'lightPurple', 'lightMulberry']);
 
   function getEditorTheme() {
     return LIGHT_EDITOR_THEMES.has(themeState.current) ? lightTheme : oneDark;

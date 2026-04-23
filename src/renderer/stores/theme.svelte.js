@@ -178,6 +178,42 @@ const THEMES = {
       '--modal-header-bg': '#e8e8e8',
       '--modal-header-text': '#1a1a1a',
     }
+  },
+  lightMulberry: {
+    name: 'Light-Mulberry',
+    vars: {
+      '--bg-base': '#f5f5f5',
+      '--bg-surface': '#ffffff',
+      '--bg-overlay': '#e8e8e8',
+      '--bg-button': '#e0e0e0',
+      '--bg-button-hover': '#d0d0d0',
+      '--bg-selected': 'rgba(126, 13, 79, 0.1)',
+      '--bg-drag-over': 'rgba(126, 13, 79, 0.12)',
+      '--bg-item-hover': 'rgba(0, 0, 0, 0.04)',
+      '--border': '#d4d4d4',
+      '--border-hover': '#b0b0b0',
+      '--text-primary': '#1a1a1a',
+      '--text-secondary': '#555555',
+      '--text-tertiary': '#333333',
+      '--text-muted': '#888888',
+      '--text-faint': '#bbbbbb',
+      '--accent': '#7E0D4F',
+      '--accent-hover': '#6E003F',
+      '--accent-on': '#ffffff',
+      '--scrollbar-track': '#f0f0f0',
+      '--scrollbar-thumb': '#c0c0c0',
+      '--scrollbar-thumb-hover': '#a0a0a0',
+      '--input-bg': '#f0f0f0',
+      '--input-border': '#d4d4d4',
+      '--input-border-focus': '#7E0D4F',
+      '--modal-overlay': 'rgba(0, 0, 0, 0.3)',
+      '--code-bg': '#e8e8e8',
+      '--pre-bg': '#f0f0f0',
+      '--blockquote-border': '#d4d4d4',
+      '--tag-bg': '#e0e0e0',
+      '--modal-header-bg': '#e8e8e8',
+      '--modal-header-text': '#1a1a1a',
+    }
   }
 };
 
