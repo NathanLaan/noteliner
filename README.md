@@ -2,6 +2,8 @@
 
 NoteLiner is a single-user outliner-style note-taking application, built with Electron and Svelte 5. It allows users to create and organize files in a hierarchical structure. Each file is written in Markdown with syntax highlighting, and all changes are automatically synced via Git.
 
+NoteLiner should be considered BETA software. I wrote it for my own personal use, and it meets my specific needs.
+
 ## Features
 
 - Hierarchical file organization with drag-and-drop reordering
