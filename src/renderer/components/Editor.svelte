@@ -45,8 +45,10 @@
     '.cm-lineNumbers': { minWidth: '44px' },
   });
 
+  const LIGHT_EDITOR_THEMES = new Set(['light', 'lightPurple']);
+
   function getEditorTheme() {
-    return themeState.current === 'light' ? lightTheme : oneDark;
+    return LIGHT_EDITOR_THEMES.has(themeState.current) ? lightTheme : oneDark;
   }
 
   function createEditor() {
