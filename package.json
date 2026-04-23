@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "start": "electron .",
+    "start": "electron --class=NoteLiner .",
     "electron:dev": "node scripts/dev.js",
     "postinstall": "bash scripts/install-desktop.sh"
   },
