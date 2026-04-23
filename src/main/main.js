@@ -6,6 +6,7 @@ const { GitService } = require('./git-service');
 const { ProjectService } = require('./project-service');
 const { WindowStateService } = require('./window-state-service');
 const { LinkGraphService } = require('./link-graph-service');
+const { ImportService } = require('./import-service');
 const { marked } = require('marked');
 
 // Set app name early so Linux WM_CLASS is correct (for dock icon in dev mode)
@@ -83,6 +84,7 @@ let mainWindow;
 let gitService;
 let projectService;
 let linkGraphService;
+let importService;
 let windowStateService;
 let boundsTimer = null;
 
@@ -124,6 +126,7 @@ function createWindow() {
 
   projectService = new ProjectService(gitService);
   linkGraphService = new LinkGraphService(projectService);
+  importService = new ImportService(projectService);
   windowStateService = new WindowStateService(
     path.join(app.getPath('userData'), 'window-state.json')
   );
@@ -306,6 +309,30 @@ ipcMain.handle('file:rename', async (_event, fileId, newName) => {
   } catch (err) {
     if (err.code === 'GIT_CONFIG_REQUIRED') return { error: 'git_config_required' };
     throw err;
+  }
+});
+
+// Import
+
+ipcMain.handle('dialog:openImportFile', async () => {
+  const result = await dialog.showOpenDialog(mainWindow, {
+    properties: ['openFile'],
+    filters: [
+      { name: 'Word Document', extensions: ['docx'] },
+    ],
+  });
+  if (result.canceled || result.filePaths.length === 0) return null;
+  return result.filePaths[0];
+});
+
+ipcMain.handle('file:import', async (_event, sourcePath) => {
+  try {
+    const result = await importService.importDocx(sourcePath);
+    await linkGraphService.rebuild();
+    return result;
+  } catch (err) {
+    if (err.code === 'GIT_CONFIG_REQUIRED') return { error: 'git_config_required' };
+    return { error: err.message };
   }
 });
 

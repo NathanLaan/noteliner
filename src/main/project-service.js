@@ -124,10 +124,10 @@ class ProjectService {
     this.gitService.schedulePush(this.projectPath);
   }
 
-  async createFile(name, tags) {
+  async createFile(name, tags, options = {}) {
     if (!name || !name.trim()) throw new Error('File name cannot be empty');
     const id = uuidv4();
-    const filename = this.slugify(name) + '.md';
+    const filename = this.uniqueFilename(this.slugify(name) + '.md');
 
     const entry = {
       id,
@@ -139,13 +139,16 @@ class ProjectService {
       attachments: []
     };
 
-    // Create the file on disk with a heading
     const filePath = path.join(this.projectPath, filename);
-    const now = new Date();
-    const yyyy = now.getFullYear();
-    const mm = String(now.getMonth() + 1).padStart(2, '0');
-    const dd = String(now.getDate()).padStart(2, '0');
-    fs.writeFileSync(filePath, `# ${name} ${yyyy}-${mm}-${dd}\n`, 'utf-8');
+    if (options.body != null) {
+      fs.writeFileSync(filePath, options.body, 'utf-8');
+    } else {
+      const now = new Date();
+      const yyyy = now.getFullYear();
+      const mm = String(now.getMonth() + 1).padStart(2, '0');
+      const dd = String(now.getDate()).padStart(2, '0');
+      fs.writeFileSync(filePath, `# ${name} ${yyyy}-${mm}-${dd}\n`, 'utf-8');
+    }
 
     // Update index
     this.index.files.push(entry);
@@ -321,6 +324,22 @@ class ProjectService {
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/(^-|-$)/g, '');
+  }
+
+  uniqueFilename(filename) {
+    const existing = new Set(this.index.files.map(f => f.filename));
+    if (!existing.has(filename) && !fs.existsSync(path.join(this.projectPath, filename))) {
+      return filename;
+    }
+    const ext = path.extname(filename);
+    const stem = filename.slice(0, -ext.length);
+    for (let i = 2; i < 10000; i++) {
+      const candidate = `${stem}-${i}${ext}`;
+      if (!existing.has(candidate) && !fs.existsSync(path.join(this.projectPath, candidate))) {
+        return candidate;
+      }
+    }
+    throw new Error('Could not find a unique filename');
   }
 }
 

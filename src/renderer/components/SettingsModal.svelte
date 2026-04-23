@@ -40,6 +40,7 @@
   const shortcuts = [
     { keys: 'Ctrl+N', action: 'New File' },
     { keys: 'Ctrl+D', action: 'Delete File' },
+    { keys: 'Ctrl+Shift+I', action: 'Import Document' },
     { keys: 'Ctrl+PgUp', action: 'Previous File' },
     { keys: 'Ctrl+PgDn', action: 'Next File' },
     { keys: 'Ctrl+O', action: 'Open Folder' },
