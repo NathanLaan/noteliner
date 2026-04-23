@@ -1,5 +1,5 @@
 <script>
-  let { onGoHome, onOpenFolder, onNewFile, onDeleteFile, onToggleSidebar, onToggleOutline, onToggleTags, onToggleTagGroups, onToggleLog, onToggleAttachments, onToggleSearch, onShowAbout, onShowSettings, onShowProjectSettings, onShowSync, onShowHelp, projectOpen, hasSelectedFile = false, logVisible = false, sidebarVisible = true, outlineVisible = false, tagsVisible = true, tagGroupsVisible = false, attachmentsVisible = false, searchVisible = false } = $props();
+  let { onGoHome, onOpenFolder, onNewFile, onDeleteFile, onToggleSidebar, onToggleOutline, onToggleTags, onToggleTagGroups, onToggleLog, onToggleAttachments, onToggleSearch, onToggleBacklinks, onShowAbout, onShowSettings, onShowProjectSettings, onShowSync, onShowHelp, projectOpen, hasSelectedFile = false, logVisible = false, sidebarVisible = true, outlineVisible = false, tagsVisible = true, tagGroupsVisible = false, attachmentsVisible = false, searchVisible = false, backlinksVisible = false } = $props();
 </script>
 
 <div class="toolbar">
@@ -48,6 +48,10 @@
 
     <button class="toolbar-btn" class:active={searchVisible} onclick={onToggleSearch} title="Search (Ctrl+F)">
       <i class="fas fa-magnifying-glass"></i>
+    </button>
+
+    <button class="toolbar-btn" class:active={backlinksVisible} onclick={onToggleBacklinks} title="Backlinks (Ctrl+Shift+B)">
+      <i class="fas fa-link"></i>
     </button>
   {/if}
 

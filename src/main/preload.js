@@ -50,6 +50,11 @@ contextBridge.exposeInMainWorld('api', {
   getFileHistory: (filename) => ipcRenderer.invoke('file:getHistory', filename),
   getFileHistoryContent: (commit, filename) => ipcRenderer.invoke('file:getHistoryContent', commit, filename),
 
+  // Link graph (wikilinks / backlinks)
+  getBacklinks: (fileId) => ipcRenderer.invoke('links:getBacklinks', fileId),
+  getAllNoteNames: () => ipcRenderer.invoke('links:getAllNames'),
+  rebuildLinkGraph: () => ipcRenderer.invoke('links:rebuild'),
+
   // Convert
   convertToHtml: (filename, name) => ipcRenderer.invoke('file:convertToHtml', filename, name),
   convertToMarkdown: (filename, name) => ipcRenderer.invoke('file:convertToMarkdown', filename, name),

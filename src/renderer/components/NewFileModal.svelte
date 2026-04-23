@@ -1,9 +1,9 @@
 <script>
   import { projectState } from '../stores/project.svelte.js';
 
-  let { onConfirm, onCancel } = $props();
+  let { onConfirm, onCancel, initialName = '' } = $props();
 
-  let fileName = $state('');
+  let fileName = $state(initialName);
   let selectedTags = $state(new Set());
 
   let allTags = $derived(projectState.allTags);

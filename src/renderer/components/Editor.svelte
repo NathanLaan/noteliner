@@ -11,6 +11,7 @@
   import { EditorState } from '@codemirror/state';
   import { oneDark } from '@codemirror/theme-one-dark';
   import { openSearchPanel } from '@codemirror/search';
+  import { autocompletion } from '@codemirror/autocomplete';
 
   const lightTheme = EditorView.theme({
     '&': { backgroundColor: '#ffffff', color: '#1a1a1a' },
@@ -51,6 +52,24 @@
     return LIGHT_EDITOR_THEMES.has(themeState.current) ? lightTheme : oneDark;
   }
 
+  function wikilinkCompletions(context) {
+    // Match "[[" followed by any chars that aren't "]" — the opened wikilink.
+    const match = context.matchBefore(/\[\[[^\]]*/);
+    if (!match) return null;
+    const typed = match.text.slice(2).toLowerCase();
+    const currentId = projectState.selectedFileId;
+    const options = projectState.index.files
+      .filter(f => f.id !== currentId && f.name.toLowerCase().includes(typed))
+      .slice(0, 50)
+      .map(f => ({
+        label: f.name,
+        type: 'text',
+        apply: `${f.name}]]`,
+      }));
+    if (options.length === 0) return null;
+    return { from: match.from + 2, options, validFor: /^[^\]]*$/ };
+  }
+
   function createEditor() {
     if (editorView) {
       editorView.destroy();
@@ -62,6 +81,7 @@
         basicSetup,
         keymap.of([indentWithTab, { key: 'Mod-Shift-f', run: openSearchPanel }]),
         markdown({ codeLanguages: languages }),
+        autocompletion({ override: [wikilinkCompletions] }),
         getEditorTheme(),
         customTheme,
         EditorView.domEventHandlers({
