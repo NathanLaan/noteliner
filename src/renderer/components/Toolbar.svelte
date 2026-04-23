@@ -1,5 +1,5 @@
 <script>
-  let { onGoHome, onOpenFolder, onNewFile, onDeleteFile, onToggleSidebar, onToggleOutline, onToggleTags, onToggleTagGroups, onToggleLog, onToggleAttachments, onToggleSearch, onToggleBacklinks, onShowAbout, onShowSettings, onShowProjectSettings, onShowSync, onShowHelp, projectOpen, hasSelectedFile = false, logVisible = false, sidebarVisible = true, outlineVisible = false, tagsVisible = true, tagGroupsVisible = false, attachmentsVisible = false, searchVisible = false, backlinksVisible = false } = $props();
+  let { onGoHome, onOpenFolder, onNewFile, onDeleteFile, onImportDocument, onToggleSidebar, onToggleOutline, onToggleTags, onToggleTagGroups, onToggleLog, onToggleAttachments, onToggleSearch, onToggleBacklinks, onShowAbout, onShowSettings, onShowProjectSettings, onShowSync, onShowHelp, projectOpen, hasSelectedFile = false, logVisible = false, sidebarVisible = true, outlineVisible = false, tagsVisible = true, tagGroupsVisible = false, attachmentsVisible = false, searchVisible = false, backlinksVisible = false } = $props();
 </script>
 
 <div class="toolbar">
@@ -20,6 +20,10 @@
 
     <button class="toolbar-btn" onclick={onDeleteFile} disabled={!hasSelectedFile} title="Delete File (Ctrl+D)">
       <i class="fas fa-file-circle-minus"></i>
+    </button>
+
+    <button class="toolbar-btn" onclick={onImportDocument} title="Import Document (Ctrl+Shift+I)">
+      <i class="fas fa-file-import"></i>
     </button>
 
     <div class="toolbar-divider"></div>

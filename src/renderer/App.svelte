@@ -17,10 +17,12 @@
   import ClearTagsModal from './components/ClearTagsModal.svelte';
   import SyncModal from './components/SyncModal.svelte';
   import SyncingModal from './components/SyncingModal.svelte';
+  import ImportingModal from './components/ImportingModal.svelte';
   import HistoryPanel from './components/HistoryPanel.svelte';
   import AttachmentPanel from './components/AttachmentPanel.svelte';
   import { projectState } from './stores/project.svelte.js';
   import { themeState } from './stores/theme.svelte.js';
+  import { logState } from './stores/log.svelte.js';
 
   const VALID_PANE_KEYS = ['files', 'tagGroups', 'outline', 'tags', 'search', 'backlinks'];
 
@@ -67,6 +69,8 @@
   let showNewFile = $state(false);
   let showDeleteFile = $state(false);
   let showSyncing = $state(false);
+  let showImporting = $state(false);
+  let importingFilename = $state('');
   let showClearTags = $state(false);
   let clearTagsFile = $state(null);
   let projectSettingsRequired = $state(false);
@@ -178,6 +182,9 @@
       } else if (e.ctrlKey && e.key === 'PageDown') {
         e.preventDefault();
         if (projectState.isOpen) projectState.selectNextFile();
+      } else if (e.ctrlKey && e.shiftKey && e.code === 'KeyI') {
+        e.preventDefault();
+        if (projectState.isOpen) handleImportDocument();
       } else if (e.ctrlKey && e.key === 'i') {
         e.preventDefault();
         showAbout = true;
@@ -278,6 +285,41 @@
   function handleDeleteFile() {
     if (!projectState.isOpen || !projectState.selectedFileId) return;
     showDeleteFile = true;
+  }
+
+  async function handleImportDocument() {
+    if (!projectState.isOpen) return;
+    const sourcePath = await window.api.openImportDialog();
+    if (!sourcePath) return;
+
+    const basename = sourcePath.split(/[\\/]/).pop();
+    importingFilename = basename;
+    showImporting = true;
+
+    try {
+      const result = await window.api.importDocument(sourcePath);
+      if (result?.error) {
+        logState.add(`Import failed: ${result.error}`);
+        return;
+      }
+      const { entry, stats } = result;
+      projectState.addFile(entry);
+      // selectFile reads the file and sets editorContent to the converted body.
+      projectState.selectFile(entry.id);
+
+      const parts = [`Imported ${basename}`];
+      if (stats.images) parts.push(`${stats.images} image${stats.images === 1 ? '' : 's'}`);
+      if (stats.tablesStripped) parts.push(`${stats.tablesStripped} table${stats.tablesStripped === 1 ? '' : 's'} stripped`);
+      logState.add(parts.join(' — '));
+      for (const w of stats.warnings || []) {
+        logState.add(`Import warning: ${w}`);
+      }
+    } catch (err) {
+      logState.add(`Import failed: ${err.message}`);
+    } finally {
+      showImporting = false;
+      importingFilename = '';
+    }
   }
 
   async function handleDeleteFileConfirm() {
@@ -549,6 +591,10 @@
   <SyncingModal />
 {/if}
 
+{#if showImporting}
+  <ImportingModal filename={importingFilename} />
+{/if}
+
 <div class="app-layout">
   {#if customTitlebar}
     <TitleBar
@@ -564,6 +610,7 @@
         onOpenFolder={handleOpenFolder}
         onNewFile={handleNewFile}
         onDeleteFile={handleDeleteFile}
+        onImportDocument={handleImportDocument}
         hasSelectedFile={!!projectState.selectedFileId}
         onToggleLog={handleToggleLog}
         onToggleSidebar={handleToggleSidebar}

@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "start": "electron .",
+    "start": "electron --class=NoteLiner .",
     "electron:dev": "node scripts/dev.js",
     "postinstall": "bash scripts/install-desktop.sh"
   },
@@ -31,6 +31,7 @@
     "@codemirror/theme-one-dark": "^6.1.3",
     "@fortawesome/fontawesome-free": "^6.7.0",
     "codemirror": "^6.0.1",
+    "mammoth": "^1.12.0",
     "marked": "^15.0.0",
     "sortablejs": "^1.15.6",
     "uuid": "^14.0.0"

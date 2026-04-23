@@ -39,7 +39,7 @@ vite.stdout.on('data', (data) => {
   // When Vite is ready, launch Electron
   if (output.includes('Local:')) {
     console.log('\nStarting Electron...\n');
-    const electron = spawn('npx', ['electron', '.'], {
+    const electron = spawn('npx', ['electron', '--class=NoteLiner', '.'], {
       cwd: path.resolve(__dirname, '..'),
       stdio: 'inherit',
       shell: true,

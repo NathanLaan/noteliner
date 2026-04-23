@@ -60,6 +60,10 @@ contextBridge.exposeInMainWorld('api', {
   convertToMarkdown: (filename, name) => ipcRenderer.invoke('file:convertToMarkdown', filename, name),
   convertToPdf: (filename, name) => ipcRenderer.invoke('file:convertToPdf', filename, name),
 
+  // Import
+  openImportDialog: () => ipcRenderer.invoke('dialog:openImportFile'),
+  importDocument: (sourcePath) => ipcRenderer.invoke('file:import', sourcePath),
+
   // System
   getSystemInfo: () => ipcRenderer.invoke('system:getInfo'),
   ensureDir: (dirPath) => ipcRenderer.invoke('fs:ensureDir', dirPath),
