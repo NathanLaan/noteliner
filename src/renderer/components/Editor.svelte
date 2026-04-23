@@ -64,7 +64,18 @@
       .map(f => ({
         label: f.name,
         type: 'text',
-        apply: `${f.name}]]`,
+        // Custom apply so we (a) skip inserting `]]` if closeBrackets already did,
+        // and (b) place the cursor after the closing `]]` rather than inside them.
+        apply: (view, _completion, from, to) => {
+          const afterText = view.state.doc.sliceString(to, to + 2);
+          const hasClose = afterText === ']]';
+          const insert = hasClose ? f.name : `${f.name}]]`;
+          const cursorAfter = from + f.name.length + 2;
+          view.dispatch({
+            changes: { from, to, insert },
+            selection: { anchor: cursorAfter },
+          });
+        },
       }));
     if (options.length === 0) return null;
     return { from: match.from + 2, options, validFor: /^[^\]]*$/ };
