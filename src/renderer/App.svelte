@@ -690,7 +690,7 @@
           }}></div>
         {/if}
         <div class="editor-area">
-          <Editor onTogglePreview={handleTogglePreview} showPreview={layout.showPreview} onToggleHistory={handleToggleHistory} showHistory={layout.showHistory} onGitConfigRequired={() => { projectSettingsRequired = true; showProjectSettings = true; }} />
+          <Editor onTogglePreview={handleTogglePreview} showPreview={layout.showPreview} onToggleHistory={handleToggleHistory} showHistory={layout.showHistory} onGitConfigRequired={() => { projectSettingsRequired = true; showProjectSettings = true; }} onSaveToHtml={handleSaveToHtml} onSaveToPdf={handleSaveToPdf} onSaveToMarkdown={handleSaveToMarkdown} />
         </div>
         {#if layout.showHistory}
           <div class="resizer history-resizer"></div>

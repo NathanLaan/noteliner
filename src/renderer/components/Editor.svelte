@@ -5,13 +5,14 @@
   import { logState } from '../stores/log.svelte.js';
   import { EditorView, basicSetup } from 'codemirror';
   import { keymap } from '@codemirror/view';
-  import { indentWithTab } from '@codemirror/commands';
+  import { indentWithTab, selectAll } from '@codemirror/commands';
   import { markdown } from '@codemirror/lang-markdown';
   import { languages } from '@codemirror/language-data';
   import { EditorState } from '@codemirror/state';
   import { oneDark } from '@codemirror/theme-one-dark';
   import { openSearchPanel } from '@codemirror/search';
   import { autocompletion } from '@codemirror/autocomplete';
+  import ContextMenu from './ContextMenu.svelte';
 
   const lightTheme = EditorView.theme({
     '&': { backgroundColor: '#ffffff', color: '#1a1a1a' },
@@ -25,7 +26,18 @@
     '.cm-foldPlaceholder': { backgroundColor: '#e8e8e8', color: '#666666' },
   }, { dark: false });
 
-  let { onTogglePreview, showPreview, onToggleHistory, showHistory, onGitConfigRequired = () => {} } = $props();
+  let {
+    onTogglePreview,
+    showPreview,
+    onToggleHistory,
+    showHistory,
+    onGitConfigRequired = () => {},
+    onSaveToHtml = () => {},
+    onSaveToPdf = () => {},
+    onSaveToMarkdown = () => {},
+  } = $props();
+
+  let contextMenu = $state(null);
 
   const IMAGE_EXTENSIONS = ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.svg'];
   const MAX_SIZE = 30 * 1024 * 1024;
@@ -274,6 +286,60 @@
     };
   }
 
+  function handleSelectAll() {
+    if (!editorView) return;
+    editorView.focus();
+    selectAll(editorView);
+  }
+
+  function handleCopy() {
+    if (!editorView) return;
+    editorView.focus();
+    document.execCommand('copy');
+  }
+
+  function handleCut() {
+    if (!editorView) return;
+    editorView.focus();
+    document.execCommand('cut');
+  }
+
+  async function handlePasteFromClipboard() {
+    if (!editorView) return;
+    editorView.focus();
+    try {
+      const text = await navigator.clipboard.readText();
+      if (text == null) return;
+      const { from, to } = editorView.state.selection.main;
+      editorView.dispatch({
+        changes: { from, to, insert: text },
+        selection: { anchor: from + text.length },
+      });
+    } catch {
+      document.execCommand('paste');
+    }
+  }
+
+  function handleContextMenu(e) {
+    e.preventDefault();
+    const zoom = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--ui-zoom')) || 1;
+    contextMenu = {
+      x: e.clientX / zoom,
+      y: e.clientY / zoom,
+      items: [
+        { label: 'Select All', icon: 'fa-object-group', action: handleSelectAll },
+        { separator: true },
+        { label: 'Cut', icon: 'fa-scissors', action: handleCut },
+        { label: 'Copy', icon: 'fa-copy', action: handleCopy },
+        { label: 'Paste', icon: 'fa-paste', action: handlePasteFromClipboard },
+        { separator: true },
+        { label: 'Save to HTML', icon: 'fa-file-code', action: onSaveToHtml },
+        { label: 'Save to PDF', icon: 'fa-file-pdf', action: onSaveToPdf },
+        { label: 'Save to Markdown', icon: 'fa-file-lines', action: onSaveToMarkdown },
+      ]
+    };
+  }
+
   onMount(() => {
     currentTheme = themeState.current;
     createEditor();
@@ -354,8 +420,17 @@
     </div>
   </div>
   <!-- svelte-ignore a11y_no_static_element_interactions -->
-  <div class="editor-container" bind:this={editorContainer} use:interceptInternalDrops onpaste={handlePaste} ondragover={handleDragOver} ondrop={handleDrop}></div>
+  <div class="editor-container" bind:this={editorContainer} use:interceptInternalDrops onpaste={handlePaste} ondragover={handleDragOver} ondrop={handleDrop} oncontextmenu={handleContextMenu}></div>
 </div>
+
+{#if contextMenu}
+  <ContextMenu
+    x={contextMenu.x}
+    y={contextMenu.y}
+    items={contextMenu.items}
+    onClose={() => contextMenu = null}
+  />
+{/if}
 
 <style>
   .editor-wrapper {
