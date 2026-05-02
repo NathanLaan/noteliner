@@ -442,6 +442,10 @@ ipcMain.handle('shell:openPath', async (_event, filePath) => {
   return await shell.openPath(filePath);
 });
 
+ipcMain.handle('shell:openExternal', async (_event, url) => {
+  return await shell.openExternal(url);
+});
+
 // Recent projects
 
 ipcMain.handle('projects:getRecent', async () => {
