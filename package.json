@@ -1,11 +1,25 @@
 {
   "name": "noteliner",
-  "version": "0.4.2",
+  "version": "0.5.0",
   "description": "An outliner-style note-taking app built with Electron and Svelte",
   "main": "src/main/main.js",
+  "author": {
+    "name": "Nathan Laan"
+  },
+  "homepage": "https://github.com/NathanLaan/noteliner",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/NathanLaan/noteliner.git"
+  },
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "build:icons": "bash scripts/build-icons.sh",
+    "build:linux": "npm run build && npm run build:icons && electron-builder --linux",
+    "build:win": "npm run build && npm run build:icons && electron-builder --win",
+    "build:mac": "npm run build && npm run build:icons && electron-builder --mac",
+    "build:all": "npm run build && npm run build:icons && electron-builder -mwl",
+    "release": "npm run build && npm run build:icons && electron-builder --publish always",
     "start": "electron --class=NoteLiner .",
     "electron:dev": "node scripts/dev.js",
     "test": "playwright test",
@@ -27,6 +41,7 @@
     "@playwright/test": "^1.59.1",
     "@sveltejs/vite-plugin-svelte": "^5.0.0",
     "electron": "^41.2.0",
+    "electron-builder": "^26.8.1",
     "playwright": "^1.59.1",
     "svelte": "^5.0.0",
     "vite": "^6.0.0"
@@ -38,6 +53,7 @@
     "@codemirror/theme-one-dark": "^6.1.3",
     "@fortawesome/fontawesome-free": "^6.7.0",
     "codemirror": "^6.0.1",
+    "electron-updater": "^6.8.3",
     "mammoth": "^1.12.0",
     "marked": "^15.0.0",
     "sortablejs": "^1.15.6",

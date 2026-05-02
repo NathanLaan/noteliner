@@ -7,6 +7,12 @@ if [ "$(uname)" != "Linux" ]; then
   exit 0
 fi
 
+# Skip in CI runners — the runner's $HOME is ephemeral, the desktop entry
+# would be useless, and electron-builder's packaging step doesn't need it.
+if [ -n "${CI:-}" ] || [ -n "${GITHUB_ACTIONS:-}" ]; then
+  exit 0
+fi
+
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 DESKTOP_DIR="$HOME/.local/share/applications"

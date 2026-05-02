@@ -2,6 +2,7 @@ node_modules/
 .vite/
 .cache/
 dist/
+dist-electron/
 package-lock.json
 
 # Playwright

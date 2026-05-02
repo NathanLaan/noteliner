@@ -198,6 +198,29 @@ app.whenReady().then(() => {
 
   createWindow();
 
+  // Auto-update only in packaged production builds. Dev runs and the test
+  // harness skip the network round-trip entirely.
+  if (app.isPackaged && !isTest) {
+    try {
+      const { autoUpdater } = require('electron-updater');
+      const log = (msg) => {
+        if (mainWindow && !mainWindow.isDestroyed()) {
+          mainWindow.webContents.send('git:log', `[update] ${msg}`);
+        }
+      };
+      autoUpdater.on('checking-for-update', () => log('Checking for update...'));
+      autoUpdater.on('update-available', (info) => log(`Update available: ${info?.version || ''}`));
+      autoUpdater.on('update-not-available', () => log('No update available.'));
+      autoUpdater.on('error', (err) => log(`Update error: ${err?.message || err}`));
+      autoUpdater.on('download-progress', (p) => log(`Downloading update: ${Math.round(p.percent || 0)}%`));
+      autoUpdater.on('update-downloaded', (info) => log(`Update ${info?.version || ''} ready; will install on next restart.`));
+      autoUpdater.checkForUpdatesAndNotify().catch((err) => log(`Update check failed: ${err?.message || err}`));
+    } catch (err) {
+      // electron-updater throws if there is no publish config — non-fatal.
+      console.warn('electron-updater unavailable:', err.message);
+    }
+  }
+
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {
       createWindow();

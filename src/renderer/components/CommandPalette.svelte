@@ -155,7 +155,7 @@
               {/if}
             </span>
             <span class="palette-label">{it.label}</span>
-            <span class="palette-section">{it.section}</span>
+            {#if !it.sub}<span class="palette-section">{it.section}</span>{/if}
             {#if it.sub}<span class="palette-sub">{it.sub}</span>{/if}
           </li>
         {/each}
@@ -168,73 +168,95 @@
   .palette-backdrop {
     position: fixed;
     inset: 0;
-    background: rgba(0, 0, 0, 0.4);
+    background: var(--modal-overlay);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
     z-index: 1000;
     display: flex;
     justify-content: center;
     align-items: flex-start;
-    padding-top: 12vh;
+    padding-top: 18vh;
   }
 
   .palette {
     width: 600px;
     max-width: 90vw;
-    max-height: 60vh;
+    max-height: 50vh;
+    min-height: 240px;
     display: flex;
     flex-direction: column;
-    background: var(--bg-elevated);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    background: var(--bg-surface);
+    border-radius: 10px;
+    /* Hard 1px ring + deep shadow lift the palette off the page so editor
+       text behind the backdrop never visually competes with palette rows. */
+    box-shadow:
+      0 0 0 1px var(--border),
+      0 16px 48px rgba(0, 0, 0, 0.55);
     overflow: hidden;
   }
 
   .palette-input-row {
-    display: flex;
+    display: grid;
+    grid-template-columns: 20px 1fr;
     align-items: center;
-    gap: 10px;
-    padding: 12px 16px;
+    gap: 12px;
+    padding: 14px 18px;
+    background: var(--input-bg);
     border-bottom: 1px solid var(--border);
     color: var(--text-muted);
   }
 
+  .palette-input-row i {
+    text-align: center;
+    font-size: 14px;
+  }
+
   .palette-input-row input {
-    flex: 1;
     background: transparent;
     border: none;
     outline: none;
     color: var(--text-primary);
-    font-size: 14px;
+    font-size: 16px;
+    line-height: 1.2;
+    padding: 2px 0;
+  }
+
+  .palette-input-row input::placeholder {
+    color: var(--text-muted);
   }
 
   .palette-list {
     flex: 1;
     overflow-y: auto;
-    padding: 4px 0;
+    padding: 6px 0;
     list-style: none;
     margin: 0;
   }
 
   .palette-row {
     display: grid;
-    grid-template-columns: 24px 1fr auto auto;
+    grid-template-columns: 24px 1fr auto;
     align-items: center;
-    gap: 10px;
-    padding: 8px 16px;
+    gap: 12px;
+    padding: 10px 18px;
+    /* Reserve 3px for the selected-state accent bar so labels don't shift
+       horizontally when the selection moves between rows. */
+    border-left: 3px solid transparent;
     cursor: pointer;
     color: var(--text-primary);
-    font-size: 13px;
+    font-size: 14px;
+    transition: background 0.08s, border-color 0.08s;
   }
 
   .palette-row.selected {
-    background: var(--bg-selected);
-    outline: 1px solid var(--accent);
-    outline-offset: -1px;
+    background: color-mix(in srgb, var(--accent) 15%, transparent);
+    border-left-color: var(--accent);
   }
 
   .palette-kind {
     color: var(--text-muted);
-    font-size: 12px;
+    font-size: 13px;
+    text-align: center;
   }
 
   .palette-row.selected .palette-kind {
@@ -248,24 +270,31 @@
   }
 
   .palette-section {
-    font-size: 11px;
+    font-size: 10px;
     color: var(--text-muted);
     text-transform: uppercase;
-    letter-spacing: 0.5px;
+    letter-spacing: 0.6px;
+    opacity: 0.7;
   }
 
   .palette-sub {
-    font-family: monospace;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
     font-size: 11px;
-    color: var(--text-muted);
+    color: var(--text-secondary);
     background: var(--bg-button);
-    padding: 2px 8px;
+    padding: 3px 8px;
     border-radius: 4px;
     border: 1px solid var(--border);
+    line-height: 1;
+  }
+
+  .palette-row.selected .palette-sub {
+    color: var(--text-primary);
+    border-color: var(--accent);
   }
 
   .palette-empty {
-    padding: 16px;
+    padding: 24px 16px;
     text-align: center;
     color: var(--text-muted);
     font-size: 13px;

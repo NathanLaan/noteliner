@@ -1,0 +1,90 @@
+appId: com.nathanlaan.noteliner
+productName: NoteLiner
+copyright: Copyright (c) 2026 Nathan Laan
+
+directories:
+  output: dist-electron
+  buildResources: build
+
+# Files included in the packaged app. Excludes test scaffolding, source maps,
+# and dev-only docs that bloat the asar without adding runtime value.
+files:
+  - "src/main/**/*"
+  - "dist/**/*"
+  - "package.json"
+  - "!**/node_modules/*/{CHANGELOG.md,README.md,README,readme.md,readme}"
+  - "!**/node_modules/*/{test,__tests__,tests,powered-test,example,examples}"
+  - "!**/node_modules/*.d.ts"
+  - "!**/node_modules/.bin"
+  - "!**/*.{iml,o,hprof,orig,pyc,pyo,rbc,swp,csproj,sln,xproj}"
+  - "!.editorconfig"
+  - "!**/._*"
+  - "!**/{.DS_Store,.git,.svn,.hg,CVS,RCS,SCCS,.gitignore,.gitattributes}"
+  - "!**/{__pycache__,thumbs.db,.flowconfig,.idea,.vs,.nyc_output}"
+  - "!**/{appveyor.yml,.travis.yml,circle.yml}"
+  - "!playwright.config.js"
+  - "!tests/**"
+  - "!scripts/bench/**"
+  - "!docs/**"
+  - "!.github/**"
+
+asar: true
+
+# --- Linux ---
+linux:
+  category: Office
+  icon: build/icon.png
+  # The .deb format requires a maintainer with an email. GitHub's noreply
+  # pattern is the standard placeholder; replace before a public release.
+  maintainer: Nathan Laan <NathanLaan@users.noreply.github.com>
+  target:
+    - target: AppImage
+      arch: [x64]
+    - target: deb
+      arch: [x64]
+  desktop:
+    entry:
+      Name: NoteLiner
+      Comment: An outliner-style note-taking application
+      Categories: Utility;TextEditor;
+      StartupWMClass: NoteLiner
+
+# --- Windows ---
+# Without a code-signing cert (WIN_CSC_LINK / WIN_CSC_KEY_PASSWORD secrets in CI),
+# binaries are unsigned and Windows SmartScreen will warn the first time.
+win:
+  icon: build/icon.png
+  target:
+    - target: nsis
+      arch: [x64]
+    - target: portable
+      arch: [x64]
+
+nsis:
+  oneClick: false
+  perMachine: false
+  allowElevation: true
+  allowToChangeInstallationDirectory: true
+  shortcutName: NoteLiner
+
+# --- macOS ---
+# Without an Apple Developer cert + notarization, Gatekeeper blocks first launch
+# (right-click -> Open works around it). Configure when CSC_* + APPLE_* secrets
+# are available; until then ship unsigned.
+mac:
+  category: public.app-category.productivity
+  icon: build/icon.png
+  target:
+    - target: dmg
+      arch: [x64, arm64]
+    - target: zip
+      arch: [x64, arm64]
+  hardenedRuntime: true
+  gatekeeperAssess: false
+
+# --- Auto-update via GitHub Releases ---
+publish:
+  provider: github
+  owner: NathanLaan
+  repo: noteliner
+  releaseType: release
