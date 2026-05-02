@@ -20,9 +20,11 @@
   import ImportingModal from './components/ImportingModal.svelte';
   import HistoryPanel from './components/HistoryPanel.svelte';
   import AttachmentPanel from './components/AttachmentPanel.svelte';
+  import CommandPalette from './components/CommandPalette.svelte';
   import { projectState } from './stores/project.svelte.js';
   import { themeState } from './stores/theme.svelte.js';
   import { logState } from './stores/log.svelte.js';
+  import { commandRegistry } from './stores/commands.svelte.js';
   import { installTestHelpers } from './test-helpers.js';
 
   const VALID_PANE_KEYS = ['files', 'tagGroups', 'outline', 'tags', 'search', 'backlinks'];
@@ -79,6 +81,7 @@
   let searchFocusTs = $state(null);
   let setupFolderPath = $state('');
   let customTitlebar = $state(false);
+  let showPalette = $state(false);
 
   // Debounced layout save
   let layoutSaveTimer = null;
@@ -105,106 +108,146 @@
     );
   });
 
+  function registerCommands() {
+    const C = (def) => commandRegistry.register(def);
+    const ctrl = (e) => e.ctrlKey || e.metaKey;
+    const projectOpen = () => projectState.isOpen;
+    const hasSelection = () => projectState.isOpen && !!projectState.selectedFileId;
+
+    // File
+    C({ id: 'file.new', label: 'New File', section: 'File', shortcut: 'Ctrl+N',
+        matches: (e) => ctrl(e) && !e.shiftKey && !e.altKey && e.key === 'n',
+        when: projectOpen, run: () => handleNewFile() });
+    C({ id: 'file.delete', label: 'Delete File', section: 'File', shortcut: 'Ctrl+D',
+        matches: (e) => ctrl(e) && !e.shiftKey && !e.altKey && e.key === 'd',
+        when: hasSelection, run: () => handleDeleteFile() });
+    C({ id: 'file.import', label: 'Import Document', section: 'File', shortcut: 'Ctrl+Shift+I',
+        matches: (e) => ctrl(e) && e.shiftKey && !e.altKey && e.code === 'KeyI',
+        when: projectOpen, run: () => handleImportDocument() });
+    C({ id: 'file.openFolder', label: 'Open Folder', section: 'File', shortcut: 'Ctrl+O',
+        matches: (e) => ctrl(e) && !e.shiftKey && !e.altKey && e.key === 'o',
+        run: () => handleOpenFolder() });
+    C({ id: 'file.prev', label: 'Previous File', section: 'File', shortcut: 'Ctrl+PgUp',
+        matches: (e) => ctrl(e) && !e.altKey && e.key === 'PageUp',
+        when: projectOpen, run: () => projectState.selectPrevFile() });
+    C({ id: 'file.next', label: 'Next File', section: 'File', shortcut: 'Ctrl+PgDn',
+        matches: (e) => ctrl(e) && !e.altKey && e.key === 'PageDown',
+        when: projectOpen, run: () => projectState.selectNextFile() });
+
+    // View
+    C({ id: 'view.togglePreview', label: 'Toggle Preview', section: 'View', shortcut: 'Ctrl+P',
+        matches: (e) => ctrl(e) && !e.shiftKey && !e.altKey && e.key === 'p',
+        run: () => handleTogglePreview() });
+    C({ id: 'view.toggleHistory', label: 'Toggle History', section: 'View', shortcut: 'Ctrl+H',
+        matches: (e) => ctrl(e) && !e.shiftKey && !e.altKey && e.key === 'h',
+        when: projectOpen, run: () => handleToggleHistory() });
+    C({ id: 'view.toggleSidebar', label: 'Toggle Files Panel', section: 'View', shortcut: 'Ctrl+E',
+        matches: (e) => ctrl(e) && !e.shiftKey && !e.altKey && e.key === 'e',
+        when: projectOpen, run: () => handleToggleSidebar() });
+    C({ id: 'view.toggleToolbar', label: 'Toggle Toolbar', section: 'View', shortcut: 'Ctrl+Shift+E',
+        matches: (e) => ctrl(e) && e.shiftKey && !e.altKey && e.code === 'KeyE',
+        run: () => handleToggleToolbar() });
+    C({ id: 'view.toggleOutline', label: 'Toggle Outline', section: 'View', shortcut: 'Ctrl+Shift+O',
+        matches: (e) => ctrl(e) && e.shiftKey && !e.altKey && e.code === 'KeyO',
+        when: projectOpen, run: () => handleToggleOutline() });
+    C({ id: 'view.toggleTags', label: 'Toggle Tags', section: 'View', shortcut: 'Ctrl+Shift+T',
+        matches: (e) => ctrl(e) && e.shiftKey && !e.altKey && e.code === 'KeyT',
+        when: projectOpen, run: () => handleToggleTags() });
+    C({ id: 'view.toggleTagGroups', label: 'Toggle Tag Groups', section: 'View', shortcut: 'Ctrl+G',
+        matches: (e) => ctrl(e) && !e.shiftKey && !e.altKey && e.key === 'g',
+        when: projectOpen, run: () => handleToggleTagGroups() });
+    C({ id: 'view.toggleAttachments', label: 'Toggle Attachments', section: 'View', shortcut: 'Ctrl+B',
+        matches: (e) => ctrl(e) && !e.shiftKey && !e.altKey && e.key === 'b',
+        run: () => handleToggleAttachments() });
+    C({ id: 'view.toggleSearch', label: 'Toggle Search', section: 'View', shortcut: 'Ctrl+F',
+        matches: (e) => ctrl(e) && !e.shiftKey && !e.altKey && e.key === 'f',
+        when: projectOpen, run: () => handleToggleSearch() });
+    C({ id: 'view.toggleBacklinks', label: 'Toggle Backlinks', section: 'View', shortcut: 'Ctrl+Shift+B',
+        matches: (e) => ctrl(e) && e.shiftKey && !e.altKey && e.code === 'KeyB',
+        when: projectOpen, run: () => handleToggleBacklinks() });
+    C({ id: 'view.toggleLog', label: 'Toggle Log Panel', section: 'View', shortcut: 'Ctrl+L',
+        matches: (e) => ctrl(e) && !e.shiftKey && !e.altKey && e.key === 'l',
+        run: () => handleToggleLog() });
+    C({ id: 'view.zoomIn', label: 'Zoom In', section: 'View', shortcut: 'Ctrl+=',
+        matches: (e) => ctrl(e) && !e.altKey && (e.key === '=' || e.key === '+'),
+        run: () => themeState.zoomIn() });
+    C({ id: 'view.zoomOut', label: 'Zoom Out', section: 'View', shortcut: 'Ctrl+-',
+        matches: (e) => ctrl(e) && !e.altKey && e.key === '-',
+        run: () => themeState.zoomOut() });
+    C({ id: 'view.zoomReset', label: 'Zoom Reset', section: 'View', shortcut: 'Ctrl+0',
+        matches: (e) => ctrl(e) && !e.altKey && e.key === '0',
+        run: () => themeState.zoomReset() });
+
+    // Tags
+    C({ id: 'tag.add', label: 'Add Tag', section: 'Tags', shortcut: 'Ctrl+T',
+        matches: (e) => ctrl(e) && !e.shiftKey && !e.altKey && e.key === 't',
+        when: hasSelection, run: () => triggerTagAction('add') });
+    C({ id: 'tag.remove', label: 'Remove Tag', section: 'Tags', shortcut: 'Ctrl+Y',
+        matches: (e) => ctrl(e) && !e.shiftKey && !e.altKey && e.key === 'y',
+        when: hasSelection, run: () => triggerTagAction('remove') });
+
+    // Project
+    C({ id: 'project.sync', label: 'Remote Sync', section: 'Project', shortcut: 'Ctrl+Shift+S',
+        matches: (e) => ctrl(e) && e.shiftKey && !e.altKey && e.code === 'KeyS',
+        when: projectOpen, run: () => handleShowSync() });
+    C({ id: 'project.settings', label: 'Project Settings', section: 'Project', shortcut: 'Ctrl+Shift+,',
+        matches: (e) => ctrl(e) && e.shiftKey && !e.altKey && e.code === 'Comma',
+        when: projectOpen, run: () => handleShowProjectSettings() });
+    C({ id: 'project.goHome', label: 'Close Project (Home)', section: 'Project',
+        when: projectOpen, run: () => handleGoHome() });
+
+    // App
+    C({ id: 'app.settings', label: 'Settings', section: 'App', shortcut: 'Ctrl+,',
+        matches: (e) => ctrl(e) && !e.shiftKey && !e.altKey && e.key === ',',
+        run: () => handleShowSettings() });
+    C({ id: 'app.about', label: 'About', section: 'App', shortcut: 'Ctrl+I',
+        matches: (e) => ctrl(e) && !e.shiftKey && !e.altKey && e.key === 'i',
+        run: () => handleShowAbout() });
+    C({ id: 'app.commandPalette', label: 'Command Palette', section: 'App', shortcut: 'Ctrl+K',
+        matches: (e) => ctrl(e) && !e.altKey
+          && ((!e.shiftKey && (e.key === 'k' || e.key === 'K')) || (e.shiftKey && e.code === 'KeyP')),
+        run: () => { showPalette = true; } });
+  }
+
+  // Persist recently-used command ids back to ui-preferences (debounced).
+  let recentsSaveTimer = null;
+  $effect(() => {
+    const ids = commandRegistry.recentIds;
+    if (!recentsLoaded) return;
+    if (recentsSaveTimer) clearTimeout(recentsSaveTimer);
+    recentsSaveTimer = setTimeout(() => {
+      recentsSaveTimer = null;
+      window.api?.setUIPrefs?.({ commandRecents: $state.snapshot(ids) }).catch(() => {});
+    }, 500);
+  });
+  let recentsLoaded = $state(false);
+
   onMount(() => {
     // themeState.init() runs at module scope in main.js before mount — don't repeat here.
 
     installTestHelpers(projectState);
+    registerCommands();
 
     if (window.api?.getUIPrefs) {
       window.api.getUIPrefs().then((prefs) => {
         customTitlebar = !!prefs?.customTitlebar;
-      }).catch(() => {});
+        commandRegistry.loadRecents(prefs?.commandRecents || []);
+      }).catch(() => {}).finally(() => {
+        recentsLoaded = true;
+      });
+    } else {
+      recentsLoaded = true;
     }
 
     function handleKeydown(e) {
-      if (e.ctrlKey && e.key === 'n') {
-        e.preventDefault();
-        handleNewFile();
-      } else if (e.ctrlKey && e.key === 'd') {
-        e.preventDefault();
-        handleDeleteFile();
-      } else if (e.ctrlKey && e.key === 'o') {
-        e.preventDefault();
-        handleOpenFolder();
-      } else if (e.ctrlKey && e.key === 'p') {
-        e.preventDefault();
-        handleTogglePreview();
-      } else if (e.ctrlKey && e.key === 'h') {
-        e.preventDefault();
-        if (projectState.isOpen) handleToggleHistory();
-      } else if (e.ctrlKey && e.shiftKey && e.code === 'Comma') {
-        e.preventDefault();
-        showProjectSettings = true;
-        projectSettingsRequired = false;
-      } else if (e.ctrlKey && e.key === ',') {
-        e.preventDefault();
-        showSettings = true;
-      } else if (e.ctrlKey && e.shiftKey && e.code === 'KeyS') {
-        e.preventDefault();
-        if (projectState.isOpen) showSync = true;
-      } else if (e.ctrlKey && e.shiftKey && e.code === 'KeyO') {
-        e.preventDefault();
-        if (projectState.isOpen) handleToggleOutline();
-      } else if (e.ctrlKey && e.key === 't') {
-        e.preventDefault();
-        if (projectState.isOpen && projectState.selectedFileId) {
-          tagAction = { type: 'add', ts: Date.now() };
-        }
-      } else if (e.ctrlKey && e.key === 'y') {
-        e.preventDefault();
-        if (projectState.isOpen && projectState.selectedFileId) {
-          tagAction = { type: 'remove', ts: Date.now() };
-        }
-      } else if (e.ctrlKey && e.shiftKey && e.code === 'KeyT') {
-        e.preventDefault();
-        if (projectState.isOpen) handleToggleTags();
-      } else if (e.ctrlKey && e.shiftKey && e.code === 'KeyB') {
-        e.preventDefault();
-        if (projectState.isOpen) handleToggleBacklinks();
-      } else if (e.ctrlKey && e.key === 'g') {
-        e.preventDefault();
-        if (projectState.isOpen) handleToggleTagGroups();
-      } else if (e.ctrlKey && e.shiftKey && e.code === 'KeyE') {
-        e.preventDefault();
-        handleToggleToolbar();
-      } else if (e.ctrlKey && e.key === 'e') {
-        e.preventDefault();
-        if (projectState.isOpen) handleToggleSidebar();
-      } else if (e.ctrlKey && e.key === 'l') {
-        e.preventDefault();
-        handleToggleLog();
-      } else if (e.ctrlKey && e.key === 'b') {
-        e.preventDefault();
-        handleToggleAttachments();
-      } else if (e.ctrlKey && !e.shiftKey && e.key === 'f') {
-        e.preventDefault();
-        if (projectState.isOpen) handleToggleSearch();
-      } else if (e.ctrlKey && e.key === 'PageUp') {
-        e.preventDefault();
-        if (projectState.isOpen) projectState.selectPrevFile();
-      } else if (e.ctrlKey && e.key === 'PageDown') {
-        e.preventDefault();
-        if (projectState.isOpen) projectState.selectNextFile();
-      } else if (e.ctrlKey && e.shiftKey && e.code === 'KeyI') {
-        e.preventDefault();
-        if (projectState.isOpen) handleImportDocument();
-      } else if (e.ctrlKey && e.key === 'i') {
-        e.preventDefault();
-        showAbout = true;
-      } else if (e.ctrlKey && (e.key === '=' || e.key === '+')) {
-        e.preventDefault();
-        themeState.zoomIn();
-      } else if (e.ctrlKey && e.key === '-') {
-        e.preventDefault();
-        themeState.zoomOut();
-      } else if (e.ctrlKey && e.key === '0') {
-        e.preventDefault();
-        themeState.zoomReset();
-      }
+      // Palette gets all keystrokes when open; don't dispatch shortcuts past it.
+      if (showPalette) return;
+      commandRegistry.dispatchKeyEvent(e);
     }
 
-    window.addEventListener('keydown', handleKeydown);
-    return () => window.removeEventListener('keydown', handleKeydown);
+    // Capture phase so Ctrl+K reaches us before CodeMirror's "delete-to-EOL" binding.
+    window.addEventListener('keydown', handleKeydown, true);
+    return () => window.removeEventListener('keydown', handleKeydown, true);
   });
 
   async function loadProject(folderPath, result) {
@@ -530,6 +573,10 @@
     }
   }
 </script>
+
+{#if showPalette}
+  <CommandPalette onClose={() => showPalette = false} />
+{/if}
 
 {#if showAbout}
   <AboutModal onClose={() => showAbout = false} />
