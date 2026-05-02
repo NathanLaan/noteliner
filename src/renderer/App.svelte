@@ -23,6 +23,7 @@
   import { projectState } from './stores/project.svelte.js';
   import { themeState } from './stores/theme.svelte.js';
   import { logState } from './stores/log.svelte.js';
+  import { installTestHelpers } from './test-helpers.js';
 
   const VALID_PANE_KEYS = ['files', 'tagGroups', 'outline', 'tags', 'search', 'backlinks'];
 
@@ -106,6 +107,8 @@
 
   onMount(() => {
     // themeState.init() runs at module scope in main.js before mount — don't repeat here.
+
+    installTestHelpers(projectState);
 
     if (window.api?.getUIPrefs) {
       window.api.getUIPrefs().then((prefs) => {

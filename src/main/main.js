@@ -89,6 +89,7 @@ let windowStateService;
 let boundsTimer = null;
 
 const isDev = !app.isPackaged;
+const isTest = process.env.NODE_ENV === 'test';
 
 function createWindow() {
   const uiPrefs = loadUIPrefs();
@@ -109,13 +110,21 @@ function createWindow() {
 
   Menu.setApplicationMenu(null);
 
-  if (isDev) {
+  if (isDev && !isTest) {
     mainWindow.loadURL('http://localhost:5250');
     mainWindow.webContents.on('console-message', ({ level, message }) => {
       console.log(`[Renderer ${level}] ${message}`);
     });
   } else {
-    mainWindow.loadFile(path.join(__dirname, '..', '..', 'dist', 'index.html'));
+    const indexFile = path.join(__dirname, '..', '..', 'dist', 'index.html');
+    if (isTest) {
+      mainWindow.loadFile(indexFile, { query: { test: '1' } });
+      mainWindow.webContents.on('console-message', ({ level, message }) => {
+        console.log(`[Renderer ${level}] ${message}`);
+      });
+    } else {
+      mainWindow.loadFile(indexFile);
+    }
   }
 
   gitService = new GitService((msg) => {

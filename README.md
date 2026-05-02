@@ -81,6 +81,19 @@ npm run build           # Build the renderer (Vite)
 npm run start           # Run the built Electron app
 ```
 
+## Testing
+
+End-to-end smoke tests run against the real Electron app via Playwright.
+
+```bash
+npm run build           # tests run against dist/, build first
+npm test                # headless
+npm run test:headed     # show the Electron window
+npm run test:debug      # Playwright Inspector
+```
+
+See `tests/README.md` for the test mandate and how the harness works.
+
 ## Technology
 
 - [Electron](https://www.electronjs.org/) -- Desktop application framework
