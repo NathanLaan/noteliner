@@ -7,6 +7,7 @@ const { ProjectService } = require('./project-service');
 const { WindowStateService } = require('./window-state-service');
 const { LinkGraphService } = require('./link-graph-service');
 const { ImportService } = require('./import-service');
+const perf = require('./perf');
 const { marked } = require('marked');
 
 // Set app name early so Linux WM_CLASS is correct (for dock icon in dev mode)
@@ -242,9 +243,14 @@ ipcMain.handle('dialog:openFolder', async () => {
 });
 
 ipcMain.handle('project:open', async (_event, folderPath) => {
-  const result = await projectService.openProject(folderPath);
-  if (result.status === 'loaded') await linkGraphService.rebuild();
-  return result;
+  return perf.measure('project.open', async () => {
+    const result = await projectService.openProject(folderPath);
+    if (result.status === 'loaded') {
+      await perf.measure('linkgraph.rebuild', () => linkGraphService.rebuild(),
+        { files: projectService.index?.files?.length || 0 });
+    }
+    return result;
+  });
 });
 
 ipcMain.handle('project:init', async (_event, folderPath, remoteUrl) => {
@@ -270,31 +276,35 @@ ipcMain.handle('project:saveIndex', async (_event, index) => {
 });
 
 ipcMain.handle('file:read', async (_event, filePath) => {
-  return await projectService.readFile(filePath);
+  return perf.measure('file.read', () => projectService.readFile(filePath));
 });
 
 ipcMain.handle('file:write', async (_event, filePath, content) => {
-  try {
-    const result = await projectService.writeFile(filePath, content);
-    const entry = projectService.index?.files.find(f => f.filename === filePath);
-    if (entry) await linkGraphService.scanFile(entry.id);
-    return result;
-  } catch (err) {
-    if (err.code === 'GIT_CONFIG_REQUIRED') return { error: 'git_config_required' };
-    throw err;
-  }
+  return perf.measure('file.write', async () => {
+    try {
+      const result = await projectService.writeFile(filePath, content);
+      const entry = projectService.index?.files.find(f => f.filename === filePath);
+      if (entry) await linkGraphService.scanFile(entry.id);
+      return result;
+    } catch (err) {
+      if (err.code === 'GIT_CONFIG_REQUIRED') return { error: 'git_config_required' };
+      throw err;
+    }
+  }, { bytes: typeof content === 'string' ? content.length : 0 });
 });
 
 ipcMain.handle('file:create', async (_event, name, tags) => {
-  try {
-    const entry = await projectService.createFile(name, tags);
-    // New file may resolve pre-existing dangling links elsewhere; full rebuild is cheap.
-    await linkGraphService.rebuild();
-    return entry;
-  } catch (err) {
-    if (err.code === 'GIT_CONFIG_REQUIRED') return { error: 'git_config_required' };
-    throw err;
-  }
+  return perf.measure('file.create', async () => {
+    try {
+      const entry = await projectService.createFile(name, tags);
+      // New file may resolve pre-existing dangling links elsewhere; full rebuild is cheap.
+      await linkGraphService.rebuild();
+      return entry;
+    } catch (err) {
+      if (err.code === 'GIT_CONFIG_REQUIRED') return { error: 'git_config_required' };
+      throw err;
+    }
+  });
 });
 
 ipcMain.handle('file:delete', async (_event, fileId) => {
@@ -348,7 +358,7 @@ ipcMain.handle('file:import', async (_event, sourcePath) => {
 // Link graph
 
 ipcMain.handle('links:getBacklinks', async (_event, fileId) => {
-  return linkGraphService.getBacklinkSnippets(fileId);
+  return perf.measure('links.backlinks', () => linkGraphService.getBacklinkSnippets(fileId));
 });
 
 ipcMain.handle('links:getAllNames', async () => {
@@ -356,7 +366,8 @@ ipcMain.handle('links:getAllNames', async () => {
 });
 
 ipcMain.handle('links:rebuild', async () => {
-  await linkGraphService.rebuild();
+  await perf.measure('linkgraph.rebuild', () => linkGraphService.rebuild(),
+    { files: projectService.index?.files?.length || 0 });
 });
 
 ipcMain.handle('git:push', async () => {
@@ -490,7 +501,8 @@ ipcMain.handle('fs:ensureDir', async (_event, dirPath) => {
 
 ipcMain.handle('search:query', async (_event, query, options) => {
   if (!projectService.projectPath) return [];
-  return projectService.search(query, options);
+  return perf.measure('search.query', () => projectService.search(query, options),
+    { qLen: typeof query === 'string' ? query.length : 0 });
 });
 
 // Convert to HTML
