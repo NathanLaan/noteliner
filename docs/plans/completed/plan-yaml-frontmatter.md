@@ -1,5 +1,62 @@
 # YAML Frontmatter Support — Implementation Plan
 
+## Status
+
+**Completed 2026-05-03.** All v1 scope shipped. `noteliner.json` remains
+authoritative; `.md` files are now self-describing for external tools.
+
+**Shipped:**
+- `src/main/frontmatter-service.js` — parse / serialize / mirror /
+  divergence-check; preserves user-added fields untouched.
+- `gray-matter` runtime dep.
+- `ProjectService` integration:
+  - `readFile` strips frontmatter before returning to the renderer.
+  - `writeFile` reattaches mirrored frontmatter on every save.
+  - `createFile` writes initial frontmatter.
+  - `renameFile` rewrites the `name` mirror in the same commit as the
+    rename.
+  - `saveIndex` diffs old vs new and rewrites frontmatter for any entry
+    whose `name` or `tags` changed (catches tag edits from the renderer).
+  - `reconcileFrontmatter` walks every entry, fixes drift, returns
+    rewrite count.
+- `openProject` runs the reconciler and produces a single
+  `Sync frontmatter on N notes` commit on first open after upgrade
+  (skipped when git config is missing — caught next open).
+- `convertToHtml`, `convertToPdf`, `getFileHistoryContent`, `search`,
+  `linkGraphService.rebuild`/`scanFile` all strip frontmatter before
+  consuming content (so YAML never renders or matches as "body").
+- Settings toggle "Write YAML frontmatter to .md files" in the UI tab,
+  default on. Stored in `ui-preferences.json`. When off, future writes
+  emit pure markdown; existing frontmatter is dropped on next save of
+  each file.
+- `convertToMarkdown` (export) preserves frontmatter — markdown export is
+  for round-tripping, frontmatter is part of the document.
+- Bench vault generator (`scripts/bench/generate-vault.js`) writes
+  frontmatter so generated vaults match real-world file shape.
+- Two new smoke tests (`tests/e2e/07-frontmatter.spec.js`):
+  - Created file has frontmatter on disk; `readFile` IPC returns body
+    only.
+  - Rename rewrites the on-disk `name` field.
+
+**Field mirroring rules (closed set):** `id`, `name`, `tags`, `created`
+(set on first write, preserved thereafter), `updated` (refreshed on every
+write). `parentId`, `order`, and `attachments` are deliberately *not*
+mirrored — they're project-level structure, not note-intrinsic.
+
+**Deferred (per "Out of Scope (V1)" in this plan):**
+- Custom field mapping (user-declared mirrors).
+- Real-time filesystem watching for external edits — open-time reconciler
+  only.
+- Conflict resolution UI for index-vs-frontmatter divergence — v1 always
+  favors the index; mismatches are not surfaced.
+- Migrating off `noteliner.json` (not a goal; frontmatter is a mirror).
+- Newer-wins resolution via `updated` timestamp — index always wins.
+
+**Conflict policy (v1):** if frontmatter diverges from the index on open,
+the index wins silently and the on-disk frontmatter is rewritten to match.
+The plan's "log warning per divergence" was simplified to a silent
+reconcile + single batched commit; the commit message names the count.
+
 ## Overview
 
 Adopt YAML frontmatter at the top of each `.md` file as a portable,

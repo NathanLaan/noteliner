@@ -41,7 +41,8 @@ class LinkGraphService {
     for (const file of this.projectService.index.files) {
       const filePath = path.join(this.projectService.projectPath, file.filename);
       if (!fs.existsSync(filePath)) continue;
-      const content = fs.readFileSync(filePath, 'utf-8');
+      const raw = fs.readFileSync(filePath, 'utf-8');
+      const content = this.projectService.frontmatter.stripBody(raw);
       this.applyFileLinks(file.id, content, nameToId);
     }
   }
@@ -77,7 +78,8 @@ class LinkGraphService {
     if (!file) return;
     const filePath = path.join(this.projectService.projectPath, file.filename);
     if (!fs.existsSync(filePath)) return;
-    const content = fs.readFileSync(filePath, 'utf-8');
+    const raw = fs.readFileSync(filePath, 'utf-8');
+    const content = this.projectService.frontmatter.stripBody(raw);
     const nameToId = this.buildNameIndex();
     this.applyFileLinks(fileId, content, nameToId);
   }
@@ -116,7 +118,8 @@ class LinkGraphService {
       const filePath = path.join(this.projectService.projectPath, source.filename);
       if (!fs.existsSync(filePath)) continue;
 
-      const content = fs.readFileSync(filePath, 'utf-8');
+      const raw = fs.readFileSync(filePath, 'utf-8');
+      const content = this.projectService.frontmatter.stripBody(raw);
       const lines = content.split('\n');
       const matches = [];
       for (let i = 0; i < lines.length; i++) {
