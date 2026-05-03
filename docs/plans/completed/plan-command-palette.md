@@ -1,5 +1,42 @@
 # Command Palette — Implementation Plan
 
+## Status
+
+**Completed 2026-05-02.** All four item kinds (commands, notes, tags,
+recent projects) shipped, plus matched-substring highlighting and inter-
+kind dividers. Theme switching is now palette-driven via three commands.
+
+**Shipped:**
+- `src/renderer/stores/commands.svelte.js` — central registry with
+  `register`, `dispatchKeyEvent`, applicability gating, recently-used.
+- `src/renderer/lib/fuzzy.js` — small fuzzy scorer.
+- `src/renderer/components/CommandPalette.svelte` — centered modal,
+  `Ctrl+K` / `Ctrl+Shift+P`, ↑/↓/Home/End/Enter/Esc keyboard nav.
+- `App.svelte` keyboard handler now dispatches via `commandRegistry` —
+  shortcuts are SoT in the registry.
+- `SettingsModal.svelte` shortcuts list derives from the registry; the
+  static `shortcuts` array is gone (auto-memory updated accordingly).
+- Recently-used IDs persisted to `ui-preferences.json` (debounced).
+- 31 commands registered across File / View / Tags / Project / Theme / App
+  sections.
+- All four item kinds: commands, notes, tags (jump to first file with
+  tag), recent projects (open via callback to `handleOpenRecent`).
+- Matched-substring highlighting via `<mark>` with accent-tinted
+  background; brighter tint on selected row.
+- Section dividers between kind transitions in the result list.
+- Visibility pass after first ship: backdrop uses `--modal-overlay`,
+  body uses `--bg-surface` (was a `--bg-elevated` typo); blur + ring +
+  taller input + accent-bar selection.
+- Smoke tests: open/filter/close + Enter-dispatch
+  (`tests/e2e/06-command-palette.spec.js`).
+
+**Deferred:**
+- Multi-step palette flows ("Open File ›" with sub-list). Out of scope
+  per the plan.
+- User-defined commands / macros. Out of scope per the plan.
+- Toolbar buttons still call handlers directly rather than going through
+  `commandRegistry.run(id)` — works fine, low value to refactor.
+
 ## Overview
 
 Add a `Ctrl+K` (also `Ctrl+Shift+P`) command palette: a centered, modal,

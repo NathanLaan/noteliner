@@ -196,6 +196,14 @@
     C({ id: 'project.goHome', label: 'Close Project (Home)', section: 'Project',
         when: projectOpen, run: () => handleGoHome() });
 
+    // Theme — palette-only; no shortcuts.
+    C({ id: 'theme.midnight', label: 'Set Theme: Midnight', section: 'Theme',
+        run: () => themeState.set('midnight') });
+    C({ id: 'theme.dark', label: 'Set Theme: Dark', section: 'Theme',
+        run: () => themeState.set('dark') });
+    C({ id: 'theme.light', label: 'Set Theme: Light', section: 'Theme',
+        run: () => themeState.set('light') });
+
     // App
     C({ id: 'app.settings', label: 'Settings', section: 'App', shortcut: 'Ctrl+,',
         matches: (e) => ctrl(e) && !e.shiftKey && !e.altKey && e.key === ',',
@@ -575,7 +583,10 @@
 </script>
 
 {#if showPalette}
-  <CommandPalette onClose={() => showPalette = false} />
+  <CommandPalette
+    onClose={() => showPalette = false}
+    onOpenRecent={async (path) => { showPalette = false; await handleOpenRecent(path); }}
+  />
 {/if}
 
 {#if showAbout}

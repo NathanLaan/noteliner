@@ -1,5 +1,25 @@
 # Playwright Smoke Tests — Implementation Plan
 
+## Status
+
+**Completed 2026-05-02.** All v1 scope shipped.
+
+**Shipped:**
+- 5 smoke tests (`tests/e2e/01-boot` through `05-attachment`) plus a 6th
+  covering the command palette added in a later plan.
+- Test fixture (`tests/e2e/fixtures.js`): per-test temp project + userData
+  dir, Electron launch with `NODE_ENV=test`, git env vars for commits.
+- Renderer-side `__nlTest` helper (`src/renderer/test-helpers.js`) exposed
+  on `?test=1` — a lighter alternative to the test-only IPC handlers the
+  plan originally proposed; same effect, smaller production surface.
+- `playwright.config.js`, `npm run test{,:headed,:debug}` scripts.
+- `.github/workflows/test.yml` — Linux runner with xvfb.
+- `tests/README.md` documenting the five-test mandate.
+
+**Deferred (per "Out of Scope (V1)" in this plan):**
+- Unit tests, visual regression, performance assertions, coverage tracking,
+  cross-platform CI runners. All remain explicitly out of scope.
+
 ## Overview
 
 Stand up a minimal Playwright + `@playwright/test` test harness against a

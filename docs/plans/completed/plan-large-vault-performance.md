@@ -1,5 +1,34 @@
 # Large-Vault Performance Pass — Implementation Plan
 
+## Status
+
+**Bench harness completed 2026-05-02.** No fix work shipped — measurements
+showed targets met, so Steps 2–5 were largely N/A. Filed here as
+"completed" because the load-bearing infrastructure (Step 1) is in place
+and the plan's measurement phase produced its expected output.
+
+**Shipped (Step 1):**
+- `src/main/perf.js` — env-gated start/end/measure helpers.
+- `scripts/bench/generate-vault.js` — deterministic synthetic vault
+  generator (100 / 1k / 5k / 10k notes verified).
+- `scripts/bench/run-bench.js` — Playwright-driven Electron bench runner
+  with 5-iteration trim-mean summarization.
+- `docs/bench/baseline.md` — auto-generated, with measurements + targets
+  table.
+- `npm run bench:gen` and `npm run bench:run` scripts.
+- Perf hooks wrapping 6 IPC handlers: `project.open`, `linkgraph.rebuild`,
+  `file.{read,write,create}`, `search.query`, `links.backlinks`.
+
+**Deferred (intentional — "measure first, fix only what misses"):**
+- Step 3 fix work: 5 of 6 ops met target by wide margins at 10k notes.
+  `search.query` came in at 76ms vs 50ms target — deferred to the existing
+  `plan-search-index.md` (persistent inverted index), where the bench now
+  provides a concrete success criterion.
+- Step 4 aggregate `npm run bench` (chains gen + run) — not shipped;
+  separate `bench:gen` and `bench:run` invocations work today.
+- Step 5 `bench:diff` regression-check script — explicitly optional; not
+  shipped.
+
 ## Overview
 
 Measure NoteLiner's behavior on synthetic vaults of 1k / 5k / 10k notes,

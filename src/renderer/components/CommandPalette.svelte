@@ -1,22 +1,52 @@
 <script>
+  import { onMount } from 'svelte';
   import { commandRegistry } from '../stores/commands.svelte.js';
   import { projectState } from '../stores/project.svelte.js';
   import { fuzzyScore } from '../lib/fuzzy.js';
 
-  let { onClose } = $props();
+  let { onClose, onOpenRecent } = $props();
 
   let query = $state('');
   let selectedIndex = $state(0);
+  let recentProjects = $state([]);
   let inputEl;
   let listEl;
 
-  // Result item shape: { kind, label, sub, score, run }
-  // kind = 'command' | 'note'
+  onMount(() => {
+    window.api?.getRecentProjects?.()
+      .then((list) => { recentProjects = list || []; })
+      .catch(() => {});
+  });
+
+  // Highlights the matched substring in `label` for the current query.
+  // Returns segments [{text, match}]; the template wraps matches in <mark>.
+  function highlight(label, q) {
+    if (!q) return [{ text: label, match: false }];
+    const lower = label.toLowerCase();
+    const idx = lower.indexOf(q.toLowerCase());
+    if (idx < 0) return [{ text: label, match: false }];
+    return [
+      { text: label.slice(0, idx), match: false },
+      { text: label.slice(idx, idx + q.length), match: true },
+      { text: label.slice(idx + q.length), match: false },
+    ];
+  }
+
+  // Trim a recent-project path to its last two segments for compactness.
+  function shortPath(p) {
+    if (!p) return '';
+    const parts = p.split(/[\\/]/).filter(Boolean);
+    if (parts.length <= 2) return p;
+    return '.../' + parts.slice(-2).join('/');
+  }
+
+  // Result item shape: { kind, id, label, sub, section, score, run }
+  // kind = 'command' | 'note' | 'tag' | 'recent'
   const items = $derived.by(() => {
     const q = query.trim();
     const out = [];
 
-    // Commands.
+    // Commands — always shown; with empty query, sorted by registry recency.
     const cmds = commandRegistry.applicableCommands();
     for (const c of cmds) {
       const score = fuzzyScore(c.label, q);
@@ -27,12 +57,30 @@
         label: c.label,
         sub: c.shortcut || '',
         section: c.section || 'Command',
-        score: score + (q ? 0 : 1000),  // empty query: commands first, sorted by registry recency
+        score: score + (q ? 0 : 1000),
         run: () => commandRegistry.run(c.id),
       });
     }
 
-    // Notes (only when a query is present, and only when a project is open).
+    // Tags — only when a query is present and a project is open.
+    if (q && projectState.isOpen) {
+      for (const tag of projectState.allTags) {
+        const score = fuzzyScore(tag, q);
+        if (score === 0) continue;
+        const files = projectState.getFilesWithTag(tag);
+        out.push({
+          kind: 'tag',
+          id: 'tag:' + tag,
+          label: '#' + tag,
+          sub: files.length + (files.length === 1 ? ' note' : ' notes'),
+          section: 'Tag',
+          score,
+          run: () => { if (files[0]) projectState.selectFile(files[0].id); },
+        });
+      }
+    }
+
+    // Notes — only when a query is present and a project is open.
     if (q && projectState.isOpen) {
       for (const f of projectState.index.files) {
         const score = fuzzyScore(f.name, q);
@@ -45,6 +93,25 @@
           section: 'Note',
           score,
           run: () => projectState.selectFile(f.id),
+        });
+      }
+    }
+
+    // Recent projects — show always when no project is open (palette replaces
+    // OpenScreen for keyboard users). When a project is open, show only on
+    // query so they don't clutter the empty-query view.
+    if (!projectState.isOpen || q) {
+      for (const r of recentProjects) {
+        const score = fuzzyScore(r.name, q);
+        if (q && score === 0) continue;
+        out.push({
+          kind: 'recent',
+          id: 'rp:' + r.path,
+          label: r.name,
+          sub: shortPath(r.path),
+          section: 'Recent',
+          score: score + (q ? 0 : 200),
+          run: () => onOpenRecent && onOpenRecent(r.path),
         });
       }
     }
@@ -141,6 +208,9 @@
         <li class="palette-empty">No matching commands or notes.</li>
       {:else}
         {#each items as it, i (it.id)}
+          {#if i > 0 && items[i - 1].kind !== it.kind}
+            <li class="palette-divider" aria-hidden="true"></li>
+          {/if}
           <li
             class="palette-row"
             class:selected={i === selectedIndex}
@@ -150,11 +220,19 @@
             <span class="palette-kind">
               {#if it.kind === 'command'}
                 <i class="fas fa-bolt"></i>
-              {:else}
+              {:else if it.kind === 'note'}
                 <i class="fas fa-file-lines"></i>
+              {:else if it.kind === 'tag'}
+                <i class="fas fa-tag"></i>
+              {:else if it.kind === 'recent'}
+                <i class="fas fa-folder"></i>
               {/if}
             </span>
-            <span class="palette-label">{it.label}</span>
+            <span class="palette-label">
+              {#each highlight(it.label, query) as seg}
+                {#if seg.match}<mark>{seg.text}</mark>{:else}{seg.text}{/if}
+              {/each}
+            </span>
             {#if !it.sub}<span class="palette-section">{it.section}</span>{/if}
             {#if it.sub}<span class="palette-sub">{it.sub}</span>{/if}
           </li>
@@ -269,6 +347,25 @@
     white-space: nowrap;
   }
 
+  .palette-label mark {
+    background: color-mix(in srgb, var(--accent) 30%, transparent);
+    color: var(--text-primary);
+    border-radius: 2px;
+    padding: 0;
+  }
+
+  .palette-row.selected .palette-label mark {
+    background: color-mix(in srgb, var(--accent) 45%, transparent);
+  }
+
+  .palette-divider {
+    height: 1px;
+    background: var(--border);
+    margin: 6px 14px;
+    list-style: none;
+    pointer-events: none;
+  }
+
   .palette-section {
     font-size: 10px;
     color: var(--text-muted);
@@ -286,6 +383,10 @@
     border-radius: 4px;
     border: 1px solid var(--border);
     line-height: 1;
+    max-width: 240px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .palette-row.selected .palette-sub {
