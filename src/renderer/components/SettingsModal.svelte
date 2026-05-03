@@ -1,6 +1,7 @@
 <script>
   import { onMount } from 'svelte';
   import { themeState } from '../stores/theme.svelte.js';
+  import { commandRegistry } from '../stores/commands.svelte.js';
 
   let { onClose } = $props();
 
@@ -37,34 +38,15 @@
 
   let restartPending = $derived(prefsLoaded && customTitlebar !== customTitlebarInitial);
 
-  const shortcuts = [
-    { keys: 'Ctrl+N', action: 'New File' },
-    { keys: 'Ctrl+D', action: 'Delete File' },
-    { keys: 'Ctrl+Shift+I', action: 'Import Document' },
-    { keys: 'Ctrl+PgUp', action: 'Previous File' },
-    { keys: 'Ctrl+PgDn', action: 'Next File' },
-    { keys: 'Ctrl+O', action: 'Open Folder' },
-    { keys: 'Ctrl+P', action: 'Toggle Preview' },
-    { keys: 'Ctrl+H', action: 'Toggle History' },
-    { keys: 'Ctrl+E', action: 'Toggle Files Panel' },
-    { keys: 'Ctrl+Shift+E', action: 'Toggle Toolbar' },
-    { keys: 'Ctrl+Shift+O', action: 'Toggle Outline' },
-    { keys: 'Ctrl+Shift+T', action: 'Toggle Tags' },
-    { keys: 'Ctrl+G', action: 'Toggle Tag Groups' },
-    { keys: 'Ctrl+B', action: 'Toggle Attachments' },
-    { keys: 'Ctrl+Shift+B', action: 'Toggle Backlinks' },
-    { keys: 'Ctrl+F', action: 'Global Search' },
-    { keys: 'Ctrl+Shift+F', action: 'Find in File' },
-    { keys: 'Ctrl+L', action: 'Toggle Log Panel' },
-    { keys: 'Ctrl+,', action: 'Settings' },
-    { keys: 'Ctrl+Shift+,', action: 'Project Settings' },
-    { keys: 'Ctrl+Shift+S', action: 'Remote Sync' },
-    { keys: 'Ctrl+T', action: 'Add Tag' },
-    { keys: 'Ctrl+Y', action: 'Remove Tag' },
-    { keys: 'Ctrl+I', action: 'About' },
-    { keys: 'Ctrl++', action: 'Zoom In' },
-    { keys: 'Ctrl+-', action: 'Zoom Out' },
-    { keys: 'Ctrl+0', action: 'Zoom Reset' },
+  // Derived from the command registry — single source of truth for shortcuts.
+  // Adding a new keyboard shortcut means adding the command in App.svelte's
+  // registerCommands(); this list updates automatically.
+  const shortcuts = $derived(commandRegistry.shortcutList());
+
+  // CodeMirror-handled shortcuts that aren't NoteLiner commands but are worth
+  // documenting alongside.
+  const editorShortcuts = [
+    { keys: 'Ctrl+Shift+F', action: 'Find in File', section: 'Editor' },
   ];
 
   function focusOnMount(node) {
@@ -152,7 +134,10 @@
         </div>
       {:else if activeTab === 'shortcuts'}
         <div class="shortcuts-list">
-          {#each shortcuts as shortcut (shortcut.keys)}
+          {#each [...shortcuts, ...editorShortcuts] as shortcut, i (shortcut.section + '|' + shortcut.keys + '|' + i)}
+            {#if i === 0 || shortcut.section !== [...shortcuts, ...editorShortcuts][i - 1].section}
+              <div class="shortcut-section">{shortcut.section}</div>
+            {/if}
             <div class="shortcut-row">
               <span class="shortcut-action">{shortcut.action}</span>
               <kbd class="shortcut-keys">{shortcut.keys}</kbd>
@@ -283,6 +268,19 @@
     display: flex;
     flex-direction: column;
     gap: 2px;
+  }
+
+  .shortcut-section {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-muted);
+    padding: 12px 12px 4px;
+  }
+
+  .shortcut-section:first-child {
+    padding-top: 0;
   }
 
   .shortcut-row {

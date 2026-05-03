@@ -37,6 +37,7 @@ contextBridge.exposeInMainWorld('api', {
   getAttachmentPath: (filename) => ipcRenderer.invoke('file:getAttachmentPath', filename),
   openFileDialog: () => ipcRenderer.invoke('dialog:openFiles'),
   openPath: (filePath) => ipcRenderer.invoke('shell:openPath', filePath),
+  openExternal: (url) => ipcRenderer.invoke('shell:openExternal', url),
 
   // Recent projects
   getRecentProjects: () => ipcRenderer.invoke('projects:getRecent'),

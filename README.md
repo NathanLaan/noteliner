@@ -70,7 +70,28 @@ Attachments are stored in the `_attachments/` directory and tracked in `noteline
 
 ## Versioning
 
-The application version combines the SemVer version from `package.json` with the short git commit hash, e.g. `0.2.0.8c6e3d6`. This is injected at build time via Vite's `define` option.
+Released builds display the bare semver from `package.json` (e.g. `0.5.0`).
+Local development builds append the short git commit hash and a `dev` marker
+(e.g. `0.5.0-dev.8c6e3d6`) so it's always obvious whether you're running an
+unreleased build. The version is injected at build time via Vite's `define`.
+
+## Installation
+
+Pre-built binaries for Linux, Windows, and macOS are published from the
+[Releases page](https://github.com/NathanLaan/noteliner/releases) on each
+tag.
+
+- **Linux** — download the `.AppImage`, `chmod +x`, run. Or
+  `sudo dpkg -i noteliner_*_amd64.deb`.
+- **Windows** — download the `.exe` installer, run. The first launch may
+  show a SmartScreen warning (current builds are unsigned); click
+  "More info" → "Run anyway."
+- **macOS** — download the `.dmg`, drag NoteLiner to `/Applications`. The
+  first launch will be blocked by Gatekeeper (current builds are unsigned);
+  right-click NoteLiner in `/Applications` → "Open" → "Open" to bypass.
+
+Once a release is installed, NoteLiner checks for updates on each launch
+and downloads them in the background. The Log panel shows progress.
 
 ## Development
 
@@ -80,6 +101,36 @@ npm run electron:dev    # Start in development mode
 npm run build           # Build the renderer (Vite)
 npm run start           # Run the built Electron app
 ```
+
+## Building Distributable Binaries
+
+```bash
+npm run build:linux     # AppImage + .deb (Linux only)
+npm run build:win       # NSIS installer + portable .exe
+npm run build:mac       # .dmg + .zip (universal)
+npm run build:all       # all three (cross-compile; works best on macOS)
+```
+
+Output lands in `dist-electron/`. Cross-compilation has limits — the
+authoritative builds happen in CI via `.github/workflows/release.yml` on
+tag push, with one runner per OS.
+
+The 512×512 build icon (`build/icon.png`) is checked in; regenerate it
+from `assets/icon.png` with `npm run build:icons` if the source icon
+changes (requires ImageMagick).
+
+## Testing
+
+End-to-end smoke tests run against the real Electron app via Playwright.
+
+```bash
+npm run build           # tests run against dist/, build first
+npm test                # headless
+npm run test:headed     # show the Electron window
+npm run test:debug      # Playwright Inspector
+```
+
+See `tests/README.md` for the test mandate and how the harness works.
 
 ## Technology
 

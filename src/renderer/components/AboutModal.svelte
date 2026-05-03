@@ -13,6 +13,11 @@
   function handleKeydown(e) {
     if (e.key === 'Escape' || e.key === 'Enter') onClose();
   }
+
+  function openRepo(e) {
+    e.preventDefault();
+    window.api.openExternal('https://github.com/NathanLaan/noteliner');
+  }
 </script>
 
 <div class="modal-overlay about-overlay" use:focusOnMount onclick={(e) => { if (e.target === e.currentTarget) onClose(); }} onkeydown={handleKeydown} role="dialog" aria-modal="true" tabindex="-1">
@@ -26,6 +31,7 @@
           <p class="app-name">NoteLiner</p>
           <p class="version">Version {__APP_VERSION__}</p>
           <p class="desc">An outliner-style note-taking application built with Electron and Svelte.</p>
+          <p class="repo-link"><a href="https://github.com/NathanLaan/noteliner" onclick={openRepo}>github.com/NathanLaan/noteliner</a></p>
         </div>
         <div class="app-icon" role="img" aria-label="NoteLiner">{@html appIconSvg}</div>
       </div>
@@ -103,8 +109,21 @@
 
   .desc {
     color: var(--text-secondary);
-    margin-bottom: 24px;
+    margin-bottom: 16px;
     line-height: 1.5;
+  }
+
+  .repo-link {
+    margin-bottom: 24px;
+  }
+
+  .repo-link a {
+    color: var(--accent);
+    text-decoration: none;
+  }
+
+  .repo-link a:hover {
+    text-decoration: underline;
   }
 
   .modal-footer {

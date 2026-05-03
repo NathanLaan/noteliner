@@ -2,4 +2,10 @@ node_modules/
 .vite/
 .cache/
 dist/
-package-lock.json
+dist-electron/
+
+# Playwright
+test-results/
+playwright-report/
+blob-report/
+playwright/.cache/
