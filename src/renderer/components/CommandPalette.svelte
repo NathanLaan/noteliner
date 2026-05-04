@@ -184,7 +184,6 @@
 
 <div
   class="palette-backdrop"
-  use:focusOnMount
   onclick={(e) => { if (e.target === e.currentTarget) onClose(); }}
   onkeydown={onKeydown}
   role="dialog"
