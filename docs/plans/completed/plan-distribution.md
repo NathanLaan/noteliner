@@ -1,5 +1,51 @@
 # Distribution & Signed Builds — Implementation Plan
 
+## Status
+
+**Scaffolding completed 2026-05-02; signing requires user action to fully
+deploy.** All build and CI infrastructure is in place. Remaining items are
+either user decisions (paid certs, real maintainer email) or operational
+(actually pushing a tag and verifying releases).
+
+**Shipped:**
+- `electron-builder.yml` — Linux (AppImage + deb), Windows (NSIS +
+  portable), macOS (dmg + zip universal). Output to `dist-electron/`.
+- Build scripts: `npm run build:{linux,win,mac,all}`, `npm run release`,
+  `npm run build:icons`.
+- `scripts/build-icons.sh` — generates 512×512 `build/icon.png` from the
+  source asset; falls back to the committed icon if ImageMagick is
+  missing (so CI runners without it still build).
+- `build/icon.png` checked in.
+- `electron-updater` wired in `src/main/main.js`, gated on
+  `app.isPackaged && !isTest`. Update events stream to the existing log
+  channel.
+- Tag-aware versioning in `vite.config.mjs` — bare semver on tagged CI
+  builds, `-dev.<hash>` suffix locally.
+- `.github/workflows/release.yml` — matrix Ubuntu/Windows/macOS on tag
+  push or manual dispatch. Reads `MAC_CSC_*`, `WIN_CSC_*`, `APPLE_*`
+  secrets when present (all optional).
+- `scripts/install-desktop.sh` skips itself on CI.
+- README "Installation" and "Building Distributable Binaries" sections.
+- Local Linux build verified end-to-end: AppImage launches cleanly.
+
+**Deferred (require user action / decisions):**
+- **Code-signing certs not configured** — no Apple Developer Program
+  enrollment, no Windows EV cert. Workflow reads secrets when present;
+  flipping signing on later is a no-code-change operation.
+- **Maintainer email is `NathanLaan@users.noreply.github.com`** —
+  placeholder until a real release.
+- **No tag pushed yet.** Recommended next step: cut `v0.5.0-rc.1`,
+  verify three draft-release artifacts appear, install on fresh VMs,
+  promote to `v0.5.0`.
+- **Platform-specific icons (.icns, .ico)** — not generated; using a
+  single 512×512 PNG and letting electron-builder derive. Cosmetic gap.
+- **DMG background image and Windows installer banner** — not generated.
+- **Cross-platform binaries not tested** — only Linux build verified
+  locally; Windows and macOS builds will happen first in CI on a real
+  release.
+- **Linux .deb auto-update** — does not update automatically (would need
+  a PPA/repo). AppImage auto-updates work.
+
 ## Overview
 
 Replace the current "clone the repo, run `npm install`, run `npm start`"

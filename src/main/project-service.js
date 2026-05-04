@@ -1,6 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const { v4: uuidv4 } = require('uuid');
+const { FrontmatterService } = require('./frontmatter-service');
 
 const INDEX_FILE = 'noteliner.json';
 const ATTACHMENTS_DIR = '_attachments';
@@ -22,6 +23,14 @@ class ProjectService {
     this.gitService = gitService;
     this.projectPath = null;
     this.index = null;
+    this.frontmatter = new FrontmatterService();
+    // Toggle for whether NoteLiner emits frontmatter on writes. Read remains
+    // strip-aware regardless. Set externally by main from ui-preferences.
+    this.writeFrontmatter = true;
+  }
+
+  setWriteFrontmatter(on) {
+    this.writeFrontmatter = !!on;
   }
 
   indexPath() {
@@ -40,6 +49,16 @@ class ProjectService {
       this.index = JSON.parse(fs.readFileSync(this.indexPath(), 'utf-8'));
       this.migrateIndex();
       const needsGitConfig = await this.checkGitConfig();
+      // Sync on-disk frontmatter to the loaded index. Skipped when git config
+      // is missing — a commit would fail; the next open after config is set
+      // will catch up.
+      if (!needsGitConfig) {
+        const rewritten = this.reconcileFrontmatter();
+        if (rewritten > 0) {
+          await this.gitService.commit(this.projectPath, `Sync frontmatter on ${rewritten} note${rewritten === 1 ? '' : 's'}`);
+          this.gitService.schedulePush(this.projectPath);
+        }
+      }
       return { status: 'loaded', index: this.index, needsGitConfig };
     }
 
@@ -105,23 +124,83 @@ class ProjectService {
   }
 
   async saveIndex(index) {
+    // Diff old vs new for files whose mirrored frontmatter fields changed
+    // (name or tags). These need their on-disk frontmatter refreshed so the
+    // mirror tracks the index. parentId / order changes are not mirrored.
+    const oldByFilename = new Map();
+    if (this.index?.files) {
+      for (const f of this.index.files) oldByFilename.set(f.filename, f);
+    }
+
     this.index = index;
     fs.writeFileSync(this.indexPath(), JSON.stringify(this.index, null, 2));
+
+    if (this.writeFrontmatter) {
+      for (const entry of this.index.files) {
+        const old = oldByFilename.get(entry.filename);
+        if (!old || this.entryMirrorDiffers(old, entry)) {
+          this.rewriteFrontmatter(entry);
+        }
+      }
+    }
+
     await this.gitService.commit(this.projectPath, 'Update index');
     this.gitService.schedulePush(this.projectPath);
+  }
+
+  entryMirrorDiffers(a, b) {
+    if (a.name !== b.name) return true;
+    const at = Array.isArray(a.tags) ? a.tags : [];
+    const bt = Array.isArray(b.tags) ? b.tags : [];
+    if (at.length !== bt.length) return true;
+    for (let i = 0; i < at.length; i++) if (at[i] !== bt[i]) return true;
+    return false;
   }
 
   async readFile(filename) {
     const filePath = path.join(this.projectPath, filename);
     if (!fs.existsSync(filePath)) return '';
-    return fs.readFileSync(filePath, 'utf-8');
+    const raw = fs.readFileSync(filePath, 'utf-8');
+    return this.frontmatter.stripBody(raw);
   }
 
-  async writeFile(filename, content) {
+  // Writes the body, reattaching mirrored frontmatter from the index entry.
+  // When the writeFrontmatter toggle is off, the body is written raw — any
+  // existing frontmatter on disk is dropped on the next save.
+  async writeFile(filename, body) {
     const filePath = path.join(this.projectPath, filename);
-    fs.writeFileSync(filePath, content, 'utf-8');
+    let outContent = body;
+    if (this.writeFrontmatter) {
+      const entry = this.index?.files.find(f => f.filename === filename);
+      const existingData = fs.existsSync(filePath)
+        ? this.frontmatter.parse(fs.readFileSync(filePath, 'utf-8')).data
+        : {};
+      const data = entry
+        ? this.frontmatter.mirrorFromIndexEntry(entry, existingData)
+        : existingData;
+      outContent = this.frontmatter.serialize(body, data);
+    }
+    fs.writeFileSync(filePath, outContent, 'utf-8');
     await this.gitService.commit(this.projectPath, `Update ${filename}`);
     this.gitService.schedulePush(this.projectPath);
+  }
+
+  // Refreshes only the frontmatter on disk for `entry`, preserving the
+  // existing body. Used after non-body operations (rename, tag change) so
+  // the on-disk mirror matches the index without forcing a body write.
+  rewriteFrontmatter(entry) {
+    if (!this.writeFrontmatter) return false;
+    const filePath = path.join(this.projectPath, entry.filename);
+    if (!fs.existsSync(filePath)) return false;
+    const raw = fs.readFileSync(filePath, 'utf-8');
+    const { data: existingData, body } = this.frontmatter.parse(raw);
+    const data = this.frontmatter.mirrorFromIndexEntry(entry, existingData);
+    const next = this.frontmatter.serialize(body, data);
+    if (next !== raw) {
+      fs.writeFileSync(filePath, next, 'utf-8');
+      return true;
+    }
+    return false;
   }
 
   async createFile(name, tags, options = {}) {
@@ -140,14 +219,21 @@ class ProjectService {
     };
 
     const filePath = path.join(this.projectPath, filename);
+    let initialBody;
     if (options.body != null) {
-      fs.writeFileSync(filePath, options.body, 'utf-8');
+      initialBody = options.body;
     } else {
       const now = new Date();
       const yyyy = now.getFullYear();
       const mm = String(now.getMonth() + 1).padStart(2, '0');
       const dd = String(now.getDate()).padStart(2, '0');
-      fs.writeFileSync(filePath, `# ${name} ${yyyy}-${mm}-${dd}\n`, 'utf-8');
+      initialBody = `# ${name} ${yyyy}-${mm}-${dd}\n`;
+    }
+    if (this.writeFrontmatter) {
+      const data = this.frontmatter.mirrorFromIndexEntry(entry);
+      fs.writeFileSync(filePath, this.frontmatter.serialize(initialBody, data), 'utf-8');
+    } else {
+      fs.writeFileSync(filePath, initialBody, 'utf-8');
     }
 
     // Update index
@@ -204,6 +290,10 @@ class ProjectService {
     entry.filename = newFilename;
     fs.writeFileSync(this.indexPath(), JSON.stringify(this.index, null, 2));
 
+    // Refresh the file's mirrored frontmatter (name changed) before committing
+    // so rename + frontmatter update land in a single commit.
+    this.rewriteFrontmatter(entry);
+
     await this.gitService.commit(this.projectPath, `Rename ${oldFilename} to ${newFilename}`);
     this.gitService.schedulePush(this.projectPath);
 
@@ -218,6 +308,31 @@ class ProjectService {
       this.index.version = 2;
       fs.writeFileSync(this.indexPath(), JSON.stringify(this.index, null, 2));
     }
+  }
+
+  // Walks every entry, refreshes frontmatter for files whose on-disk mirror
+  // is missing or diverges from the index. Returns the count of files
+  // rewritten so the caller can decide whether to make a single commit.
+  // No-op when writeFrontmatter is disabled.
+  reconcileFrontmatter() {
+    if (!this.writeFrontmatter) return 0;
+    if (!this.index?.files) return 0;
+    let rewritten = 0;
+    for (const entry of this.index.files) {
+      const filePath = path.join(this.projectPath, entry.filename);
+      if (!fs.existsSync(filePath)) continue;
+      const raw = fs.readFileSync(filePath, 'utf-8');
+      const parsed = this.frontmatter.parse(raw);
+      const wanted = this.frontmatter.mirrorFromIndexEntry(entry, parsed.data);
+      if (this.frontmatter.mirrorDiverges(parsed.data, wanted)) {
+        const next = this.frontmatter.serialize(parsed.body, wanted);
+        if (next !== raw) {
+          fs.writeFileSync(filePath, next, 'utf-8');
+          rewritten++;
+        }
+      }
+    }
+    return rewritten;
   }
 
   attachmentsDir() {
@@ -295,7 +410,10 @@ class ProjectService {
     for (const file of this.index.files) {
       const filePath = path.join(this.projectPath, file.filename);
       if (!fs.existsSync(filePath)) continue;
-      const content = fs.readFileSync(filePath, 'utf-8');
+      // Search the body only — matches against frontmatter (id, name, tags)
+      // would surprise users who don't see frontmatter in the editor.
+      const raw = fs.readFileSync(filePath, 'utf-8');
+      const content = this.frontmatter.stripBody(raw);
       const lines = content.split('\n');
       const matches = [];
 

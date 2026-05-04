@@ -11,6 +11,9 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 const { execFileSync } = require('child_process');
+const { FrontmatterService } = require('../../src/main/frontmatter-service');
+
+const frontmatter = new FrontmatterService();
 
 const TAG_POOL = Array.from({ length: 30 }, (_, i) =>
   'tag-' + String.fromCharCode(97 + (i % 26)) + (i < 26 ? '' : Math.floor(i / 26)));
@@ -83,7 +86,9 @@ function generate(outDir, n, seed) {
       }
       paras.push(para);
     }
-    fs.writeFileSync(path.join(outDir, f.filename), paras.join('\n\n') + '\n');
+    const body = paras.join('\n\n') + '\n';
+    const data = frontmatter.mirrorFromIndexEntry(f);
+    fs.writeFileSync(path.join(outDir, f.filename), frontmatter.serialize(body, data));
   }
 
   fs.writeFileSync(

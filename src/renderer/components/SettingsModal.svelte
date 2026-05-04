@@ -8,6 +8,7 @@
   let activeTab = $state('ui');
   let customTitlebar = $state(false);
   let customTitlebarInitial = $state(false);
+  let writeFrontmatter = $state(true);
   let prefsLoaded = $state(false);
 
   onMount(async () => {
@@ -16,6 +17,7 @@
         const prefs = await window.api.getUIPrefs();
         customTitlebar = !!prefs?.customTitlebar;
         customTitlebarInitial = customTitlebar;
+        writeFrontmatter = prefs?.writeFrontmatter !== false;
       } catch { /* ignore */ }
     }
     prefsLoaded = true;
@@ -26,6 +28,15 @@
     if (window.api?.setUIPrefs) {
       try {
         await window.api.setUIPrefs({ customTitlebar });
+      } catch { /* ignore */ }
+    }
+  }
+
+  async function toggleWriteFrontmatter() {
+    writeFrontmatter = !writeFrontmatter;
+    if (window.api?.setUIPrefs) {
+      try {
+        await window.api.setUIPrefs({ writeFrontmatter });
       } catch { /* ignore */ }
     }
   }
@@ -131,6 +142,30 @@
               <button class="restart-btn" onclick={applyRestart}>Restart now</button>
             </div>
           {/if}
+        </div>
+
+        <div class="setting-group">
+          <span class="setting-label">Storage</span>
+          <button
+            class="toggle-option"
+            class:active={writeFrontmatter}
+            onclick={toggleWriteFrontmatter}
+            disabled={!prefsLoaded}
+          >
+            <span class="toggle-radio">
+              {#if writeFrontmatter}
+                <i class="fas fa-square-check"></i>
+              {:else}
+                <i class="far fa-square"></i>
+              {/if}
+            </span>
+            Write YAML frontmatter to .md files
+          </button>
+          <p class="setting-help">
+            Mirrors id, name, and tags into a YAML block at the top of each
+            note so external tools can read them. Applies to future saves;
+            files are reconciled on next project open.
+          </p>
         </div>
       {:else if activeTab === 'shortcuts'}
         <div class="shortcuts-list">
@@ -347,6 +382,13 @@
 
   .toggle-option.active .toggle-radio {
     color: var(--accent);
+  }
+
+  .setting-help {
+    margin: 8px 2px 0;
+    font-size: 12px;
+    line-height: 1.4;
+    color: var(--text-muted);
   }
 
   .restart-banner {

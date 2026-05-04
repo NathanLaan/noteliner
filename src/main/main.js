@@ -38,13 +38,14 @@ function getUIPrefsPath() {
 }
 
 function loadUIPrefs() {
+  const defaults = { customTitlebar: false, writeFrontmatter: true };
   try {
     const filePath = getUIPrefsPath();
     if (fs.existsSync(filePath)) {
-      return { customTitlebar: false, ...JSON.parse(fs.readFileSync(filePath, 'utf-8')) };
+      return { ...defaults, ...JSON.parse(fs.readFileSync(filePath, 'utf-8')) };
     }
   } catch { /* ignore */ }
-  return { customTitlebar: false };
+  return defaults;
 }
 
 function saveUIPrefs(prefs) {
@@ -135,6 +136,7 @@ function createWindow() {
   });
 
   projectService = new ProjectService(gitService);
+  projectService.setWriteFrontmatter(uiPrefs.writeFrontmatter !== false);
   linkGraphService = new LinkGraphService(projectService);
   importService = new ImportService(projectService);
   windowStateService = new WindowStateService(
@@ -240,6 +242,9 @@ ipcMain.handle('ui:getPrefs', () => loadUIPrefs());
 ipcMain.handle('ui:setPrefs', (_event, prefs) => {
   const current = loadUIPrefs();
   saveUIPrefs({ ...current, ...prefs });
+  if (projectService && typeof prefs?.writeFrontmatter === 'boolean') {
+    projectService.setWriteFrontmatter(prefs.writeFrontmatter);
+  }
   return true;
 });
 
@@ -532,7 +537,8 @@ ipcMain.handle('search:query', async (_event, query, options) => {
 
 ipcMain.handle('file:convertToHtml', async (_event, filename, name) => {
   if (!projectService.projectPath) return null;
-  const mdContent = fs.readFileSync(path.join(projectService.projectPath, filename), 'utf-8');
+  const raw = fs.readFileSync(path.join(projectService.projectPath, filename), 'utf-8');
+  const mdContent = projectService.frontmatter.stripBody(raw);
   const htmlBody = marked(mdContent);
   const fullHtml = `<!DOCTYPE html>
 <html lang="en">
@@ -583,7 +589,8 @@ ipcMain.handle('file:convertToMarkdown', async (_event, filename, name) => {
 
 ipcMain.handle('file:convertToPdf', async (_event, filename, name) => {
   if (!projectService.projectPath) return null;
-  const mdContent = fs.readFileSync(path.join(projectService.projectPath, filename), 'utf-8');
+  const raw = fs.readFileSync(path.join(projectService.projectPath, filename), 'utf-8');
+  const mdContent = projectService.frontmatter.stripBody(raw);
   let htmlBody = marked(mdContent);
 
   // Resolve ./_attachments/ refs to absolute file:// URLs so images render in the PDF
@@ -649,7 +656,10 @@ ipcMain.handle('file:getHistory', async (_event, filename) => {
 
 ipcMain.handle('file:getHistoryContent', async (_event, commit, filename) => {
   if (!projectService.projectPath) return null;
-  return await gitService.getFileAtCommit(projectService.projectPath, commit, filename);
+  const raw = await gitService.getFileAtCommit(projectService.projectPath, commit, filename);
+  if (raw == null) return null;
+  // Strip frontmatter so the history preview renders body markdown only.
+  return projectService.frontmatter.stripBody(raw);
 });
 
 // Window state
