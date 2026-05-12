@@ -114,6 +114,19 @@
     }
   }
 
+  async function handlePullRebase() {
+    error = '';
+    operating = 'Pulling & rebasing...';
+    try {
+      await window.api.gitPullRebase();
+      await refreshStatus();
+    } catch (err) {
+      error = `Pull & rebase failed: ${err.message}`;
+    } finally {
+      operating = '';
+    }
+  }
+
   async function handleResetFromRemote() {
     showResetConfirm = false;
     error = '';
@@ -222,6 +235,9 @@
             <div class="sync-actions">
               <button class="action-btn" onclick={handlePull} disabled={busy}>
                 <i class="fas fa-cloud-arrow-down"></i> Pull
+              </button>
+              <button class="action-btn" onclick={handlePullRebase} disabled={busy}>
+                <i class="fas fa-code-branch"></i> Pull & Rebase
               </button>
               <button class="action-btn" onclick={handlePush} disabled={busy}>
                 <i class="fas fa-cloud-arrow-up"></i> Push

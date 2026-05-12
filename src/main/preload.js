@@ -21,6 +21,7 @@ contextBridge.exposeInMainWorld('api', {
   // Git
   gitPush: () => ipcRenderer.invoke('git:push'),
   gitPull: () => ipcRenderer.invoke('git:pull'),
+  gitPullRebase: () => ipcRenderer.invoke('git:pullRebase'),
   getGitConfig: () => ipcRenderer.invoke('git:getConfig'),
   setGitConfig: (name, email) => ipcRenderer.invoke('git:setConfig', name, email),
   gitGetRemoteUrl: () => ipcRenderer.invoke('git:getRemoteUrl'),

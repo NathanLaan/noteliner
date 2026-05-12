@@ -408,6 +408,11 @@ ipcMain.handle('git:pull', async () => {
   return await gitService.pull(projectService.projectPath);
 });
 
+ipcMain.handle('git:pullRebase', async () => {
+  if (!projectService.projectPath) return;
+  return await gitService.pullRebase(projectService.projectPath);
+});
+
 ipcMain.handle('git:getRemoteUrl', async () => {
   if (!projectService.projectPath) return null;
   return await gitService.getRemoteUrl(projectService.projectPath);
