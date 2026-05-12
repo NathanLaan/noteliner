@@ -83,6 +83,15 @@ class GitService {
     }
   }
 
+  async pullRebase(folderPath) {
+    try {
+      return await this.exec(['pull', '--rebase'], folderPath);
+    } catch (err) {
+      this.log(`Pull --rebase failed: ${err.message}`);
+      return null;
+    }
+  }
+
   async addRemote(folderPath, url) {
     return await this.exec(['remote', 'add', 'origin', url], folderPath);
   }
