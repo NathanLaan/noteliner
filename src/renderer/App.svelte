@@ -134,6 +134,14 @@
         matches: (e) => ctrl(e) && !e.altKey && e.key === 'PageDown',
         when: projectOpen, run: () => projectState.selectNextFile() });
 
+    // Tags — registered before View so Ctrl+Shift++ wins over zoom-in when the TAGS pane is open.
+    // zoom-in's matcher also accepts e.key === '+' (Ctrl+Shift+=), and the dispatcher returns on
+    // the first match, so this command must come first. Its `when` falls back to zoom-in
+    // automatically when the TAGS pane is closed.
+    C({ id: 'tag.addPlus', label: 'Add Tag', section: 'Tags', shortcut: 'Ctrl+Shift++',
+        matches: (e) => ctrl(e) && e.shiftKey && !e.altKey && e.key === '+',
+        when: () => hasSelection() && layout.showTags, run: () => triggerTagAction('add') });
+
     // View
     C({ id: 'view.togglePreview', label: 'Toggle Preview', section: 'View', shortcut: 'Ctrl+P',
         matches: (e) => ctrl(e) && !e.shiftKey && !e.altKey && e.key === 'p',
