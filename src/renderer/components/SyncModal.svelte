@@ -441,9 +441,9 @@
   }
 
   .sync-modal {
-    width: 50%;
+    width: 65%;
     height: 50%;
-    min-width: 480px;
+    min-width: 624px;
     min-height: 380px;
   }
 
