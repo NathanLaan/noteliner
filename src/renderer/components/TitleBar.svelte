@@ -1,5 +1,13 @@
 <script>
-  let { onToggleToolbar, toolbarVisible = true } = $props();
+  let {
+    onToggleToolbar,
+    toolbarVisible = true,
+    onGoHome,
+    onOpenFolder,
+    onNewFile,
+    onImportDocument,
+    projectOpen = false,
+  } = $props();
 
   let isMaximized = $state(false);
 
@@ -32,6 +40,29 @@
   >
     <i class="fas fa-bars"></i>
   </button>
+
+  <div class="titlebar-actions">
+    <button
+      class="titlebar-btn"
+      class:active={!projectOpen}
+      onclick={onGoHome}
+      disabled={!projectOpen}
+      title="Home"
+    >
+      <i class="fas fa-house"></i>
+    </button>
+    <button class="titlebar-btn" onclick={onOpenFolder} title="Open Folder (Ctrl+O)">
+      <i class="fas fa-folder-open"></i>
+    </button>
+    {#if projectOpen}
+      <button class="titlebar-btn" onclick={onNewFile} title="New File (Ctrl+N)">
+        <i class="fas fa-file-circle-plus"></i>
+      </button>
+      <button class="titlebar-btn" onclick={onImportDocument} title="Import Document (Ctrl+Shift+I)">
+        <i class="fas fa-file-import"></i>
+      </button>
+    {/if}
+  </div>
 
   <div class="titlebar-title">NoteLiner</div>
 
@@ -79,14 +110,24 @@
     transition: background 0.15s, opacity 0.15s;
   }
 
-  .titlebar-btn:hover {
+  .titlebar-btn:hover:not(:disabled) {
     background: rgba(0, 0, 0, 0.18);
     opacity: 1;
+  }
+
+  .titlebar-btn:disabled {
+    opacity: 0.35;
+    cursor: default;
   }
 
   .titlebar-btn.active {
     opacity: 1;
     background: rgba(0, 0, 0, 0.12);
+  }
+
+  .titlebar-actions {
+    display: flex;
+    -webkit-app-region: no-drag;
   }
 
   .titlebar-btn.close:hover {

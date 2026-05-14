@@ -669,6 +669,11 @@
     <TitleBar
       onToggleToolbar={handleToggleToolbar}
       toolbarVisible={layout.showToolbar}
+      onGoHome={handleGoHome}
+      onOpenFolder={handleOpenFolder}
+      onNewFile={handleNewFile}
+      onImportDocument={handleImportDocument}
+      projectOpen={projectState.isOpen}
     />
   {/if}
 
@@ -678,9 +683,8 @@
         onGoHome={handleGoHome}
         onOpenFolder={handleOpenFolder}
         onNewFile={handleNewFile}
-        onDeleteFile={handleDeleteFile}
         onImportDocument={handleImportDocument}
-        hasSelectedFile={!!projectState.selectedFileId}
+        customTitlebar={customTitlebar}
         onToggleLog={handleToggleLog}
         onToggleSidebar={handleToggleSidebar}
         onToggleOutline={handleToggleOutline}
