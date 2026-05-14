@@ -248,9 +248,30 @@ ipcMain.handle('ui:setPrefs', (_event, prefs) => {
   return true;
 });
 
+// Recreate the BrowserWindow in-process instead of doing a full `app.relaunch()`.
+// A real relaunch tears down the Electron child started by scripts/dev.js, which
+// kills the Vite dev server with it — the relaunched instance then loads
+// http://localhost:5250 and hangs on a blank page. Recreating the window picks
+// up settings that are only read at construction time (e.g. `frame:` for the
+// custom titlebar) without exiting the process.
 ipcMain.handle('app:relaunch', () => {
-  app.relaunch();
-  app.quit();
+  const old = mainWindow;
+  if (old && !old.isDestroyed()) {
+    if (boundsTimer) clearTimeout(boundsTimer);
+    if (projectService?.projectPath) {
+      const isMax = old.isMaximized();
+      const bounds = isMax ? old.getNormalBounds() : old.getBounds();
+      windowStateService.setBoundsSync(projectService.projectPath, bounds, isMax);
+    }
+  }
+  // createWindow() reassigns `mainWindow` and the service globals; the old
+  // window's listeners still close over the same `let` bindings, so they'd
+  // race on the new state. Destroy the old window before its handlers can fire.
+  createWindow();
+  if (old && !old.isDestroyed()) {
+    old.removeAllListeners('close');
+    old.destroy();
+  }
 });
 
 ipcMain.handle('window:minimize', () => mainWindow?.minimize());
