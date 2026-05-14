@@ -1,32 +1,32 @@
 <script>
-  let { onGoHome, onOpenFolder, onNewFile, onDeleteFile, onImportDocument, onToggleSidebar, onToggleOutline, onToggleTags, onToggleTagGroups, onToggleLog, onToggleAttachments, onToggleSearch, onToggleBacklinks, onShowAbout, onShowSettings, onShowProjectSettings, onShowSync, onShowHelp, projectOpen, hasSelectedFile = false, logVisible = false, sidebarVisible = true, outlineVisible = false, tagsVisible = true, tagGroupsVisible = false, attachmentsVisible = false, searchVisible = false, backlinksVisible = false } = $props();
+  let { onGoHome, onOpenFolder, onNewFile, onImportDocument, onToggleSidebar, onToggleOutline, onToggleTags, onToggleTagGroups, onToggleLog, onToggleAttachments, onToggleSearch, onToggleBacklinks, onShowAbout, onShowSettings, onShowProjectSettings, onShowSync, onShowHelp, projectOpen, customTitlebar = false, logVisible = false, sidebarVisible = true, outlineVisible = false, tagsVisible = true, tagGroupsVisible = false, attachmentsVisible = false, searchVisible = false, backlinksVisible = false } = $props();
 </script>
 
 <div class="toolbar">
-  <button class="toolbar-btn" class:active={!projectOpen} onclick={onGoHome} disabled={!projectOpen} title="Home">
-    <i class="fas fa-house"></i>
-  </button>
+  {#if !customTitlebar}
+    <button class="toolbar-btn" class:active={!projectOpen} onclick={onGoHome} disabled={!projectOpen} title="Home">
+      <i class="fas fa-house"></i>
+    </button>
 
-  <button class="toolbar-btn" onclick={onOpenFolder} title="Open Folder (Ctrl+O)">
-    <i class="fas fa-folder-open"></i>
-  </button>
+    <button class="toolbar-btn" onclick={onOpenFolder} title="Open Folder (Ctrl+O)">
+      <i class="fas fa-folder-open"></i>
+    </button>
+  {/if}
 
   {#if projectOpen}
-    <div class="toolbar-divider"></div>
+    {#if !customTitlebar}
+      <div class="toolbar-divider"></div>
 
-    <button class="toolbar-btn" onclick={onNewFile} title="New File (Ctrl+N)">
-      <i class="fas fa-file-circle-plus"></i>
-    </button>
+      <button class="toolbar-btn" onclick={onNewFile} title="New File (Ctrl+N)">
+        <i class="fas fa-file-circle-plus"></i>
+      </button>
 
-    <button class="toolbar-btn" onclick={onDeleteFile} disabled={!hasSelectedFile} title="Delete File (Ctrl+D)">
-      <i class="fas fa-file-circle-minus"></i>
-    </button>
+      <button class="toolbar-btn" onclick={onImportDocument} title="Import Document (Ctrl+Shift+I)">
+        <i class="fas fa-file-import"></i>
+      </button>
 
-    <button class="toolbar-btn" onclick={onImportDocument} title="Import Document (Ctrl+Shift+I)">
-      <i class="fas fa-file-import"></i>
-    </button>
-
-    <div class="toolbar-divider"></div>
+      <div class="toolbar-divider"></div>
+    {/if}
 
     <button class="toolbar-btn" class:active={sidebarVisible} onclick={onToggleSidebar} title="Files (Ctrl+E)">
       <i class="fas fa-bars-staggered"></i>

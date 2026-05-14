@@ -57,7 +57,10 @@
         {#if item.icon}
           <i class="fas {item.icon} context-icon"></i>
         {/if}
-        <span>{item.label}</span>
+        <span class="context-label">{item.label}</span>
+        {#if item.shortcut}
+          <span class="context-shortcut">{item.shortcut}</span>
+        {/if}
       </button>
     {/if}
   {/each}
@@ -85,6 +88,17 @@
     color: var(--text-primary);
     text-align: left;
     transition: background 0.1s;
+  }
+
+  .context-label {
+    flex: 1;
+  }
+
+  .context-shortcut {
+    font-size: 11px;
+    color: var(--text-muted);
+    padding-left: 18px;
+    white-space: nowrap;
   }
 
   .context-item:hover {

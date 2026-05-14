@@ -81,8 +81,8 @@
       x: e.clientX / zoom,
       y: e.clientY / zoom,
       items: [
-        { label: 'Select All', icon: 'fa-object-group', action: handleSelectAll },
-        { label: 'Copy', icon: 'fa-copy', action: handleCopy },
+        { label: 'Select All', icon: 'fa-object-group', shortcut: 'Ctrl+A', action: handleSelectAll },
+        { label: 'Copy', icon: 'fa-copy', shortcut: 'Ctrl+C', action: handleCopy },
         { separator: true },
         { label: 'Save to HTML', icon: 'fa-file-code', action: onSaveToHtml },
         { label: 'Save to PDF', icon: 'fa-file-pdf', action: onSaveToPdf },
