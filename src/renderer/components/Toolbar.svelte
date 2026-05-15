@@ -1,5 +1,9 @@
 <script>
+  import { updateState } from '../stores/update.svelte.js';
+
   let { onGoHome, onOpenFolder, onNewFile, onImportDocument, onToggleSidebar, onToggleOutline, onToggleTags, onToggleTagGroups, onToggleLog, onToggleAttachments, onToggleSearch, onToggleBacklinks, onShowAbout, onShowSettings, onShowProjectSettings, onShowSync, onShowHelp, projectOpen, customTitlebar = false, logVisible = false, sidebarVisible = true, outlineVisible = false, tagsVisible = true, tagGroupsVisible = false, attachmentsVisible = false, searchVisible = false, backlinksVisible = false } = $props();
+
+  const updateReady = $derived(updateState.state === 'available' || updateState.state === 'downloaded');
 </script>
 
 <div class="toolbar">
@@ -83,8 +87,13 @@
     <i class="fas fa-gear"></i>
   </button>
 
-  <button class="toolbar-btn" onclick={onShowAbout} title="About (Ctrl+I)">
+  <button
+    class="toolbar-btn"
+    onclick={onShowAbout}
+    title={updateReady ? `Update ${updateState.state === 'downloaded' ? 'ready to install' : 'available'} — About (Ctrl+I)` : 'About (Ctrl+I)'}
+  >
     <i class="fas fa-circle-info"></i>
+    {#if updateReady}<span class="update-dot" aria-hidden="true"></span>{/if}
   </button>
 
   <button class="toolbar-btn" onclick={onShowHelp} title="Help (F1)">
@@ -106,6 +115,7 @@
   }
 
   .toolbar-btn {
+    position: relative;
     width: 36px;
     height: 36px;
     display: flex;
@@ -115,6 +125,17 @@
     color: var(--text-secondary);
     font-size: 16px;
     transition: background 0.15s, color 0.15s;
+  }
+
+  .update-dot {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 0 2px var(--bg-overlay);
   }
 
   .toolbar-btn:hover {

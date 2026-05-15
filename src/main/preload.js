@@ -82,6 +82,17 @@ contextBridge.exposeInMainWorld('api', {
   // App lifecycle
   relaunchApp: () => ipcRenderer.invoke('app:relaunch'),
 
+  // Auto-updater
+  getUpdateState: () => ipcRenderer.invoke('update:getState'),
+  checkForUpdates: () => ipcRenderer.invoke('update:checkNow'),
+  downloadUpdate: () => ipcRenderer.invoke('update:downloadNow'),
+  installUpdate: () => ipcRenderer.invoke('update:installNow'),
+  onUpdateState: (callback) => {
+    const listener = (_event, state) => callback(state);
+    ipcRenderer.on('update:state', listener);
+    return () => ipcRenderer.removeListener('update:state', listener);
+  },
+
   // Help window (separate non-modal BrowserWindow)
   openHelpWindow: () => ipcRenderer.invoke('help:open'),
 

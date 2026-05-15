@@ -94,6 +94,58 @@ let boundsTimer = null;
 const isDev = !app.isPackaged;
 const isTest = process.env.NODE_ENV === 'test';
 
+// --- Auto-update state ---
+// Lazily loaded: `electron-updater` throws on require if there is no publish
+// config, so we defer until the first packaged-build call.
+let autoUpdaterModule = null;
+// Cached so the renderer can pick up the current update status when AboutModal
+// mounts after a startup check has already fired its events.
+let latestUpdateState = { state: 'idle' };
+
+function getAutoUpdater() {
+  if (autoUpdaterModule) return autoUpdaterModule;
+  try {
+    const { autoUpdater } = require('electron-updater');
+    // User-driven: surface "Update available" before bytes move (matters on
+    // metered connections). The renderer triggers downloadUpdate() explicitly.
+    autoUpdater.autoDownload = false;
+    // Continuous builds publish under the same `latest` channel as tagged
+    // releases but with a SemVer pre-release token; without this, the
+    // updater would skip them.
+    autoUpdater.allowPrerelease = true;
+    autoUpdaterModule = autoUpdater;
+    return autoUpdater;
+  } catch (err) {
+    console.warn('electron-updater unavailable:', err.message);
+    return null;
+  }
+}
+
+function sendUpdateState(state) {
+  latestUpdateState = state;
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.webContents.send('update:state', state);
+  }
+}
+
+function initAutoUpdater() {
+  if (!app.isPackaged || isTest) return;
+  const u = getAutoUpdater();
+  if (!u) return;
+
+  u.on('checking-for-update', () => sendUpdateState({ state: 'checking' }));
+  u.on('update-available',    (i) => sendUpdateState({ state: 'available', version: i?.version, notes: i?.releaseNotes }));
+  u.on('update-not-available',(i) => sendUpdateState({ state: 'unavailable', version: i?.version }));
+  u.on('download-progress',   (p) => sendUpdateState({ state: 'downloading', percent: p?.percent || 0 }));
+  u.on('update-downloaded',   (i) => sendUpdateState({ state: 'downloaded', version: i?.version }));
+  u.on('error',               (err) => sendUpdateState({ state: 'error', error: err?.message || String(err) }));
+
+  // Startup check drives the same state machine. The dedicated
+  // checkForUpdatesAndNotify() native-notification path is intentionally not
+  // used — Phase 2's in-app status block replaces it.
+  u.checkForUpdates().catch((err) => sendUpdateState({ state: 'error', error: err?.message || String(err) }));
+}
+
 function createWindow() {
   const uiPrefs = loadUIPrefs();
 
@@ -201,28 +253,7 @@ app.whenReady().then(() => {
 
   createWindow();
 
-  // Auto-update only in packaged production builds. Dev runs and the test
-  // harness skip the network round-trip entirely.
-  if (app.isPackaged && !isTest) {
-    try {
-      const { autoUpdater } = require('electron-updater');
-      const log = (msg) => {
-        if (mainWindow && !mainWindow.isDestroyed()) {
-          mainWindow.webContents.send('git:log', `[update] ${msg}`);
-        }
-      };
-      autoUpdater.on('checking-for-update', () => log('Checking for update...'));
-      autoUpdater.on('update-available', (info) => log(`Update available: ${info?.version || ''}`));
-      autoUpdater.on('update-not-available', () => log('No update available.'));
-      autoUpdater.on('error', (err) => log(`Update error: ${err?.message || err}`));
-      autoUpdater.on('download-progress', (p) => log(`Downloading update: ${Math.round(p.percent || 0)}%`));
-      autoUpdater.on('update-downloaded', (info) => log(`Update ${info?.version || ''} ready; will install on next restart.`));
-      autoUpdater.checkForUpdatesAndNotify().catch((err) => log(`Update check failed: ${err?.message || err}`));
-    } catch (err) {
-      // electron-updater throws if there is no publish config — non-fatal.
-      console.warn('electron-updater unavailable:', err.message);
-    }
-  }
+  initAutoUpdater();
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {
@@ -246,6 +277,49 @@ ipcMain.handle('ui:setPrefs', (_event, prefs) => {
   if (projectService && typeof prefs?.writeFrontmatter === 'boolean') {
     projectService.setWriteFrontmatter(prefs.writeFrontmatter);
   }
+  return true;
+});
+
+// --- Auto-update IPC ---
+
+ipcMain.handle('update:getState', () => latestUpdateState);
+
+ipcMain.handle('update:checkNow', async () => {
+  if (!app.isPackaged || isTest) {
+    sendUpdateState({ state: 'unavailable', reason: 'dev' });
+    return false;
+  }
+  const u = getAutoUpdater();
+  if (!u) {
+    sendUpdateState({ state: 'error', error: 'Updater not available in this build' });
+    return false;
+  }
+  try {
+    await u.checkForUpdates();
+    return true;
+  } catch (err) {
+    sendUpdateState({ state: 'error', error: err?.message || String(err) });
+    return false;
+  }
+});
+
+ipcMain.handle('update:downloadNow', async () => {
+  const u = getAutoUpdater();
+  if (!u) return false;
+  try {
+    await u.downloadUpdate();
+    return true;
+  } catch (err) {
+    sendUpdateState({ state: 'error', error: err?.message || String(err) });
+    return false;
+  }
+});
+
+ipcMain.handle('update:installNow', () => {
+  const u = getAutoUpdater();
+  if (!u) return false;
+  // quitAndInstall() exits the process — no further IPC will be served.
+  u.quitAndInstall();
   return true;
 });
 
