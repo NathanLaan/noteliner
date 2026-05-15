@@ -8,6 +8,7 @@
   import LogPanel from './components/LogPanel.svelte';
   import OpenScreen from './components/OpenScreen.svelte';
   import AboutModal from './components/AboutModal.svelte';
+  import HelpModal from './components/HelpModal.svelte';
   import SetupModal from './components/SetupModal.svelte';
   import SettingsModal from './components/SettingsModal.svelte';
   import ProjectSettingsModal from './components/ProjectSettingsModal.svelte';
@@ -64,6 +65,7 @@
 
   // Transient modal/action state (not persisted)
   let showAbout = $state(false);
+  let showHelp = $state(false);
   let showSetup = $state(false);
   let showSettings = $state(false);
   let showProjectSettings = $state(false);
@@ -219,6 +221,9 @@
     C({ id: 'app.about', label: 'About', section: 'App', shortcut: 'Ctrl+I',
         matches: (e) => ctrl(e) && !e.shiftKey && !e.altKey && e.key === 'i',
         run: () => handleShowAbout() });
+    C({ id: 'app.help', label: 'Help', section: 'App', shortcut: 'F1',
+        matches: (e) => !ctrl(e) && !e.shiftKey && !e.altKey && e.key === 'F1',
+        run: () => handleShowHelp() });
     C({ id: 'app.commandPalette', label: 'Command Palette', section: 'App', shortcut: 'Ctrl+K',
         matches: (e) => ctrl(e) && !e.altKey
           && ((!e.shiftKey && (e.key === 'k' || e.key === 'K')) || (e.shiftKey && e.code === 'KeyP')),
@@ -508,7 +513,7 @@
   }
 
   function handleShowHelp() {
-    // TODO: implement help
+    showHelp = true;
   }
 
   function handleShowSettings() {
@@ -599,6 +604,10 @@
 
 {#if showAbout}
   <AboutModal onClose={() => showAbout = false} />
+{/if}
+
+{#if showHelp}
+  <HelpModal onClose={() => showHelp = false} />
 {/if}
 
 {#if showSetup}

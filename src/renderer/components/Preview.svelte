@@ -3,7 +3,23 @@
   import { marked } from 'marked';
   import ContextMenu from './ContextMenu.svelte';
 
-  let { onClose = () => {}, onSaveToHtml = () => {}, onSaveToPdf = () => {}, onSaveToMarkdown = () => {}, onCreateFromWikilink = () => {} } = $props();
+  let {
+    onClose = () => {},
+    onSaveToHtml = () => {},
+    onSaveToPdf = () => {},
+    onSaveToMarkdown = () => {},
+    onCreateFromWikilink = () => {},
+    // Optional override: when provided, render this markdown string instead of
+    // the active project file. Used by HelpModal to reuse the preview chrome
+    // and styling for static markdown pages.
+    source = null,
+    // Hide the "PREVIEW" toolbar (title + close button). Defaults to showing it
+    // so the existing editor-side usage is unchanged.
+    showToolbar = true,
+    // Hide the save-to-* and wikilink-create actions. Set false when rendering
+    // content that isn't a project file.
+    projectActions = true,
+  } = $props();
 
   let previewContentEl;
   let contextMenu = $state(null);
@@ -51,6 +67,7 @@
     const link = e.target.closest('.wikilink');
     if (!link) return;
     e.preventDefault();
+    if (!projectActions) return;
     const name = link.dataset.wikilink;
     if (!name) return;
     const id = nameToId.get(name.toLowerCase());
@@ -77,32 +94,43 @@
   function handleContextMenu(e) {
     e.preventDefault();
     const zoom = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--ui-zoom')) || 1;
-    contextMenu = {
-      x: e.clientX / zoom,
-      y: e.clientY / zoom,
-      items: [
-        { label: 'Select All', icon: 'fa-object-group', shortcut: 'Ctrl+A', action: handleSelectAll },
-        { label: 'Copy', icon: 'fa-copy', shortcut: 'Ctrl+C', action: handleCopy },
+    const items = [
+      { label: 'Select All', icon: 'fa-object-group', shortcut: 'Ctrl+A', action: handleSelectAll },
+      { label: 'Copy', icon: 'fa-copy', shortcut: 'Ctrl+C', action: handleCopy },
+    ];
+    if (projectActions) {
+      items.push(
         { separator: true },
         { label: 'Save to HTML', icon: 'fa-file-code', action: onSaveToHtml },
         { label: 'Save to PDF', icon: 'fa-file-pdf', action: onSaveToPdf },
         { label: 'Save to Markdown', icon: 'fa-file-lines', action: onSaveToMarkdown },
-      ]
-    };
+      );
+    }
+    contextMenu = { x: e.clientX / zoom, y: e.clientY / zoom, items };
   }
 
-  let html = $derived(projectState.editorContent
-    ? resolveAttachmentUrls(marked(projectState.editorContent))
-    : '<p class="empty">Nothing to preview</p>');
+  // When `source` is provided, render it as-is (no attachment-URL resolution —
+  // help/static content doesn't reference the project's _attachments folder).
+  // Otherwise fall back to the active project file.
+  let html = $derived.by(() => {
+    if (source != null) {
+      return source ? marked(source) : '<p class="empty">Nothing to preview</p>';
+    }
+    return projectState.editorContent
+      ? resolveAttachmentUrls(marked(projectState.editorContent))
+      : '<p class="empty">Nothing to preview</p>';
+  });
 </script>
 
 <div class="preview-wrapper">
-  <div class="preview-toolbar">
-    <span class="preview-title">PREVIEW</span>
-    <button class="close-btn" onclick={onClose} title="Close Preview">
-      <i class="fas fa-xmark"></i>
-    </button>
-  </div>
+  {#if showToolbar}
+    <div class="preview-toolbar">
+      <span class="preview-title">PREVIEW</span>
+      <button class="close-btn" onclick={onClose} title="Close Preview">
+        <i class="fas fa-xmark"></i>
+      </button>
+    </div>
+  {/if}
   <!-- svelte-ignore a11y_no_static_element_interactions -->
   <!-- svelte-ignore a11y_click_events_have_key_events -->
   <div class="preview-content" bind:this={previewContentEl} oncontextmenu={handleContextMenu} onclick={handlePreviewClick}>
