@@ -1,8 +1,7 @@
 <script>
-  import Preview from './Preview.svelte';
-  import { helpPages } from '../lib/helpContent.js';
-
-  let { onClose } = $props();
+  import { onMount } from 'svelte';
+  import Preview from './components/Preview.svelte';
+  import { helpPages } from './lib/helpContent.js';
 
   let query = $state('');
   let selectedId = $state(helpPages[0]?.id ?? null);
@@ -13,21 +12,13 @@
   let bodyEl;
   let searchEl;
 
-  // Auto-focus the search box on open.
   function focusSearch(node) {
     searchEl = node;
     setTimeout(() => node.focus(), 0);
   }
 
-  function handleKeydown(e) {
-    if (e.key === 'Escape') {
-      e.stopPropagation();
-      onClose();
-    }
-  }
-
-  // Match against title + body, case-insensitive. Empty query → every page is
-  // a "match" (everything shown normally, none grayed).
+  // Match against title + body + section, case-insensitive. Empty query →
+  // every page counts as a match (everything shown normally, none grayed).
   function pageMatches(page, q) {
     if (!q) return true;
     const needle = q.toLowerCase();
@@ -80,7 +71,6 @@
       const x = (ev.clientX - rect.left) / zoom;
       const w = rect.width / zoom;
       const pct = (x / w) * 100;
-      // Clamp so neither pane collapses entirely.
       leftPct = Math.max(15, Math.min(70, pct));
     }
     function onUp() {
@@ -90,128 +80,96 @@
     window.addEventListener('mousemove', onMove);
     window.addEventListener('mouseup', onUp);
   }
+
+  function handleKeydown(e) {
+    // Esc closes the help window.
+    if (e.key === 'Escape') {
+      window.close();
+    }
+  }
+
+  onMount(() => {
+    document.title = 'NoteLiner Help';
+    window.addEventListener('keydown', handleKeydown);
+    return () => window.removeEventListener('keydown', handleKeydown);
+  });
 </script>
 
-<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
-<div
-  class="modal-overlay help-overlay"
-  onclick={(e) => {
-    if (e.target === e.currentTarget) onClose();
-  }}
-  onkeydown={handleKeydown}
-  role="dialog"
-  aria-modal="true"
-  tabindex="-1"
->
-  <div class="modal help-modal">
-    <div class="modal-header">
-      <h2>Help</h2>
-      <button class="header-close" onclick={onClose} title="Close (Esc)">
-        <i class="fas fa-xmark"></i>
-      </button>
+<div class="help-root">
+  <div class="help-body" bind:this={bodyEl}>
+    <div class="help-index" style="width: {leftPct}%">
+      <div class="search-row">
+        <i class="fas fa-magnifying-glass search-icon"></i>
+        <input
+          use:focusSearch
+          type="text"
+          class="search-input"
+          placeholder="Search help…"
+          bind:value={query}
+        />
+        {#if hasQuery}
+          <button class="clear-btn" onclick={() => (query = '')} title="Clear">
+            <i class="fas fa-xmark"></i>
+          </button>
+        {/if}
+      </div>
+
+      {#if hasQuery}
+        <div class="search-summary">
+          {matchCount} match{matchCount === 1 ? '' : 'es'}
+        </div>
+      {/if}
+
+      <div class="index-list">
+        {#each grouped as group (group.section)}
+          <div class="index-section">{group.section}</div>
+          {#each group.items as { page, matches } (page.id)}
+            <button
+              class="index-item"
+              class:active={page.id === selectedId}
+              class:dim={hasQuery && !matches}
+              class:hit={hasQuery && matches}
+              onclick={() => handleSelect(page.id)}
+            >
+              {page.title}
+            </button>
+          {/each}
+        {/each}
+      </div>
     </div>
 
-    <div class="help-body" bind:this={bodyEl}>
-      <div class="help-index" style="width: {leftPct}%">
-        <div class="search-row">
-          <i class="fas fa-magnifying-glass search-icon"></i>
-          <input
-            use:focusSearch
-            type="text"
-            class="search-input"
-            placeholder="Search help…"
-            bind:value={query}
-          />
-          {#if hasQuery}
-            <button class="clear-btn" onclick={() => (query = '')} title="Clear">
-              <i class="fas fa-xmark"></i>
-            </button>
-          {/if}
-        </div>
+    <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+    <div
+      class="help-resizer"
+      role="separator"
+      aria-orientation="vertical"
+      tabindex="-1"
+      onmousedown={startResize}
+    ></div>
 
-        {#if hasQuery}
-          <div class="search-summary">
-            {matchCount} match{matchCount === 1 ? '' : 'es'}
-          </div>
-        {/if}
-
-        <div class="index-list">
-          {#each grouped as group (group.section)}
-            <div class="index-section">{group.section}</div>
-            {#each group.items as { page, matches } (page.id)}
-              <button
-                class="index-item"
-                class:active={page.id === selectedId}
-                class:dim={hasQuery && !matches}
-                class:hit={hasQuery && matches}
-                onclick={() => handleSelect(page.id)}
-              >
-                {page.title}
-              </button>
-            {/each}
-          {/each}
-        </div>
-      </div>
-
-      <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
-      <div
-        class="help-resizer"
-        role="separator"
-        aria-orientation="vertical"
-        tabindex="-1"
-        onmousedown={startResize}
-      ></div>
-
-      <div class="help-content">
-        {#if selectedPage}
-          <Preview
-            source={selectedPage.body}
-            showToolbar={false}
-            projectActions={false}
-          />
-        {:else}
-          <div class="empty">No help page selected.</div>
-        {/if}
-      </div>
+    <div class="help-content">
+      {#if selectedPage}
+        <Preview
+          source={selectedPage.body}
+          showToolbar={false}
+          projectActions={false}
+        />
+      {:else}
+        <div class="empty">No help page selected.</div>
+      {/if}
     </div>
   </div>
 </div>
 
 <style>
-  /* Help dialog: large floating panel pinned to the bottom (matches the
-     About / Sync dialogs' drawer style). */
-  .help-overlay {
-    align-items: flex-end;
-    justify-content: center;
-  }
-
-  .help-modal {
-    width: 80%;
-    height: 75%;
-    min-width: 720px;
-    min-height: 420px;
-  }
-
-  .modal-header {
-    justify-content: space-between;
-  }
-
-  .header-close {
-    width: 28px;
-    height: 28px;
+  .help-root {
     display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 4px;
-    color: var(--accent-on);
-    opacity: 0.75;
-    font-size: 14px;
-    transition: background 0.15s, opacity 0.15s;
-  }
-
-  .header-close:hover {
-    background: rgba(0, 0, 0, 0.18);
-    opacity: 1;
+    flex-direction: column;
+    height: var(--ui-zoom-height, 100vh);
+    width: var(--ui-zoom-width, 100vw);
+    zoom: var(--ui-zoom, 1);
+    background: var(--bg-surface);
+    overflow: hidden;
   }
 
   .help-body {
@@ -323,7 +281,6 @@
     border-left-color: var(--accent);
   }
 
-  /* Highlight items whose content contains the search term. */
   .index-item.hit {
     color: var(--accent);
     font-weight: 600;
@@ -333,7 +290,6 @@
     color: var(--accent);
   }
 
-  /* Gray out non-matching items but keep them clickable. */
   .index-item.dim {
     color: var(--text-muted);
     opacity: 0.45;

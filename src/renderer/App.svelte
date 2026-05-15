@@ -8,7 +8,6 @@
   import LogPanel from './components/LogPanel.svelte';
   import OpenScreen from './components/OpenScreen.svelte';
   import AboutModal from './components/AboutModal.svelte';
-  import HelpModal from './components/HelpModal.svelte';
   import SetupModal from './components/SetupModal.svelte';
   import SettingsModal from './components/SettingsModal.svelte';
   import ProjectSettingsModal from './components/ProjectSettingsModal.svelte';
@@ -65,7 +64,6 @@
 
   // Transient modal/action state (not persisted)
   let showAbout = $state(false);
-  let showHelp = $state(false);
   let showSetup = $state(false);
   let showSettings = $state(false);
   let showProjectSettings = $state(false);
@@ -513,7 +511,9 @@
   }
 
   function handleShowHelp() {
-    showHelp = true;
+    // Opens (or focuses) the standalone Help BrowserWindow loaded from
+    // help.html — non-modal, so the main window stays interactive.
+    window.api?.openHelpWindow?.();
   }
 
   function handleShowSettings() {
@@ -604,10 +604,6 @@
 
 {#if showAbout}
   <AboutModal onClose={() => showAbout = false} />
-{/if}
-
-{#if showHelp}
-  <HelpModal onClose={() => showHelp = false} />
 {/if}
 
 {#if showSetup}

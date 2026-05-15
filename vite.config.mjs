@@ -30,7 +30,13 @@ export default defineConfig({
   build: {
     outDir: path.resolve(__dirname, 'dist'),
     emptyOutDir: true,
-    chunkSizeWarningLimit: 1000
+    chunkSizeWarningLimit: 1000,
+    rollupOptions: {
+      input: {
+        main: path.resolve(__dirname, 'src/renderer/index.html'),
+        help: path.resolve(__dirname, 'src/renderer/help.html'),
+      },
+    },
   },
   resolve: {
     alias: {

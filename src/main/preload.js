@@ -82,6 +82,9 @@ contextBridge.exposeInMainWorld('api', {
   // App lifecycle
   relaunchApp: () => ipcRenderer.invoke('app:relaunch'),
 
+  // Help window (separate non-modal BrowserWindow)
+  openHelpWindow: () => ipcRenderer.invoke('help:open'),
+
   // Custom window controls
   windowMinimize: () => ipcRenderer.invoke('window:minimize'),
   windowMaximize: () => ipcRenderer.invoke('window:maximize'),
