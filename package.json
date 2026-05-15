@@ -1,6 +1,6 @@
 {
   "name": "noteliner",
-  "version": "0.6.2",
+  "version": "0.7.0",
   "description": "An outliner-style note-taking app built with Electron and Svelte",
   "main": "src/main/main.js",
   "author": {

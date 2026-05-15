@@ -10,11 +10,14 @@ try {
   gitHash = execSync('git rev-parse --short HEAD').toString().trim();
 } catch { /* not in a git repo */ }
 
-// On a tagged CI build, GITHUB_REF_TYPE === 'tag' and GITHUB_REF_NAME is the
-// tag. Released builds display the bare semver (e.g. "0.5.0") instead of the
-// dev suffix.
+// APP_VERSION_OVERRIDE (set by continuous.yml) wins so continuous-channel
+// builds display the full <semver>-build.<N>+<githash>. Otherwise: tagged CI
+// builds (GITHUB_REF_TYPE=tag) show the bare semver, and everything else (dev
+// runs, ad-hoc builds) gets the "-dev.<hash>" suffix.
 const onTag = process.env.GITHUB_REF_TYPE === 'tag';
-const displayVersion = onTag ? pkg.version : `${pkg.version}-dev.${gitHash}`;
+const displayVersion =
+  process.env.APP_VERSION_OVERRIDE
+  || (onTag ? pkg.version : `${pkg.version}-dev.${gitHash}`);
 
 export default defineConfig({
   plugins: [svelte()],
