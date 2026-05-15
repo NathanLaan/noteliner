@@ -87,7 +87,7 @@
     <i class="fas fa-circle-info"></i>
   </button>
 
-  <button class="toolbar-btn" onclick={onShowHelp} title="Help">
+  <button class="toolbar-btn" onclick={onShowHelp} title="Help (F1)">
     <i class="fas fa-circle-question"></i>
   </button>
 </div>

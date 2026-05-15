@@ -219,6 +219,9 @@
     C({ id: 'app.about', label: 'About', section: 'App', shortcut: 'Ctrl+I',
         matches: (e) => ctrl(e) && !e.shiftKey && !e.altKey && e.key === 'i',
         run: () => handleShowAbout() });
+    C({ id: 'app.help', label: 'Help', section: 'App', shortcut: 'F1',
+        matches: (e) => !ctrl(e) && !e.shiftKey && !e.altKey && e.key === 'F1',
+        run: () => handleShowHelp() });
     C({ id: 'app.commandPalette', label: 'Command Palette', section: 'App', shortcut: 'Ctrl+K',
         matches: (e) => ctrl(e) && !e.altKey
           && ((!e.shiftKey && (e.key === 'k' || e.key === 'K')) || (e.shiftKey && e.code === 'KeyP')),
@@ -508,7 +511,9 @@
   }
 
   function handleShowHelp() {
-    // TODO: implement help
+    // Opens (or focuses) the standalone Help BrowserWindow loaded from
+    // help.html — non-modal, so the main window stays interactive.
+    window.api?.openHelpWindow?.();
   }
 
   function handleShowSettings() {

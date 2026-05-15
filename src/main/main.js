@@ -83,6 +83,7 @@ function addRecentProject(folderPath) {
 }
 
 let mainWindow;
+let helpWindow = null;
 let gitService;
 let projectService;
 let linkGraphService;
@@ -272,6 +273,56 @@ ipcMain.handle('app:relaunch', () => {
     old.removeAllListeners('close');
     old.destroy();
   }
+});
+
+// Help window — a separate, non-modal BrowserWindow that loads the
+// dedicated help.html renderer entry. Only one help window exists at a
+// time; subsequent calls focus the existing one rather than spawning more.
+function createHelpWindow() {
+  if (helpWindow && !helpWindow.isDestroyed()) {
+    if (helpWindow.isMinimized()) helpWindow.restore();
+    helpWindow.focus();
+    return helpWindow;
+  }
+
+  helpWindow = new BrowserWindow({
+    width: 1000,
+    height: 720,
+    minWidth: 560,
+    minHeight: 360,
+    title: 'NoteLiner Help',
+    icon: path.join(__dirname, '..', '..', 'assets', 'icon.png'),
+    // Native OS frame — keeps the help window distinct from the main app's
+    // optional custom-titlebar style and gives users standard minimize /
+    // maximize / close affordances.
+    frame: true,
+    parent: mainWindow,
+    modal: false,
+    autoHideMenuBar: true,
+    webPreferences: {
+      preload: path.join(__dirname, 'preload.js'),
+      contextIsolation: true,
+      nodeIntegration: false,
+    },
+  });
+
+  helpWindow.setMenu(null);
+
+  if (isDev && !isTest) {
+    helpWindow.loadURL('http://localhost:5250/help.html');
+  } else {
+    helpWindow.loadFile(path.join(__dirname, '..', '..', 'dist', 'help.html'));
+  }
+
+  helpWindow.on('closed', () => {
+    helpWindow = null;
+  });
+
+  return helpWindow;
+}
+
+ipcMain.handle('help:open', () => {
+  createHelpWindow();
 });
 
 ipcMain.handle('window:minimize', () => mainWindow?.minimize());
