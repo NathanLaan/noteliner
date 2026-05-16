@@ -2,6 +2,7 @@
   import { onMount } from 'svelte';
   import { themeState } from '../stores/theme.svelte.js';
   import { commandRegistry } from '../stores/commands.svelte.js';
+  import McpWalkthroughModal from './McpWalkthroughModal.svelte';
 
   let { onClose } = $props();
 
@@ -12,6 +13,8 @@
   let mcpEnabled = $state(false);
   let mcpConfirmWrites = $state(false);
   let mcpDisabledTools = $state([]);
+  let mcpIntroduced = $state(false);
+  let showMcpWalkthrough = $state(false);
   let mcpStatus = $state(null);
   let copiedConfig = $state(false);
   let prefsLoaded = $state(false);
@@ -33,6 +36,7 @@
         mcpEnabled = !!prefs?.mcpEnabled;
         mcpConfirmWrites = !!prefs?.mcpConfirmWrites;
         mcpDisabledTools = Array.isArray(prefs?.mcpDisabledTools) ? [...prefs.mcpDisabledTools] : [];
+        mcpIntroduced = !!prefs?.mcpIntroduced;
       } catch { /* ignore */ }
     }
     await refreshMcpStatus();
@@ -58,6 +62,17 @@
   }
 
   async function toggleMcp() {
+    // First-time enable: intercept and show the walkthrough rather than
+    // silently flipping. The toggle only commits if the user confirms inside
+    // the walkthrough. Disabling, or re-enabling after the first time, skips
+    // straight to the toggle.
+    if (!mcpEnabled && !mcpIntroduced) {
+      // Make sure mcpStatus.bridgePath is populated before opening — the
+      // walkthrough's config snippet depends on it.
+      if (!mcpStatus?.bridgePath) await refreshMcpStatus();
+      showMcpWalkthrough = true;
+      return;
+    }
     mcpEnabled = !mcpEnabled;
     if (window.api?.setUIPrefs) {
       try {
@@ -65,6 +80,24 @@
       } catch { /* ignore */ }
     }
     await refreshMcpStatus();
+  }
+
+  async function handleWalkthroughEnable() {
+    showMcpWalkthrough = false;
+    mcpEnabled = true;
+    mcpIntroduced = true;
+    if (window.api?.setUIPrefs) {
+      try {
+        await window.api.setUIPrefs({ mcpEnabled: true, mcpIntroduced: true });
+      } catch { /* ignore */ }
+    }
+    await refreshMcpStatus();
+  }
+
+  function handleWalkthroughCancel() {
+    // Toggle stays off, introduced flag stays false — they'll see the
+    // walkthrough again next time they try to enable.
+    showMcpWalkthrough = false;
   }
 
   async function toggleMcpConfirmWrites() {
@@ -416,6 +449,14 @@
     </div>
   </div>
 </div>
+
+{#if showMcpWalkthrough}
+  <McpWalkthroughModal
+    bridgePath={mcpStatus?.bridgePath || ''}
+    onEnable={handleWalkthroughEnable}
+    onCancel={handleWalkthroughCancel}
+  />
+{/if}
 
 <style>
   .tab-bar {

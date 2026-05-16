@@ -47,14 +47,26 @@ function loadUIPrefs() {
     mcpEnabled: false,
     mcpConfirmWrites: false,
     mcpDisabledTools: [],
+    // Whether the first-time enable walkthrough has been shown. Default false
+    // so a fresh install gets the explainer the first time the user toggles
+    // MCP on. The block below back-fills this to true for users who already
+    // had MCP enabled before the flag existed.
+    mcpIntroduced: false,
   };
+  let loaded = { ...defaults };
   try {
     const filePath = getUIPrefsPath();
     if (fs.existsSync(filePath)) {
-      return { ...defaults, ...JSON.parse(fs.readFileSync(filePath, 'utf-8')) };
+      loaded = { ...defaults, ...JSON.parse(fs.readFileSync(filePath, 'utf-8')) };
     }
   } catch { /* ignore */ }
-  return defaults;
+  // Migration: if MCP was already on from a previous version, the user has
+  // already wired up a client — popping the walkthrough now would be noise.
+  // The new flag persists to disk the next time anything writes prefs.
+  if (loaded.mcpEnabled && loaded.mcpIntroduced !== true) {
+    loaded.mcpIntroduced = true;
+  }
+  return loaded;
 }
 
 function saveUIPrefs(prefs) {
