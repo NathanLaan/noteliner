@@ -1,8 +1,8 @@
 <script>
-  // One-shot walkthrough shown the first time a user enables the MCP server.
-  // Caller is responsible for persisting `mcpIntroduced = true` when the user
-  // confirms via onEnable. Cancel leaves the introduced flag alone so the
-  // walkthrough returns next time they try.
+  // Consent gate shown every time a user toggles MCP from off to on. The
+  // toggle in SettingsModal does not commit until the user clicks Enable
+  // here; Cancel leaves MCP disabled. Re-runs on every re-enable so the
+  // architecture and config snippet are always in view before exposure.
 
   let { bridgePath, onEnable, onCancel } = $props();
   let copied = $state(false);

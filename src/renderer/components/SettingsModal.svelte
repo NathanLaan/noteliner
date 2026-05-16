@@ -13,7 +13,6 @@
   let mcpEnabled = $state(false);
   let mcpConfirmWrites = $state(false);
   let mcpDisabledTools = $state([]);
-  let mcpIntroduced = $state(false);
   let showMcpWalkthrough = $state(false);
   let mcpStatus = $state(null);
   let copiedConfig = $state(false);
@@ -36,7 +35,6 @@
         mcpEnabled = !!prefs?.mcpEnabled;
         mcpConfirmWrites = !!prefs?.mcpConfirmWrites;
         mcpDisabledTools = Array.isArray(prefs?.mcpDisabledTools) ? [...prefs.mcpDisabledTools] : [];
-        mcpIntroduced = !!prefs?.mcpIntroduced;
       } catch { /* ignore */ }
     }
     await refreshMcpStatus();
@@ -62,21 +60,20 @@
   }
 
   async function toggleMcp() {
-    // First-time enable: intercept and show the walkthrough rather than
-    // silently flipping. The toggle only commits if the user confirms inside
-    // the walkthrough. Disabling, or re-enabling after the first time, skips
-    // straight to the toggle.
-    if (!mcpEnabled && !mcpIntroduced) {
+    // Every off→on transition opens the walkthrough as a confirmation gate.
+    // The toggle only commits if the user clicks "Enable" inside the modal.
+    // Off-direction (disabling) flips silently — no value in nagging there.
+    if (!mcpEnabled) {
       // Make sure mcpStatus.bridgePath is populated before opening — the
       // walkthrough's config snippet depends on it.
       if (!mcpStatus?.bridgePath) await refreshMcpStatus();
       showMcpWalkthrough = true;
       return;
     }
-    mcpEnabled = !mcpEnabled;
+    mcpEnabled = false;
     if (window.api?.setUIPrefs) {
       try {
-        await window.api.setUIPrefs({ mcpEnabled });
+        await window.api.setUIPrefs({ mcpEnabled: false });
       } catch { /* ignore */ }
     }
     await refreshMcpStatus();
@@ -85,18 +82,16 @@
   async function handleWalkthroughEnable() {
     showMcpWalkthrough = false;
     mcpEnabled = true;
-    mcpIntroduced = true;
     if (window.api?.setUIPrefs) {
       try {
-        await window.api.setUIPrefs({ mcpEnabled: true, mcpIntroduced: true });
+        await window.api.setUIPrefs({ mcpEnabled: true });
       } catch { /* ignore */ }
     }
     await refreshMcpStatus();
   }
 
   function handleWalkthroughCancel() {
-    // Toggle stays off, introduced flag stays false — they'll see the
-    // walkthrough again next time they try to enable.
+    // Toggle stays off — the modal acts purely as a consent gate.
     showMcpWalkthrough = false;
   }
 
