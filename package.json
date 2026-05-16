@@ -1,8 +1,11 @@
 {
   "name": "noteliner",
-  "version": "0.7.0",
+  "version": "0.7.1",
   "description": "An outliner-style note-taking app built with Electron and Svelte",
   "main": "src/main/main.js",
+  "bin": {
+    "noteliner-mcp-bridge": "bin/noteliner-mcp-bridge.js"
+  },
   "author": {
     "name": "Nathan Laan"
   },
@@ -25,6 +28,7 @@
     "test": "playwright test",
     "test:headed": "playwright test --headed",
     "test:debug": "PWDEBUG=1 playwright test",
+    "test:mcp": "node tests/integration/mcp-bridge.test.js",
     "bench:gen": "node scripts/bench/generate-vault.js",
     "bench:run": "node scripts/bench/run-bench.js",
     "postinstall": "bash scripts/install-desktop.sh"

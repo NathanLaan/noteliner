@@ -79,8 +79,32 @@ contextBridge.exposeInMainWorld('api', {
   getUIPrefs: () => ipcRenderer.invoke('ui:getPrefs'),
   setUIPrefs: (prefs) => ipcRenderer.invoke('ui:setPrefs', prefs),
 
+  // MCP server status (for Settings -> MCP tab)
+  getMcpStatus: () => ipcRenderer.invoke('mcp:getStatus'),
+
+  // MCP confirm-before-write UX. Main pushes a request whenever a write tool
+  // call needs the user's permission; the renderer shows a modal and replies
+  // with one of 'allow' | 'session' | 'deny'.
+  onMcpConfirmRequest: (callback) => {
+    const listener = (_event, payload) => callback(payload);
+    ipcRenderer.on('mcp:confirm-request', listener);
+    return () => ipcRenderer.removeListener('mcp:confirm-request', listener);
+  },
+  respondMcpConfirm: (id, decision) => ipcRenderer.invoke('mcp:confirm-response', id, decision),
+
   // App lifecycle
   relaunchApp: () => ipcRenderer.invoke('app:relaunch'),
+
+  // Auto-updater
+  getUpdateState: () => ipcRenderer.invoke('update:getState'),
+  checkForUpdates: () => ipcRenderer.invoke('update:checkNow'),
+  downloadUpdate: () => ipcRenderer.invoke('update:downloadNow'),
+  installUpdate: () => ipcRenderer.invoke('update:installNow'),
+  onUpdateState: (callback) => {
+    const listener = (_event, state) => callback(state);
+    ipcRenderer.on('update:state', listener);
+    return () => ipcRenderer.removeListener('update:state', listener);
+  },
 
   // Help window (separate non-modal BrowserWindow)
   openHelpWindow: () => ipcRenderer.invoke('help:open'),

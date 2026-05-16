@@ -7,8 +7,10 @@ const { ProjectService } = require('./project-service');
 const { WindowStateService } = require('./window-state-service');
 const { LinkGraphService } = require('./link-graph-service');
 const { ImportService } = require('./import-service');
+const { McpService } = require('./mcp-service');
 const perf = require('./perf');
 const { marked } = require('marked');
+const pkg = require('../../package.json');
 
 // Set app name early so Linux WM_CLASS is correct (for dock icon in dev mode)
 app.setName('NoteLiner');
@@ -31,6 +33,7 @@ if (process.platform === 'linux') {
 
 const RECENT_PROJECTS_FILE = 'recent-projects.json';
 const UI_PREFS_FILE = 'ui-preferences.json';
+const MCP_RUNTIME_FILE = 'mcp-runtime.json';
 const MAX_RECENT = 5;
 
 function getUIPrefsPath() {
@@ -38,7 +41,13 @@ function getUIPrefsPath() {
 }
 
 function loadUIPrefs() {
-  const defaults = { customTitlebar: false, writeFrontmatter: true };
+  const defaults = {
+    customTitlebar: false,
+    writeFrontmatter: true,
+    mcpEnabled: false,
+    mcpConfirmWrites: false,
+    mcpDisabledTools: [],
+  };
   try {
     const filePath = getUIPrefsPath();
     if (fs.existsSync(filePath)) {
@@ -89,10 +98,63 @@ let projectService;
 let linkGraphService;
 let importService;
 let windowStateService;
+let mcpService;
 let boundsTimer = null;
 
 const isDev = !app.isPackaged;
 const isTest = process.env.NODE_ENV === 'test';
+
+// --- Auto-update state ---
+// Lazily loaded: `electron-updater` throws on require if there is no publish
+// config, so we defer until the first packaged-build call.
+let autoUpdaterModule = null;
+// Cached so the renderer can pick up the current update status when AboutModal
+// mounts after a startup check has already fired its events.
+let latestUpdateState = { state: 'idle' };
+
+function getAutoUpdater() {
+  if (autoUpdaterModule) return autoUpdaterModule;
+  try {
+    const { autoUpdater } = require('electron-updater');
+    // User-driven: surface "Update available" before bytes move (matters on
+    // metered connections). The renderer triggers downloadUpdate() explicitly.
+    autoUpdater.autoDownload = false;
+    // Continuous builds publish under the same `latest` channel as tagged
+    // releases but with a SemVer pre-release token; without this, the
+    // updater would skip them.
+    autoUpdater.allowPrerelease = true;
+    autoUpdaterModule = autoUpdater;
+    return autoUpdater;
+  } catch (err) {
+    console.warn('electron-updater unavailable:', err.message);
+    return null;
+  }
+}
+
+function sendUpdateState(state) {
+  latestUpdateState = state;
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.webContents.send('update:state', state);
+  }
+}
+
+function initAutoUpdater() {
+  if (!app.isPackaged || isTest) return;
+  const u = getAutoUpdater();
+  if (!u) return;
+
+  u.on('checking-for-update', () => sendUpdateState({ state: 'checking' }));
+  u.on('update-available',    (i) => sendUpdateState({ state: 'available', version: i?.version, notes: i?.releaseNotes }));
+  u.on('update-not-available',(i) => sendUpdateState({ state: 'unavailable', version: i?.version }));
+  u.on('download-progress',   (p) => sendUpdateState({ state: 'downloading', percent: p?.percent || 0 }));
+  u.on('update-downloaded',   (i) => sendUpdateState({ state: 'downloaded', version: i?.version }));
+  u.on('error',               (err) => sendUpdateState({ state: 'error', error: err?.message || String(err) }));
+
+  // Startup check drives the same state machine. The dedicated
+  // checkForUpdatesAndNotify() native-notification path is intentionally not
+  // used — Phase 2's in-app status block replaces it.
+  u.checkForUpdates().catch((err) => sendUpdateState({ state: 'error', error: err?.message || String(err) }));
+}
 
 function createWindow() {
   const uiPrefs = loadUIPrefs();
@@ -143,6 +205,29 @@ function createWindow() {
   windowStateService = new WindowStateService(
     path.join(app.getPath('userData'), 'window-state.json')
   );
+
+  // Reuse the same Log panel sink as git output. Prefixing with [MCP] in the
+  // service itself keeps the two channels distinguishable.
+  mcpService = new McpService({
+    projectService,
+    linkGraphService,
+    appVersion: pkg.version,
+    log: (msg) => {
+      if (mainWindow && !mainWindow.isDestroyed()) {
+        mainWindow.webContents.send('git:log', msg);
+      }
+    },
+    // Pulled live on every tool call — toggling settings while the server is
+    // running takes effect on the next invocation without restart.
+    getPrefs: () => {
+      const p = loadUIPrefs();
+      return {
+        confirmWrites: !!p.mcpConfirmWrites,
+        disabledTools: Array.isArray(p.mcpDisabledTools) ? p.mcpDisabledTools : [],
+      };
+    },
+    confirm: requestMcpConfirm,
+  });
 
   function saveBoundsDebounced() {
     if (!projectService.projectPath || mainWindow.isMaximized()) return;
@@ -201,28 +286,7 @@ app.whenReady().then(() => {
 
   createWindow();
 
-  // Auto-update only in packaged production builds. Dev runs and the test
-  // harness skip the network round-trip entirely.
-  if (app.isPackaged && !isTest) {
-    try {
-      const { autoUpdater } = require('electron-updater');
-      const log = (msg) => {
-        if (mainWindow && !mainWindow.isDestroyed()) {
-          mainWindow.webContents.send('git:log', `[update] ${msg}`);
-        }
-      };
-      autoUpdater.on('checking-for-update', () => log('Checking for update...'));
-      autoUpdater.on('update-available', (info) => log(`Update available: ${info?.version || ''}`));
-      autoUpdater.on('update-not-available', () => log('No update available.'));
-      autoUpdater.on('error', (err) => log(`Update error: ${err?.message || err}`));
-      autoUpdater.on('download-progress', (p) => log(`Downloading update: ${Math.round(p.percent || 0)}%`));
-      autoUpdater.on('update-downloaded', (info) => log(`Update ${info?.version || ''} ready; will install on next restart.`));
-      autoUpdater.checkForUpdatesAndNotify().catch((err) => log(`Update check failed: ${err?.message || err}`));
-    } catch (err) {
-      // electron-updater throws if there is no publish config — non-fatal.
-      console.warn('electron-updater unavailable:', err.message);
-    }
-  }
+  initAutoUpdater();
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {
@@ -237,15 +301,158 @@ app.on('window-all-closed', () => {
   }
 });
 
+// Synchronous-friendly teardown: stop accepting connections and remove the
+// runtime file. Async close of in-flight sockets is best-effort.
+app.on('before-quit', () => {
+  rejectPendingConfirms();
+  if (mcpService?.isRunning()) {
+    mcpService.stop().catch(() => { /* shutting down anyway */ });
+  }
+});
+
 // --- IPC Handlers ---
 
 ipcMain.handle('ui:getPrefs', () => loadUIPrefs());
-ipcMain.handle('ui:setPrefs', (_event, prefs) => {
+ipcMain.handle('ui:setPrefs', async (_event, prefs) => {
   const current = loadUIPrefs();
-  saveUIPrefs({ ...current, ...prefs });
+  const next = { ...current, ...prefs };
+  saveUIPrefs(next);
   if (projectService && typeof prefs?.writeFrontmatter === 'boolean') {
     projectService.setWriteFrontmatter(prefs.writeFrontmatter);
   }
+  // React to MCP toggle immediately so the user sees status update without
+  // reopening the project.
+  if (typeof prefs?.mcpEnabled === 'boolean') {
+    if (prefs.mcpEnabled) {
+      await maybeStartMcp();
+    } else {
+      await mcpService?.stop();
+    }
+  }
+  return true;
+});
+
+// --- MCP ---
+
+// Outstanding confirm-before-write prompts. The McpService awaits a Promise
+// returned by requestMcpConfirm(); we hold the resolver here keyed by the
+// synthetic id sent to the renderer, and resolve it when the renderer calls
+// back via the mcp:confirm-response invoke handler.
+let nextConfirmId = 0;
+const pendingConfirms = new Map();
+
+function requestMcpConfirm({ tool, summary, args }) {
+  if (!mainWindow || mainWindow.isDestroyed()) {
+    // No UI to ask — fail safe by denying. Better to refuse a write than to
+    // execute one the user couldn't see.
+    return Promise.resolve('deny');
+  }
+  const id = ++nextConfirmId;
+  return new Promise((resolve) => {
+    pendingConfirms.set(id, resolve);
+    mainWindow.webContents.send('mcp:confirm-request', { id, tool, summary, args });
+  });
+}
+
+function rejectPendingConfirms(decision = 'deny') {
+  for (const [, resolve] of pendingConfirms) resolve(decision);
+  pendingConfirms.clear();
+}
+
+ipcMain.handle('mcp:confirm-response', (_event, id, decision) => {
+  const resolver = pendingConfirms.get(id);
+  if (!resolver) return false;
+  pendingConfirms.delete(id);
+  // Coerce to one of the three valid strings — any unexpected value denies.
+  const valid = decision === 'allow' || decision === 'session' || decision === 'deny';
+  resolver(valid ? decision : 'deny');
+  return true;
+});
+
+function getMcpRuntimePath() {
+  return path.join(app.getPath('userData'), MCP_RUNTIME_FILE);
+}
+
+// Returns the absolute path to the bridge script. In dev it lives at the
+// repo root; in packaged builds electron-builder copies it under
+// `process.resourcesPath` via the extraResources block in electron-builder.yml.
+function getMcpBridgePath() {
+  if (app.isPackaged) {
+    return path.join(process.resourcesPath, 'noteliner-mcp-bridge.js');
+  }
+  return path.join(app.getAppPath(), 'bin', 'noteliner-mcp-bridge.js');
+}
+
+async function maybeStartMcp() {
+  if (!mcpService) return;
+  const prefs = loadUIPrefs();
+  if (!prefs.mcpEnabled) return;
+  if (!projectService?.projectPath) return;
+  if (mcpService.isRunning()) return;
+  try {
+    await mcpService.start(getMcpRuntimePath());
+  } catch (err) {
+    console.error('[MCP] failed to start:', err);
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send('git:log', `[MCP] failed to start: ${err.message}`);
+    }
+  }
+}
+
+ipcMain.handle('mcp:getStatus', () => {
+  const prefs = loadUIPrefs();
+  return {
+    enabled: !!prefs.mcpEnabled,
+    running: !!mcpService?.isRunning(),
+    socketPath: mcpService?.getSocketPath() || null,
+    bridgePath: getMcpBridgePath(),
+    projectOpen: !!projectService?.projectPath,
+    confirmWrites: !!prefs.mcpConfirmWrites,
+    disabledTools: Array.isArray(prefs.mcpDisabledTools) ? prefs.mcpDisabledTools : [],
+    tools: McpService.toolClassification(),
+  };
+});
+
+// --- Auto-update IPC ---
+
+ipcMain.handle('update:getState', () => latestUpdateState);
+
+ipcMain.handle('update:checkNow', async () => {
+  if (!app.isPackaged || isTest) {
+    sendUpdateState({ state: 'unavailable', reason: 'dev' });
+    return false;
+  }
+  const u = getAutoUpdater();
+  if (!u) {
+    sendUpdateState({ state: 'error', error: 'Updater not available in this build' });
+    return false;
+  }
+  try {
+    await u.checkForUpdates();
+    return true;
+  } catch (err) {
+    sendUpdateState({ state: 'error', error: err?.message || String(err) });
+    return false;
+  }
+});
+
+ipcMain.handle('update:downloadNow', async () => {
+  const u = getAutoUpdater();
+  if (!u) return false;
+  try {
+    await u.downloadUpdate();
+    return true;
+  } catch (err) {
+    sendUpdateState({ state: 'error', error: err?.message || String(err) });
+    return false;
+  }
+});
+
+ipcMain.handle('update:installNow', () => {
+  const u = getAutoUpdater();
+  if (!u) return false;
+  // quitAndInstall() exits the process — no further IPC will be served.
+  u.quitAndInstall();
   return true;
 });
 
@@ -348,6 +555,7 @@ ipcMain.handle('project:open', async (_event, folderPath) => {
     if (result.status === 'loaded') {
       await perf.measure('linkgraph.rebuild', () => linkGraphService.rebuild(),
         { files: projectService.index?.files?.length || 0 });
+      await maybeStartMcp();
     }
     return result;
   });
@@ -355,12 +563,17 @@ ipcMain.handle('project:open', async (_event, folderPath) => {
 
 ipcMain.handle('project:init', async (_event, folderPath, remoteUrl) => {
   const result = await projectService.initProject(folderPath, remoteUrl);
-  if (result.status === 'loaded') await linkGraphService.rebuild();
+  if (result.status === 'loaded') {
+    await linkGraphService.rebuild();
+    await maybeStartMcp();
+  }
   return result;
 });
 
 ipcMain.handle('project:close', async () => {
   if (!projectService.projectPath) return;
+  rejectPendingConfirms();
+  await mcpService?.stop();
   await gitService.flushPush(projectService.projectPath);
   projectService.projectPath = null;
   projectService.index = null;

@@ -30,6 +30,14 @@ files:
 
 asar: true
 
+# Ship the MCP stdio bridge outside the asar so external MCP clients (Claude
+# Code, Claude Desktop, Cursor, etc.) can spawn it as a normal Node script.
+# Path resolves to `process.resourcesPath` at runtime — see getMcpBridgePath
+# in src/main/main.js.
+extraResources:
+  - from: bin/noteliner-mcp-bridge.js
+    to: noteliner-mcp-bridge.js
+
 # --- Linux ---
 linux:
   category: Office

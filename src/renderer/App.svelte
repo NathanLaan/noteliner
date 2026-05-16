@@ -18,6 +18,7 @@
   import SyncModal from './components/SyncModal.svelte';
   import SyncingModal from './components/SyncingModal.svelte';
   import ImportingModal from './components/ImportingModal.svelte';
+  import McpConfirmModal from './components/McpConfirmModal.svelte';
   import HistoryPanel from './components/HistoryPanel.svelte';
   import AttachmentPanel from './components/AttachmentPanel.svelte';
   import CommandPalette from './components/CommandPalette.svelte';
@@ -77,6 +78,10 @@
   let showClearTags = $state(false);
   let clearTagsFile = $state(null);
   let projectSettingsRequired = $state(false);
+  // Queue of pending MCP confirm-before-write prompts. Main may push multiple
+  // before the user answers the first, so we serialize them — only the head
+  // of the queue renders a modal at a time.
+  let mcpConfirmQueue = $state([]);
   let tagAction = $state(null);
   let searchFocusTs = $state(null);
   let setupFolderPath = $state('');
@@ -266,8 +271,29 @@
 
     // Capture phase so Ctrl+K reaches us before CodeMirror's "delete-to-EOL" binding.
     window.addEventListener('keydown', handleKeydown, true);
-    return () => window.removeEventListener('keydown', handleKeydown, true);
+
+    // Subscribe to MCP confirm-before-write prompts. The unsubscriber is the
+    // return value from onMcpConfirmRequest — call it on unmount alongside
+    // the keydown cleanup so we don't leak listeners on hot-reload.
+    let unsubMcp = () => {};
+    if (window.api?.onMcpConfirmRequest) {
+      unsubMcp = window.api.onMcpConfirmRequest((req) => {
+        mcpConfirmQueue = [...mcpConfirmQueue, req];
+      });
+    }
+
+    return () => {
+      window.removeEventListener('keydown', handleKeydown, true);
+      unsubMcp();
+    };
   });
+
+  function resolveMcpConfirm(decision) {
+    const head = mcpConfirmQueue[0];
+    if (!head) return;
+    window.api?.respondMcpConfirm?.(head.id, decision);
+    mcpConfirmQueue = mcpConfirmQueue.slice(1);
+  }
 
   async function loadProject(folderPath, result) {
     if (result.status === 'loaded') {
@@ -667,6 +693,13 @@
 
 {#if showImporting}
   <ImportingModal filename={importingFilename} />
+{/if}
+
+{#if mcpConfirmQueue.length > 0}
+  <McpConfirmModal
+    request={mcpConfirmQueue[0]}
+    onResolve={resolveMcpConfirm}
+  />
 {/if}
 
 <div class="app-layout">

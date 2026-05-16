@@ -3,6 +3,7 @@
   // any dev-server fs.allow / CSP / URL-resolution surprises that can leave the
   // image broken on load.
   import appIconSvg from '../../../assets/icon-hexagon.svg?raw';
+  import { updateState } from '../stores/update.svelte.js';
 
   let { onClose } = $props();
 
@@ -11,13 +12,28 @@
   }
 
   function handleKeydown(e) {
-    if (e.key === 'Escape' || e.key === 'Enter') onClose();
+    // Enter is handled by the focused button; don't close on it.
+    if (e.key === 'Escape') onClose();
   }
 
   function openRepo(e) {
     e.preventDefault();
     window.api.openExternal('https://github.com/NathanLaan/noteliner');
   }
+
+  const statusLine = $derived.by(() => {
+    switch (updateState.state) {
+      case 'checking':    return 'Checking for updates…';
+      case 'available':   return `Version ${updateState.version} is available.`;
+      case 'downloading': return `Downloading update… ${Math.round(updateState.percent || 0)}%`;
+      case 'downloaded':  return `Version ${updateState.version} is ready to install.`;
+      case 'unavailable': return updateState.reason === 'dev'
+                                  ? 'Updates are disabled in development builds.'
+                                  : 'You are running the latest version.';
+      case 'error':       return `Update error: ${updateState.error}`;
+      default:            return '';
+    }
+  });
 </script>
 
 <div class="modal-overlay about-overlay" use:focusOnMount onclick={(e) => { if (e.target === e.currentTarget) onClose(); }} onkeydown={handleKeydown} role="dialog" aria-modal="true" tabindex="-1">
@@ -29,7 +45,36 @@
       <div class="header-row">
         <div class="header-left">
           <p class="app-name">NoteLiner</p>
-          <p class="version">Version {__APP_VERSION__}</p>
+          <div class="version-row">
+            <p class="version">Version {__APP_VERSION__}</p>
+            <button
+              class="update-btn"
+              onclick={() => updateState.check()}
+              disabled={updateState.state === 'checking' || updateState.state === 'downloading'}
+              title="Check for Updates"
+            >
+              <i class="fas fa-arrows-rotate" class:spin={updateState.state === 'checking'}></i>
+              Check
+            </button>
+          </div>
+          {#if statusLine}
+            <p class="update-status" class:is-error={updateState.state === 'error'}>{statusLine}</p>
+          {/if}
+          {#if updateState.state === 'available'}
+            <div class="update-actions">
+              <button class="primary-btn" onclick={() => updateState.download()}>Download</button>
+            </div>
+          {:else if updateState.state === 'downloaded'}
+            <div class="update-actions">
+              <button class="primary-btn" onclick={() => updateState.install()}>Restart and Install</button>
+            </div>
+          {/if}
+          {#if (updateState.state === 'available' || updateState.state === 'downloaded') && updateState.notes}
+            <details class="release-notes">
+              <summary>Release notes</summary>
+              <div class="release-notes-body">{@html typeof updateState.notes === 'string' ? updateState.notes : ''}</div>
+            </details>
+          {/if}
           <p class="desc">An outliner-style note-taking application built with Electron and Svelte.</p>
           <p class="repo-link"><a href="https://github.com/NathanLaan/noteliner" onclick={openRepo}>github.com/NathanLaan/noteliner</a></p>
         </div>
@@ -102,9 +147,102 @@
     margin-bottom: 6px;
   }
 
+  .version-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 8px;
+  }
+
   .version {
     color: var(--text-muted);
-    margin-bottom: 16px;
+    margin: 0;
+    flex: 1;
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .update-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    border-radius: 6px;
+    background: var(--bg-button);
+    color: var(--text-primary);
+    font-size: 12px;
+    transition: background 0.15s, color 0.15s;
+    flex-shrink: 0;
+  }
+
+  .update-btn:hover:not(:disabled) {
+    background: var(--bg-selected);
+    color: var(--accent);
+  }
+
+  .update-btn:disabled {
+    opacity: 0.5;
+    cursor: default;
+  }
+
+  .update-btn .spin {
+    animation: spin 1s linear infinite;
+  }
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+
+  .update-status {
+    color: var(--text-secondary);
+    font-size: 13px;
+    margin-bottom: 12px;
+  }
+
+  .update-status.is-error {
+    color: var(--danger, #c33);
+  }
+
+  .update-actions {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+
+  .primary-btn {
+    padding: 6px 14px;
+    background: var(--bg-selected);
+    outline: 1px solid var(--accent);
+    color: var(--accent);
+    border-radius: 6px;
+    transition: background 0.15s, color 0.15s;
+  }
+
+  .primary-btn:hover {
+    background: var(--accent);
+    color: var(--accent-on);
+  }
+
+  .release-notes {
+    margin-bottom: 12px;
+    font-size: 13px;
+  }
+
+  .release-notes summary {
+    cursor: pointer;
+    color: var(--accent);
+    user-select: none;
+  }
+
+  .release-notes-body {
+    margin-top: 8px;
+    padding: 8px 12px;
+    background: var(--bg-overlay);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text-secondary);
+    max-height: 160px;
+    overflow-y: auto;
   }
 
   .desc {

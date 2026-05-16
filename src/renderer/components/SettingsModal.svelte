@@ -2,6 +2,7 @@
   import { onMount } from 'svelte';
   import { themeState } from '../stores/theme.svelte.js';
   import { commandRegistry } from '../stores/commands.svelte.js';
+  import McpWalkthroughModal from './McpWalkthroughModal.svelte';
 
   let { onClose } = $props();
 
@@ -9,7 +10,20 @@
   let customTitlebar = $state(false);
   let customTitlebarInitial = $state(false);
   let writeFrontmatter = $state(true);
+  let mcpEnabled = $state(false);
+  let mcpConfirmWrites = $state(false);
+  let mcpDisabledTools = $state([]);
+  let showMcpWalkthrough = $state(false);
+  let mcpStatus = $state(null);
+  let copiedConfig = $state(false);
   let prefsLoaded = $state(false);
+
+  async function refreshMcpStatus() {
+    if (window.api?.getMcpStatus) {
+      try { mcpStatus = await window.api.getMcpStatus(); }
+      catch { mcpStatus = null; }
+    }
+  }
 
   onMount(async () => {
     if (window.api?.getUIPrefs) {
@@ -18,8 +32,12 @@
         customTitlebar = !!prefs?.customTitlebar;
         customTitlebarInitial = customTitlebar;
         writeFrontmatter = prefs?.writeFrontmatter !== false;
+        mcpEnabled = !!prefs?.mcpEnabled;
+        mcpConfirmWrites = !!prefs?.mcpConfirmWrites;
+        mcpDisabledTools = Array.isArray(prefs?.mcpDisabledTools) ? [...prefs.mcpDisabledTools] : [];
       } catch { /* ignore */ }
     }
+    await refreshMcpStatus();
     prefsLoaded = true;
   });
 
@@ -40,6 +58,99 @@
       } catch { /* ignore */ }
     }
   }
+
+  async function toggleMcp() {
+    // Every off→on transition opens the walkthrough as a confirmation gate.
+    // The toggle only commits if the user clicks "Enable" inside the modal.
+    // Off-direction (disabling) flips silently — no value in nagging there.
+    if (!mcpEnabled) {
+      // Make sure mcpStatus.bridgePath is populated before opening — the
+      // walkthrough's config snippet depends on it.
+      if (!mcpStatus?.bridgePath) await refreshMcpStatus();
+      showMcpWalkthrough = true;
+      return;
+    }
+    mcpEnabled = false;
+    if (window.api?.setUIPrefs) {
+      try {
+        await window.api.setUIPrefs({ mcpEnabled: false });
+      } catch { /* ignore */ }
+    }
+    await refreshMcpStatus();
+  }
+
+  async function handleWalkthroughEnable() {
+    showMcpWalkthrough = false;
+    mcpEnabled = true;
+    if (window.api?.setUIPrefs) {
+      try {
+        await window.api.setUIPrefs({ mcpEnabled: true });
+      } catch { /* ignore */ }
+    }
+    await refreshMcpStatus();
+  }
+
+  function handleWalkthroughCancel() {
+    // Toggle stays off — the modal acts purely as a consent gate.
+    showMcpWalkthrough = false;
+  }
+
+  async function toggleMcpConfirmWrites() {
+    mcpConfirmWrites = !mcpConfirmWrites;
+    if (window.api?.setUIPrefs) {
+      try {
+        await window.api.setUIPrefs({ mcpConfirmWrites });
+      } catch { /* ignore */ }
+    }
+  }
+
+  async function toggleToolDisabled(tool) {
+    if (mcpDisabledTools.includes(tool)) {
+      mcpDisabledTools = mcpDisabledTools.filter(t => t !== tool);
+    } else {
+      mcpDisabledTools = [...mcpDisabledTools, tool];
+    }
+    if (window.api?.setUIPrefs) {
+      try {
+        await window.api.setUIPrefs({ mcpDisabledTools });
+      } catch { /* ignore */ }
+    }
+  }
+
+  // Tool lists come from main via getMcpStatus so the source of truth is the
+  // service itself — no chance of the UI listing a tool that doesn't exist.
+  let readTools = $derived(mcpStatus?.tools?.read || []);
+  let writeTools = $derived(mcpStatus?.tools?.write || []);
+
+  // Sample config snippet — uses the resolved bridge path so a paste works
+  // verbatim. node-style spawn is the universal denominator across clients.
+  let mcpConfigSnippet = $derived(mcpStatus?.bridgePath
+    ? JSON.stringify({
+        mcpServers: {
+          noteliner: {
+            command: 'node',
+            args: [mcpStatus.bridgePath],
+          },
+        },
+      }, null, 2)
+    : '');
+
+  async function copyMcpConfig() {
+    if (!mcpConfigSnippet) return;
+    try {
+      await navigator.clipboard.writeText(mcpConfigSnippet);
+      copiedConfig = true;
+      setTimeout(() => { copiedConfig = false; }, 1500);
+    } catch { /* ignore */ }
+  }
+
+  let mcpStatusText = $derived(
+    !mcpStatus ? '…'
+    : !mcpStatus.enabled ? 'Disabled'
+    : !mcpStatus.projectOpen ? 'Idle (no project open)'
+    : mcpStatus.running ? 'Running'
+    : 'Stopped'
+  );
 
   async function applyRestart() {
     if (window.api?.relaunchApp) {
@@ -77,6 +188,7 @@
 
     <div class="tab-bar">
       <button class="tab" class:active={activeTab === 'ui'} onclick={() => activeTab = 'ui'}>UI</button>
+      <button class="tab" class:active={activeTab === 'mcp'} onclick={() => { activeTab = 'mcp'; refreshMcpStatus(); }}>MCP</button>
       <button class="tab" class:active={activeTab === 'shortcuts'} onclick={() => activeTab = 'shortcuts'}>Keyboard Shortcuts</button>
     </div>
 
@@ -167,6 +279,151 @@
             files are reconciled on next project open.
           </p>
         </div>
+      {:else if activeTab === 'mcp'}
+        <div class="setting-group">
+          <span class="setting-label">Model Context Protocol Server</span>
+          <button
+            class="toggle-option"
+            class:active={mcpEnabled}
+            onclick={toggleMcp}
+            disabled={!prefsLoaded}
+          >
+            <span class="toggle-radio">
+              {#if mcpEnabled}
+                <i class="fas fa-square-check"></i>
+              {:else}
+                <i class="far fa-square"></i>
+              {/if}
+            </span>
+            Enable MCP server
+          </button>
+          <p class="setting-help">
+            Lets external AI assistants (Claude Code, Claude Desktop, Cursor)
+            list, read, search, and write notes in the currently-open project.
+            All writes go through the normal save path and are committed to
+            git. The server is local-only — no network port is opened.
+          </p>
+        </div>
+
+        <div class="setting-group">
+          <span class="setting-label">Status</span>
+          <div class="mcp-status-row">
+            <span class="mcp-status-dot" class:running={mcpStatus?.running}></span>
+            <span class="mcp-status-text">{mcpStatusText}</span>
+            <button class="link-btn" onclick={refreshMcpStatus}>Refresh</button>
+          </div>
+          {#if mcpStatus?.socketPath}
+            <div class="mcp-kv">
+              <span class="mcp-k">Socket</span>
+              <code class="mcp-v">{mcpStatus.socketPath}</code>
+            </div>
+          {/if}
+          {#if mcpStatus?.bridgePath}
+            <div class="mcp-kv">
+              <span class="mcp-k">Bridge</span>
+              <code class="mcp-v">{mcpStatus.bridgePath}</code>
+            </div>
+          {/if}
+        </div>
+
+        {#if mcpEnabled && mcpConfigSnippet}
+          <div class="setting-group">
+            <span class="setting-label">Client Configuration</span>
+            <p class="setting-help">
+              Paste this into your MCP client's config file (for Claude Code:
+              <code>.mcp.json</code> in the project; for Claude Desktop:
+              <code>claude_desktop_config.json</code>).
+            </p>
+            <div class="snippet-wrap">
+              <pre class="snippet">{mcpConfigSnippet}</pre>
+              <button class="snippet-copy" onclick={copyMcpConfig}>
+                {copiedConfig ? 'Copied' : 'Copy'}
+              </button>
+            </div>
+          </div>
+        {/if}
+
+        <div class="setting-group">
+          <span class="setting-label">Safety</span>
+          <button
+            class="toggle-option"
+            class:active={mcpConfirmWrites}
+            onclick={toggleMcpConfirmWrites}
+            disabled={!prefsLoaded || !mcpEnabled}
+          >
+            <span class="toggle-radio">
+              {#if mcpConfirmWrites}
+                <i class="fas fa-square-check"></i>
+              {:else}
+                <i class="far fa-square"></i>
+              {/if}
+            </span>
+            Ask before write operations
+          </button>
+          <p class="setting-help">
+            When enabled, NoteLiner asks for permission before running write
+            tools (<code>create_note</code>, <code>update_note</code>,
+            <code>delete_note</code>, etc.). Read tools are never gated.
+            "Allow for session" remembers your choice until the project closes.
+          </p>
+        </div>
+
+        {#if mcpStatus?.tools}
+          <div class="setting-group">
+            <span class="setting-label">Tool Access</span>
+            <p class="setting-help">
+              Untick to disable individual tools. Disabled tools return an
+              error to the MCP client. This applies to both read and write
+              tools — handy for restricting an agent's reach without turning
+              the whole server off.
+            </p>
+
+            <div class="tool-section">
+              <span class="tool-section-label">Read</span>
+              {#each readTools as tool (tool)}
+                {@const disabled = mcpDisabledTools.includes(tool)}
+                <button
+                  class="tool-row"
+                  class:disabled
+                  onclick={() => toggleToolDisabled(tool)}
+                  disabled={!prefsLoaded || !mcpEnabled}
+                >
+                  <span class="tool-check">
+                    {#if !disabled}
+                      <i class="fas fa-square-check"></i>
+                    {:else}
+                      <i class="far fa-square"></i>
+                    {/if}
+                  </span>
+                  <code class="tool-name">{tool}</code>
+                </button>
+              {/each}
+            </div>
+
+            <div class="tool-section">
+              <span class="tool-section-label">Write</span>
+              {#each writeTools as tool (tool)}
+                {@const disabled = mcpDisabledTools.includes(tool)}
+                <button
+                  class="tool-row"
+                  class:disabled
+                  onclick={() => toggleToolDisabled(tool)}
+                  disabled={!prefsLoaded || !mcpEnabled}
+                >
+                  <span class="tool-check">
+                    {#if !disabled}
+                      <i class="fas fa-square-check"></i>
+                    {:else}
+                      <i class="far fa-square"></i>
+                    {/if}
+                  </span>
+                  <code class="tool-name">{tool}</code>
+                  <span class="tool-tag">write</span>
+                </button>
+              {/each}
+            </div>
+          </div>
+        {/if}
       {:else if activeTab === 'shortcuts'}
         <div class="shortcuts-list">
           {#each [...shortcuts, ...editorShortcuts] as shortcut, i (shortcut.section + '|' + shortcut.keys + '|' + i)}
@@ -187,6 +444,14 @@
     </div>
   </div>
 </div>
+
+{#if showMcpWalkthrough}
+  <McpWalkthroughModal
+    bridgePath={mcpStatus?.bridgePath || ''}
+    onEnable={handleWalkthroughEnable}
+    onCancel={handleWalkthroughCancel}
+  />
+{/if}
 
 <style>
   .tab-bar {
@@ -417,6 +682,164 @@
 
   .restart-btn:hover {
     background: var(--accent-hover);
+  }
+
+  .mcp-status-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: var(--text-primary);
+  }
+
+  .mcp-status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--text-faint);
+  }
+
+  .mcp-status-dot.running {
+    background: #2ea043;
+    box-shadow: 0 0 6px rgba(46, 160, 67, 0.6);
+  }
+
+  .mcp-status-text {
+    flex: 1;
+  }
+
+  .mcp-kv {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 8px;
+    font-size: 12px;
+  }
+
+  .mcp-k {
+    font-size: 11px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    width: 60px;
+    flex-shrink: 0;
+  }
+
+  .mcp-v {
+    color: var(--text-secondary);
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    word-break: break-all;
+  }
+
+  .link-btn {
+    font-size: 12px;
+    color: var(--accent);
+    background: transparent;
+    padding: 0;
+  }
+
+  .link-btn:hover {
+    text-decoration: underline;
+  }
+
+  .snippet-wrap {
+    position: relative;
+    margin-top: 8px;
+  }
+
+  .snippet {
+    background: var(--bg-base);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 12px 14px;
+    margin: 0;
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    font-size: 12px;
+    color: var(--text-secondary);
+    white-space: pre;
+    overflow-x: auto;
+  }
+
+  .snippet-copy {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    padding: 4px 10px;
+    font-size: 11px;
+    background: var(--bg-button);
+    color: var(--text-primary);
+    border-radius: 4px;
+    border: 1px solid var(--border);
+  }
+
+  .snippet-copy:hover {
+    background: var(--bg-button-hover);
+  }
+
+  .tool-section {
+    margin-top: 8px;
+  }
+
+  .tool-section-label {
+    display: block;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-faint);
+    margin: 8px 0 4px;
+  }
+
+  .tool-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 6px 10px;
+    background: transparent;
+    border-radius: 4px;
+    font-size: 13px;
+    color: var(--text-primary);
+    text-align: left;
+    transition: background 0.15s;
+  }
+
+  .tool-row:hover:not(:disabled) {
+    background: var(--bg-button);
+  }
+
+  .tool-row:disabled {
+    opacity: 0.5;
+    cursor: default;
+  }
+
+  .tool-row.disabled .tool-name {
+    color: var(--text-muted);
+    text-decoration: line-through;
+  }
+
+  .tool-check {
+    width: 18px;
+    text-align: center;
+    color: var(--accent);
+  }
+
+  .tool-row.disabled .tool-check {
+    color: var(--text-faint);
+  }
+
+  .tool-name {
+    flex: 1;
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    font-size: 12px;
+  }
+
+  .tool-tag {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-faint);
+    background: var(--bg-base);
+    padding: 1px 6px;
+    border-radius: 3px;
   }
 
   .close-btn {
