@@ -3,6 +3,9 @@
   "version": "0.7.1",
   "description": "An outliner-style note-taking app built with Electron and Svelte",
   "main": "src/main/main.js",
+  "bin": {
+    "noteliner-mcp-bridge": "bin/noteliner-mcp-bridge.js"
+  },
   "author": {
     "name": "Nathan Laan"
   },

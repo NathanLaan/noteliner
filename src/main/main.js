@@ -7,8 +7,10 @@ const { ProjectService } = require('./project-service');
 const { WindowStateService } = require('./window-state-service');
 const { LinkGraphService } = require('./link-graph-service');
 const { ImportService } = require('./import-service');
+const { McpService } = require('./mcp-service');
 const perf = require('./perf');
 const { marked } = require('marked');
+const pkg = require('../../package.json');
 
 // Set app name early so Linux WM_CLASS is correct (for dock icon in dev mode)
 app.setName('NoteLiner');
@@ -31,6 +33,7 @@ if (process.platform === 'linux') {
 
 const RECENT_PROJECTS_FILE = 'recent-projects.json';
 const UI_PREFS_FILE = 'ui-preferences.json';
+const MCP_RUNTIME_FILE = 'mcp-runtime.json';
 const MAX_RECENT = 5;
 
 function getUIPrefsPath() {
@@ -38,7 +41,7 @@ function getUIPrefsPath() {
 }
 
 function loadUIPrefs() {
-  const defaults = { customTitlebar: false, writeFrontmatter: true };
+  const defaults = { customTitlebar: false, writeFrontmatter: true, mcpEnabled: false };
   try {
     const filePath = getUIPrefsPath();
     if (fs.existsSync(filePath)) {
@@ -89,6 +92,7 @@ let projectService;
 let linkGraphService;
 let importService;
 let windowStateService;
+let mcpService;
 let boundsTimer = null;
 
 const isDev = !app.isPackaged;
@@ -196,6 +200,19 @@ function createWindow() {
     path.join(app.getPath('userData'), 'window-state.json')
   );
 
+  // Reuse the same Log panel sink as git output. Prefixing with [MCP] in the
+  // service itself keeps the two channels distinguishable.
+  mcpService = new McpService({
+    projectService,
+    linkGraphService,
+    appVersion: pkg.version,
+    log: (msg) => {
+      if (mainWindow && !mainWindow.isDestroyed()) {
+        mainWindow.webContents.send('git:log', msg);
+      }
+    },
+  });
+
   function saveBoundsDebounced() {
     if (!projectService.projectPath || mainWindow.isMaximized()) return;
     if (boundsTimer) clearTimeout(boundsTimer);
@@ -268,17 +285,75 @@ app.on('window-all-closed', () => {
   }
 });
 
+// Synchronous-friendly teardown: stop accepting connections and remove the
+// runtime file. Async close of in-flight sockets is best-effort.
+app.on('before-quit', () => {
+  if (mcpService?.isRunning()) {
+    mcpService.stop().catch(() => { /* shutting down anyway */ });
+  }
+});
+
 // --- IPC Handlers ---
 
 ipcMain.handle('ui:getPrefs', () => loadUIPrefs());
-ipcMain.handle('ui:setPrefs', (_event, prefs) => {
+ipcMain.handle('ui:setPrefs', async (_event, prefs) => {
   const current = loadUIPrefs();
-  saveUIPrefs({ ...current, ...prefs });
+  const next = { ...current, ...prefs };
+  saveUIPrefs(next);
   if (projectService && typeof prefs?.writeFrontmatter === 'boolean') {
     projectService.setWriteFrontmatter(prefs.writeFrontmatter);
   }
+  // React to MCP toggle immediately so the user sees status update without
+  // reopening the project.
+  if (typeof prefs?.mcpEnabled === 'boolean') {
+    if (prefs.mcpEnabled) {
+      await maybeStartMcp();
+    } else {
+      await mcpService?.stop();
+    }
+  }
   return true;
 });
+
+// --- MCP ---
+
+function getMcpRuntimePath() {
+  return path.join(app.getPath('userData'), MCP_RUNTIME_FILE);
+}
+
+// Returns the absolute path to the bridge script. In dev it lives at the
+// repo root; in packaged builds electron-builder copies it under
+// `process.resourcesPath` via the extraResources block in electron-builder.yml.
+function getMcpBridgePath() {
+  if (app.isPackaged) {
+    return path.join(process.resourcesPath, 'noteliner-mcp-bridge.js');
+  }
+  return path.join(app.getAppPath(), 'bin', 'noteliner-mcp-bridge.js');
+}
+
+async function maybeStartMcp() {
+  if (!mcpService) return;
+  const prefs = loadUIPrefs();
+  if (!prefs.mcpEnabled) return;
+  if (!projectService?.projectPath) return;
+  if (mcpService.isRunning()) return;
+  try {
+    await mcpService.start(getMcpRuntimePath());
+  } catch (err) {
+    console.error('[MCP] failed to start:', err);
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send('git:log', `[MCP] failed to start: ${err.message}`);
+    }
+  }
+}
+
+ipcMain.handle('mcp:getStatus', () => ({
+  enabled: !!loadUIPrefs().mcpEnabled,
+  running: !!mcpService?.isRunning(),
+  socketPath: mcpService?.getSocketPath() || null,
+  bridgePath: getMcpBridgePath(),
+  projectOpen: !!projectService?.projectPath,
+}));
 
 // --- Auto-update IPC ---
 
@@ -422,6 +497,7 @@ ipcMain.handle('project:open', async (_event, folderPath) => {
     if (result.status === 'loaded') {
       await perf.measure('linkgraph.rebuild', () => linkGraphService.rebuild(),
         { files: projectService.index?.files?.length || 0 });
+      await maybeStartMcp();
     }
     return result;
   });
@@ -429,12 +505,16 @@ ipcMain.handle('project:open', async (_event, folderPath) => {
 
 ipcMain.handle('project:init', async (_event, folderPath, remoteUrl) => {
   const result = await projectService.initProject(folderPath, remoteUrl);
-  if (result.status === 'loaded') await linkGraphService.rebuild();
+  if (result.status === 'loaded') {
+    await linkGraphService.rebuild();
+    await maybeStartMcp();
+  }
   return result;
 });
 
 ipcMain.handle('project:close', async () => {
   if (!projectService.projectPath) return;
+  await mcpService?.stop();
   await gitService.flushPush(projectService.projectPath);
   projectService.projectPath = null;
   projectService.index = null;

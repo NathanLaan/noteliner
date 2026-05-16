@@ -79,6 +79,9 @@ contextBridge.exposeInMainWorld('api', {
   getUIPrefs: () => ipcRenderer.invoke('ui:getPrefs'),
   setUIPrefs: (prefs) => ipcRenderer.invoke('ui:setPrefs', prefs),
 
+  // MCP server status (for Settings -> MCP tab)
+  getMcpStatus: () => ipcRenderer.invoke('mcp:getStatus'),
+
   // App lifecycle
   relaunchApp: () => ipcRenderer.invoke('app:relaunch'),
 

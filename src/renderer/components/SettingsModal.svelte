@@ -9,7 +9,17 @@
   let customTitlebar = $state(false);
   let customTitlebarInitial = $state(false);
   let writeFrontmatter = $state(true);
+  let mcpEnabled = $state(false);
+  let mcpStatus = $state(null);
+  let copiedConfig = $state(false);
   let prefsLoaded = $state(false);
+
+  async function refreshMcpStatus() {
+    if (window.api?.getMcpStatus) {
+      try { mcpStatus = await window.api.getMcpStatus(); }
+      catch { mcpStatus = null; }
+    }
+  }
 
   onMount(async () => {
     if (window.api?.getUIPrefs) {
@@ -18,8 +28,10 @@
         customTitlebar = !!prefs?.customTitlebar;
         customTitlebarInitial = customTitlebar;
         writeFrontmatter = prefs?.writeFrontmatter !== false;
+        mcpEnabled = !!prefs?.mcpEnabled;
       } catch { /* ignore */ }
     }
+    await refreshMcpStatus();
     prefsLoaded = true;
   });
 
@@ -40,6 +52,46 @@
       } catch { /* ignore */ }
     }
   }
+
+  async function toggleMcp() {
+    mcpEnabled = !mcpEnabled;
+    if (window.api?.setUIPrefs) {
+      try {
+        await window.api.setUIPrefs({ mcpEnabled });
+      } catch { /* ignore */ }
+    }
+    await refreshMcpStatus();
+  }
+
+  // Sample config snippet — uses the resolved bridge path so a paste works
+  // verbatim. node-style spawn is the universal denominator across clients.
+  let mcpConfigSnippet = $derived(mcpStatus?.bridgePath
+    ? JSON.stringify({
+        mcpServers: {
+          noteliner: {
+            command: 'node',
+            args: [mcpStatus.bridgePath],
+          },
+        },
+      }, null, 2)
+    : '');
+
+  async function copyMcpConfig() {
+    if (!mcpConfigSnippet) return;
+    try {
+      await navigator.clipboard.writeText(mcpConfigSnippet);
+      copiedConfig = true;
+      setTimeout(() => { copiedConfig = false; }, 1500);
+    } catch { /* ignore */ }
+  }
+
+  let mcpStatusText = $derived(
+    !mcpStatus ? '…'
+    : !mcpStatus.enabled ? 'Disabled'
+    : !mcpStatus.projectOpen ? 'Idle (no project open)'
+    : mcpStatus.running ? 'Running'
+    : 'Stopped'
+  );
 
   async function applyRestart() {
     if (window.api?.relaunchApp) {
@@ -77,6 +129,7 @@
 
     <div class="tab-bar">
       <button class="tab" class:active={activeTab === 'ui'} onclick={() => activeTab = 'ui'}>UI</button>
+      <button class="tab" class:active={activeTab === 'mcp'} onclick={() => { activeTab = 'mcp'; refreshMcpStatus(); }}>MCP</button>
       <button class="tab" class:active={activeTab === 'shortcuts'} onclick={() => activeTab = 'shortcuts'}>Keyboard Shortcuts</button>
     </div>
 
@@ -167,6 +220,69 @@
             files are reconciled on next project open.
           </p>
         </div>
+      {:else if activeTab === 'mcp'}
+        <div class="setting-group">
+          <span class="setting-label">Model Context Protocol Server</span>
+          <button
+            class="toggle-option"
+            class:active={mcpEnabled}
+            onclick={toggleMcp}
+            disabled={!prefsLoaded}
+          >
+            <span class="toggle-radio">
+              {#if mcpEnabled}
+                <i class="fas fa-square-check"></i>
+              {:else}
+                <i class="far fa-square"></i>
+              {/if}
+            </span>
+            Enable MCP server
+          </button>
+          <p class="setting-help">
+            Lets external AI assistants (Claude Code, Claude Desktop, Cursor)
+            list, read, search, and write notes in the currently-open project.
+            All writes go through the normal save path and are committed to
+            git. The server is local-only — no network port is opened.
+          </p>
+        </div>
+
+        <div class="setting-group">
+          <span class="setting-label">Status</span>
+          <div class="mcp-status-row">
+            <span class="mcp-status-dot" class:running={mcpStatus?.running}></span>
+            <span class="mcp-status-text">{mcpStatusText}</span>
+            <button class="link-btn" onclick={refreshMcpStatus}>Refresh</button>
+          </div>
+          {#if mcpStatus?.socketPath}
+            <div class="mcp-kv">
+              <span class="mcp-k">Socket</span>
+              <code class="mcp-v">{mcpStatus.socketPath}</code>
+            </div>
+          {/if}
+          {#if mcpStatus?.bridgePath}
+            <div class="mcp-kv">
+              <span class="mcp-k">Bridge</span>
+              <code class="mcp-v">{mcpStatus.bridgePath}</code>
+            </div>
+          {/if}
+        </div>
+
+        {#if mcpEnabled && mcpConfigSnippet}
+          <div class="setting-group">
+            <span class="setting-label">Client Configuration</span>
+            <p class="setting-help">
+              Paste this into your MCP client's config file (for Claude Code:
+              <code>.mcp.json</code> in the project; for Claude Desktop:
+              <code>claude_desktop_config.json</code>).
+            </p>
+            <div class="snippet-wrap">
+              <pre class="snippet">{mcpConfigSnippet}</pre>
+              <button class="snippet-copy" onclick={copyMcpConfig}>
+                {copiedConfig ? 'Copied' : 'Copy'}
+              </button>
+            </div>
+          </div>
+        {/if}
       {:else if activeTab === 'shortcuts'}
         <div class="shortcuts-list">
           {#each [...shortcuts, ...editorShortcuts] as shortcut, i (shortcut.section + '|' + shortcut.keys + '|' + i)}
@@ -417,6 +533,97 @@
 
   .restart-btn:hover {
     background: var(--accent-hover);
+  }
+
+  .mcp-status-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: var(--text-primary);
+  }
+
+  .mcp-status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--text-faint);
+  }
+
+  .mcp-status-dot.running {
+    background: #2ea043;
+    box-shadow: 0 0 6px rgba(46, 160, 67, 0.6);
+  }
+
+  .mcp-status-text {
+    flex: 1;
+  }
+
+  .mcp-kv {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 8px;
+    font-size: 12px;
+  }
+
+  .mcp-k {
+    font-size: 11px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    width: 60px;
+    flex-shrink: 0;
+  }
+
+  .mcp-v {
+    color: var(--text-secondary);
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    word-break: break-all;
+  }
+
+  .link-btn {
+    font-size: 12px;
+    color: var(--accent);
+    background: transparent;
+    padding: 0;
+  }
+
+  .link-btn:hover {
+    text-decoration: underline;
+  }
+
+  .snippet-wrap {
+    position: relative;
+    margin-top: 8px;
+  }
+
+  .snippet {
+    background: var(--bg-base);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 12px 14px;
+    margin: 0;
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    font-size: 12px;
+    color: var(--text-secondary);
+    white-space: pre;
+    overflow-x: auto;
+  }
+
+  .snippet-copy {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    padding: 4px 10px;
+    font-size: 11px;
+    background: var(--bg-button);
+    color: var(--text-primary);
+    border-radius: 4px;
+    border: 1px solid var(--border);
+  }
+
+  .snippet-copy:hover {
+    background: var(--bg-button-hover);
   }
 
   .close-btn {
