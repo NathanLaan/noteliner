@@ -28,6 +28,7 @@
     "test": "playwright test",
     "test:headed": "playwright test --headed",
     "test:debug": "PWDEBUG=1 playwright test",
+    "test:mcp": "node tests/integration/mcp-bridge.test.js",
     "bench:gen": "node scripts/bench/generate-vault.js",
     "bench:run": "node scripts/bench/run-bench.js",
     "postinstall": "bash scripts/install-desktop.sh"

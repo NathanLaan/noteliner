@@ -121,16 +121,48 @@ changes (requires ImageMagick).
 
 ## Testing
 
-End-to-end smoke tests run against the real Electron app via Playwright.
+Two suites cover different layers. Both run from the repo root.
+
+### End-to-end (Playwright) — UI through Electron
+
+Five focused tests that boot the real Electron app and assert against
+on-disk state: app launches, create-and-persist, rename, delete, and
+attachments. Run these whenever you touch the renderer, the IPC layer,
+or `ProjectService`.
 
 ```bash
-npm run build           # tests run against dist/, build first
+npm run build           # tests load dist/, so build first
 npm test                # headless
 npm run test:headed     # show the Electron window
-npm run test:debug      # Playwright Inspector
+npm run test:debug      # step through with the Playwright Inspector
 ```
 
-See `tests/README.md` for the test mandate and how the harness works.
+The first run installs Playwright's bundled browsers automatically.
+
+See [`tests/README.md`](tests/README.md) for the test mandate and how
+the Electron harness works.
+
+### MCP bridge integration — protocol through the real bridge
+
+Spawns `bin/noteliner-mcp-bridge.js` as a child process and drives it
+with a synthetic JSON-RPC client — the same wire path Claude Code,
+Claude Desktop, and Cursor use. Twenty-four assertions across the six
+items from the MCP plan's Testing section: list/create round-trip,
+search parity with the in-app search, mid-call disconnect, project
+switch isolation, and stale-socket recovery.
+
+```bash
+npm run test:mcp        # ~3 seconds; requires git on PATH
+```
+
+Runs in plain Node — no Electron, no browser. Suitable for CI as well
+as a fast pre-commit check whenever you touch `src/main/mcp-service.js`
+or the bridge binary.
+
+See [`tests/integration/README.md`](tests/integration/README.md) for
+coverage details and the short manual checklist for UI-side
+verification with a real MCP client (the bits that genuinely need a
+human eyeballing the FILES pane).
 
 ## Technology
 

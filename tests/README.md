@@ -56,3 +56,6 @@ real UI does. Tests call `__nlTest.initProject(...)`,
 - Performance — see `docs/plans/future/plan-large-vault-performance.md`.
 - Visual regression / screenshot diffing — too maintenance-heavy for the
   payoff at NoteLiner's size.
+- MCP server protocol — see `tests/integration/` for a Node-driven
+  integration test that drives the real `noteliner-mcp-bridge` binary
+  against a synthetic JSON-RPC client (run via `npm run test:mcp`).
