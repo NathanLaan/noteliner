@@ -11,6 +11,7 @@ NoteLiner should be considered BETA software. I wrote it for my own personal use
 - Live markdown preview panel
 - File attachments (paste, drag-and-drop, or file picker) with image thumbnails
 - Automatic Git commit on every change with debounced push to remote
+- Optional MCP server — expose the open project to AI assistants (Claude Code, Claude Desktop, Cursor) via local-only stdio bridge
 - Three built-in themes: Midnight, Dark, and Light
 - Keyboard shortcuts for all major actions
 
@@ -67,6 +68,100 @@ Files can be attached to any note via:
 - **File picker** -- Click `[+]` in the attachments panel.
 
 Attachments are stored in the `_attachments/` directory and tracked in `noteliner.json`. A markdown reference is automatically inserted at the cursor: `![name](path)` for images, `[name](path)` for other files. Maximum file size is 30MB.
+
+## MCP Server
+
+NoteLiner can expose the currently-open project to external AI assistants
+(Claude Code, Claude Desktop, Cursor, ...) via the
+[Model Context Protocol](https://modelcontextprotocol.io). When enabled,
+the AI can list, read, search, and write notes — every write goes through
+the same save path as the UI and is committed to git automatically.
+
+The server is local-only: no TCP port is opened. NoteLiner listens on a
+Unix domain socket (or Windows named pipe) that only the local user can
+read, and external clients connect through a small `noteliner-mcp-bridge`
+helper that pipes stdio to that socket.
+
+### Enabling
+
+Settings → MCP → toggle "Enable MCP server". Every off→on transition
+opens a one-screen walkthrough that explains the architecture and offers
+a copy-paste config snippet for your client. The server only runs while
+a project is open; closing the project (or disabling MCP) tears it down.
+
+### Client configuration
+
+Drop this into your MCP client's config file — for Claude Code, that's
+`.mcp.json` in the project root; for Claude Desktop,
+`claude_desktop_config.json`:
+
+```json
+{
+  "mcpServers": {
+    "noteliner": {
+      "command": "node",
+      "args": ["/absolute/path/to/noteliner-mcp-bridge.js"]
+    }
+  }
+}
+```
+
+The exact bridge path for your install appears in Settings → MCP →
+Client Configuration with a one-click copy button. Don't hand-edit the
+path — it differs between dev runs and packaged installs.
+
+### Tools
+
+| Tool | Purpose | Kind |
+|---|---|---|
+| `list_notes` | List every note (id, name, filename, tags, parentId) | read |
+| `read_note` | Read a note's body by id or name | read |
+| `search` | Full-text search across note bodies | read |
+| `get_backlinks` | List notes linking to a target via wikilinks | read |
+| `list_attachments` | List attachments on a note | read |
+| `list_tags` | Tag histogram with note counts and ids | read |
+| `create_note` | Create a new note | write |
+| `update_note` | Replace a note's body | write |
+| `delete_note` | Delete a note (children reparent) | write |
+| `rename_note` | Rename a note (filename re-slugged) | write |
+| `set_tags` | Replace a note's tag list | write |
+| `add_attachment` | Attach a binary file (base64, 30MB cap) | write |
+| `remove_attachment` | Remove an attachment by id | write |
+
+### Resources and prompts
+
+Three resource URIs are also exposed for clients that prefer
+resource-style reads: `noteliner://index` (the full `noteliner.json`),
+`noteliner://note/{id}` (a note's body), and
+`noteliner://attachment/{filename}` (binary attachment data, base64).
+
+Four MCP prompts surface in clients that render prompts as slash
+commands: `daily_note` (with optional date/topic), `meeting_note`
+(required topic + optional attendees), `summarize_note` (server-side
+fetches the body and embeds it), and `link_suggestions` (server-side
+includes the body plus the names of all other notes so the model can
+suggest wikilink targets).
+
+### Safety
+
+- **Confirm before writes** (Settings → MCP → Safety) — when enabled,
+  NoteLiner asks for permission before running every write tool. The
+  modal offers *Allow once*, *Allow for the session*, or *Deny*.
+  Session trust is cleared when the project closes or NoteLiner quits.
+- **Per-tool allow/deny** (Settings → MCP → Tool Access) — individual
+  tools can be disabled. Disabled tools return a structured error to
+  the client. Works for both read and write tools.
+- **Single-project scope** — the server only ever exposes the
+  currently open project. Switching projects bounces the server before
+  the new project's data becomes reachable.
+- **Local-only socket** — Unix socket files are `chmod 0600`; Windows
+  named pipes are user-scoped by default. No TCP port is bound, no
+  remote transport is supported.
+- **Body size caps** — write tools reject bodies above 10MB;
+  attachments inherit the 30MB cap from `ProjectService`.
+
+Every MCP tool call is logged to the Log panel (`Ctrl+L`), prefixed
+`[MCP]`, so you can see exactly what the AI just did.
 
 ## Versioning
 
