@@ -82,6 +82,16 @@ contextBridge.exposeInMainWorld('api', {
   // MCP server status (for Settings -> MCP tab)
   getMcpStatus: () => ipcRenderer.invoke('mcp:getStatus'),
 
+  // MCP confirm-before-write UX. Main pushes a request whenever a write tool
+  // call needs the user's permission; the renderer shows a modal and replies
+  // with one of 'allow' | 'session' | 'deny'.
+  onMcpConfirmRequest: (callback) => {
+    const listener = (_event, payload) => callback(payload);
+    ipcRenderer.on('mcp:confirm-request', listener);
+    return () => ipcRenderer.removeListener('mcp:confirm-request', listener);
+  },
+  respondMcpConfirm: (id, decision) => ipcRenderer.invoke('mcp:confirm-response', id, decision),
+
   // App lifecycle
   relaunchApp: () => ipcRenderer.invoke('app:relaunch'),
 

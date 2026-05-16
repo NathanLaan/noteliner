@@ -10,6 +10,8 @@
   let customTitlebarInitial = $state(false);
   let writeFrontmatter = $state(true);
   let mcpEnabled = $state(false);
+  let mcpConfirmWrites = $state(false);
+  let mcpDisabledTools = $state([]);
   let mcpStatus = $state(null);
   let copiedConfig = $state(false);
   let prefsLoaded = $state(false);
@@ -29,6 +31,8 @@
         customTitlebarInitial = customTitlebar;
         writeFrontmatter = prefs?.writeFrontmatter !== false;
         mcpEnabled = !!prefs?.mcpEnabled;
+        mcpConfirmWrites = !!prefs?.mcpConfirmWrites;
+        mcpDisabledTools = Array.isArray(prefs?.mcpDisabledTools) ? [...prefs.mcpDisabledTools] : [];
       } catch { /* ignore */ }
     }
     await refreshMcpStatus();
@@ -62,6 +66,33 @@
     }
     await refreshMcpStatus();
   }
+
+  async function toggleMcpConfirmWrites() {
+    mcpConfirmWrites = !mcpConfirmWrites;
+    if (window.api?.setUIPrefs) {
+      try {
+        await window.api.setUIPrefs({ mcpConfirmWrites });
+      } catch { /* ignore */ }
+    }
+  }
+
+  async function toggleToolDisabled(tool) {
+    if (mcpDisabledTools.includes(tool)) {
+      mcpDisabledTools = mcpDisabledTools.filter(t => t !== tool);
+    } else {
+      mcpDisabledTools = [...mcpDisabledTools, tool];
+    }
+    if (window.api?.setUIPrefs) {
+      try {
+        await window.api.setUIPrefs({ mcpDisabledTools });
+      } catch { /* ignore */ }
+    }
+  }
+
+  // Tool lists come from main via getMcpStatus so the source of truth is the
+  // service itself — no chance of the UI listing a tool that doesn't exist.
+  let readTools = $derived(mcpStatus?.tools?.read || []);
+  let writeTools = $derived(mcpStatus?.tools?.write || []);
 
   // Sample config snippet — uses the resolved bridge path so a paste works
   // verbatim. node-style spawn is the universal denominator across clients.
@@ -280,6 +311,88 @@
               <button class="snippet-copy" onclick={copyMcpConfig}>
                 {copiedConfig ? 'Copied' : 'Copy'}
               </button>
+            </div>
+          </div>
+        {/if}
+
+        <div class="setting-group">
+          <span class="setting-label">Safety</span>
+          <button
+            class="toggle-option"
+            class:active={mcpConfirmWrites}
+            onclick={toggleMcpConfirmWrites}
+            disabled={!prefsLoaded || !mcpEnabled}
+          >
+            <span class="toggle-radio">
+              {#if mcpConfirmWrites}
+                <i class="fas fa-square-check"></i>
+              {:else}
+                <i class="far fa-square"></i>
+              {/if}
+            </span>
+            Ask before write operations
+          </button>
+          <p class="setting-help">
+            When enabled, NoteLiner asks for permission before running write
+            tools (<code>create_note</code>, <code>update_note</code>,
+            <code>delete_note</code>, etc.). Read tools are never gated.
+            "Allow for session" remembers your choice until the project closes.
+          </p>
+        </div>
+
+        {#if mcpStatus?.tools}
+          <div class="setting-group">
+            <span class="setting-label">Tool Access</span>
+            <p class="setting-help">
+              Untick to disable individual tools. Disabled tools return an
+              error to the MCP client. This applies to both read and write
+              tools — handy for restricting an agent's reach without turning
+              the whole server off.
+            </p>
+
+            <div class="tool-section">
+              <span class="tool-section-label">Read</span>
+              {#each readTools as tool (tool)}
+                {@const disabled = mcpDisabledTools.includes(tool)}
+                <button
+                  class="tool-row"
+                  class:disabled
+                  onclick={() => toggleToolDisabled(tool)}
+                  disabled={!prefsLoaded || !mcpEnabled}
+                >
+                  <span class="tool-check">
+                    {#if !disabled}
+                      <i class="fas fa-square-check"></i>
+                    {:else}
+                      <i class="far fa-square"></i>
+                    {/if}
+                  </span>
+                  <code class="tool-name">{tool}</code>
+                </button>
+              {/each}
+            </div>
+
+            <div class="tool-section">
+              <span class="tool-section-label">Write</span>
+              {#each writeTools as tool (tool)}
+                {@const disabled = mcpDisabledTools.includes(tool)}
+                <button
+                  class="tool-row"
+                  class:disabled
+                  onclick={() => toggleToolDisabled(tool)}
+                  disabled={!prefsLoaded || !mcpEnabled}
+                >
+                  <span class="tool-check">
+                    {#if !disabled}
+                      <i class="fas fa-square-check"></i>
+                    {:else}
+                      <i class="far fa-square"></i>
+                    {/if}
+                  </span>
+                  <code class="tool-name">{tool}</code>
+                  <span class="tool-tag">write</span>
+                </button>
+              {/each}
             </div>
           </div>
         {/if}
@@ -624,6 +737,73 @@
 
   .snippet-copy:hover {
     background: var(--bg-button-hover);
+  }
+
+  .tool-section {
+    margin-top: 8px;
+  }
+
+  .tool-section-label {
+    display: block;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-faint);
+    margin: 8px 0 4px;
+  }
+
+  .tool-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 6px 10px;
+    background: transparent;
+    border-radius: 4px;
+    font-size: 13px;
+    color: var(--text-primary);
+    text-align: left;
+    transition: background 0.15s;
+  }
+
+  .tool-row:hover:not(:disabled) {
+    background: var(--bg-button);
+  }
+
+  .tool-row:disabled {
+    opacity: 0.5;
+    cursor: default;
+  }
+
+  .tool-row.disabled .tool-name {
+    color: var(--text-muted);
+    text-decoration: line-through;
+  }
+
+  .tool-check {
+    width: 18px;
+    text-align: center;
+    color: var(--accent);
+  }
+
+  .tool-row.disabled .tool-check {
+    color: var(--text-faint);
+  }
+
+  .tool-name {
+    flex: 1;
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    font-size: 12px;
+  }
+
+  .tool-tag {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-faint);
+    background: var(--bg-base);
+    padding: 1px 6px;
+    border-radius: 3px;
   }
 
   .close-btn {

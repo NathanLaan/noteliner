@@ -19,18 +19,52 @@ const RPC_INTERNAL_ERROR  = -32603;
 // model so it can recover (e.g. "no project open" prompts a different action).
 class ToolError extends Error {}
 
+// Tools that mutate project state. Confirm-before-write mode (when enabled)
+// prompts the user before any of these execute; read-only tools never prompt.
+// list_tags / list_attachments are read-only despite their "list" prefix.
+const WRITE_TOOLS = new Set([
+  'create_note', 'update_note', 'delete_note', 'rename_note',
+  'set_tags', 'add_attachment', 'remove_attachment',
+]);
+
+const READ_TOOLS = new Set([
+  'list_notes', 'read_note', 'search', 'get_backlinks',
+  'list_attachments', 'list_tags',
+]);
+
 class McpService {
-  constructor({ projectService, linkGraphService, appVersion, log }) {
+  constructor({ projectService, linkGraphService, appVersion, log, getPrefs, confirm }) {
     this.projectService = projectService;
     this.linkGraphService = linkGraphService;
     this.appVersion = appVersion || '0.0.0';
     this.log = log || (() => {});
+
+    // Pull live so toggling settings in the running app takes effect on the
+    // next tool call, no restart needed.
+    this.getPrefs = getPrefs || (() => ({ confirmWrites: false, disabledTools: [] }));
+    // Returns 'allow' | 'deny' | 'session'. Default = 'allow' for environments
+    // where no UI is attached (CLI smoke tests, headless modes).
+    this.confirm = confirm || (async () => 'allow');
 
     this.tcpServer = null;
     this.socketPath = null;
     this.runtimePath = null;
     this.connections = new Set();
     this.running = false;
+
+    // Session-scoped allow list. "Always allow this tool for this session"
+    // adds tool names here. Cleared on stop() so the next project open or
+    // app restart returns to prompting.
+    this.sessionAllowed = new Set();
+  }
+
+  // Exposed so the renderer (via main) can render a settings page that knows
+  // which tools are write-side and which are read-only.
+  static toolClassification() {
+    return {
+      read: [...READ_TOOLS],
+      write: [...WRITE_TOOLS],
+    };
   }
 
   isRunning() {
@@ -82,6 +116,9 @@ class McpService {
   async stop() {
     if (!this.running) return;
     this.running = false;
+
+    // Drop session trust — the next start() is a fresh session.
+    this.sessionAllowed.clear();
 
     for (const c of this.connections) {
       try { c.destroy(); } catch { /* ignore */ }
@@ -415,6 +452,7 @@ class McpService {
     }
 
     try {
+      await this.preflight(name, args);
       const result = await this.invokeTool(name, args);
       this.log(`[MCP] ${name} ok`);
       return result;
@@ -426,6 +464,65 @@ class McpService {
         content: [{ type: 'text', text: err.message }],
         isError: true,
       };
+    }
+  }
+
+  // Disabled-tool check + (for writes) interactive confirmation. Throws
+  // ToolError to abort the call without running it.
+  async preflight(name, args) {
+    const prefs = this.getPrefs() || {};
+    const disabled = Array.isArray(prefs.disabledTools) ? prefs.disabledTools : [];
+    if (disabled.includes(name)) {
+      throw new ToolError(`Tool "${name}" is disabled in NoteLiner settings.`);
+    }
+
+    if (!WRITE_TOOLS.has(name)) return;
+    if (!prefs.confirmWrites) return;
+    if (this.sessionAllowed.has(name)) return;
+
+    const summary = this.summarizeToolCall(name, args);
+    let decision;
+    try {
+      decision = await this.confirm({ tool: name, summary, args });
+    } catch (err) {
+      throw new ToolError(`Confirmation prompt failed: ${err.message}`);
+    }
+
+    if (decision === 'deny') {
+      throw new ToolError(`User denied the "${name}" call.`);
+    }
+    if (decision === 'session') {
+      this.sessionAllowed.add(name);
+      this.log(`[MCP] session-trust granted for "${name}"`);
+    }
+    // 'allow' falls through.
+  }
+
+  // Human-readable one-liner describing what the tool will do. Used in the
+  // confirmation dialog and the log so the user has something more digestible
+  // than the raw args JSON. Returns a string with no trailing punctuation.
+  summarizeToolCall(name, args = {}) {
+    switch (name) {
+      case 'create_note':
+        return `Create note "${args.name || '(unnamed)'}"` +
+          (Array.isArray(args.tags) && args.tags.length ? ` with tags [${args.tags.join(', ')}]` : '');
+      case 'update_note': {
+        const target = args.id || args.name || '(unspecified)';
+        const len = typeof args.body === 'string' ? args.body.length : 0;
+        return `Update body of "${target}" (${len} chars)`;
+      }
+      case 'delete_note':
+        return `Delete note "${args.id || args.name || '(unspecified)'}"`;
+      case 'rename_note':
+        return `Rename "${args.id || args.name || '(unspecified)'}" to "${args.newName || '(unspecified)'}"`;
+      case 'set_tags':
+        return `Set tags on "${args.id || args.name || '(unspecified)'}" to [${(args.tags || []).join(', ')}]`;
+      case 'add_attachment':
+        return `Attach "${args.filename || '(unspecified)'}" to "${args.id || args.name || '(unspecified)'}"`;
+      case 'remove_attachment':
+        return `Remove attachment ${args.attachmentId || '(unspecified)'} from "${args.id || args.name || '(unspecified)'}"`;
+      default:
+        return name;
     }
   }
 
@@ -904,4 +1001,4 @@ class McpService {
   }
 }
 
-module.exports = { McpService };
+module.exports = { McpService, WRITE_TOOLS, READ_TOOLS };

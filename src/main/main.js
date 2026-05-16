@@ -41,7 +41,13 @@ function getUIPrefsPath() {
 }
 
 function loadUIPrefs() {
-  const defaults = { customTitlebar: false, writeFrontmatter: true, mcpEnabled: false };
+  const defaults = {
+    customTitlebar: false,
+    writeFrontmatter: true,
+    mcpEnabled: false,
+    mcpConfirmWrites: false,
+    mcpDisabledTools: [],
+  };
   try {
     const filePath = getUIPrefsPath();
     if (fs.existsSync(filePath)) {
@@ -211,6 +217,16 @@ function createWindow() {
         mainWindow.webContents.send('git:log', msg);
       }
     },
+    // Pulled live on every tool call — toggling settings while the server is
+    // running takes effect on the next invocation without restart.
+    getPrefs: () => {
+      const p = loadUIPrefs();
+      return {
+        confirmWrites: !!p.mcpConfirmWrites,
+        disabledTools: Array.isArray(p.mcpDisabledTools) ? p.mcpDisabledTools : [],
+      };
+    },
+    confirm: requestMcpConfirm,
   });
 
   function saveBoundsDebounced() {
@@ -288,6 +304,7 @@ app.on('window-all-closed', () => {
 // Synchronous-friendly teardown: stop accepting connections and remove the
 // runtime file. Async close of in-flight sockets is best-effort.
 app.on('before-quit', () => {
+  rejectPendingConfirms();
   if (mcpService?.isRunning()) {
     mcpService.stop().catch(() => { /* shutting down anyway */ });
   }
@@ -316,6 +333,41 @@ ipcMain.handle('ui:setPrefs', async (_event, prefs) => {
 });
 
 // --- MCP ---
+
+// Outstanding confirm-before-write prompts. The McpService awaits a Promise
+// returned by requestMcpConfirm(); we hold the resolver here keyed by the
+// synthetic id sent to the renderer, and resolve it when the renderer calls
+// back via the mcp:confirm-response invoke handler.
+let nextConfirmId = 0;
+const pendingConfirms = new Map();
+
+function requestMcpConfirm({ tool, summary, args }) {
+  if (!mainWindow || mainWindow.isDestroyed()) {
+    // No UI to ask — fail safe by denying. Better to refuse a write than to
+    // execute one the user couldn't see.
+    return Promise.resolve('deny');
+  }
+  const id = ++nextConfirmId;
+  return new Promise((resolve) => {
+    pendingConfirms.set(id, resolve);
+    mainWindow.webContents.send('mcp:confirm-request', { id, tool, summary, args });
+  });
+}
+
+function rejectPendingConfirms(decision = 'deny') {
+  for (const [, resolve] of pendingConfirms) resolve(decision);
+  pendingConfirms.clear();
+}
+
+ipcMain.handle('mcp:confirm-response', (_event, id, decision) => {
+  const resolver = pendingConfirms.get(id);
+  if (!resolver) return false;
+  pendingConfirms.delete(id);
+  // Coerce to one of the three valid strings — any unexpected value denies.
+  const valid = decision === 'allow' || decision === 'session' || decision === 'deny';
+  resolver(valid ? decision : 'deny');
+  return true;
+});
 
 function getMcpRuntimePath() {
   return path.join(app.getPath('userData'), MCP_RUNTIME_FILE);
@@ -347,13 +399,19 @@ async function maybeStartMcp() {
   }
 }
 
-ipcMain.handle('mcp:getStatus', () => ({
-  enabled: !!loadUIPrefs().mcpEnabled,
-  running: !!mcpService?.isRunning(),
-  socketPath: mcpService?.getSocketPath() || null,
-  bridgePath: getMcpBridgePath(),
-  projectOpen: !!projectService?.projectPath,
-}));
+ipcMain.handle('mcp:getStatus', () => {
+  const prefs = loadUIPrefs();
+  return {
+    enabled: !!prefs.mcpEnabled,
+    running: !!mcpService?.isRunning(),
+    socketPath: mcpService?.getSocketPath() || null,
+    bridgePath: getMcpBridgePath(),
+    projectOpen: !!projectService?.projectPath,
+    confirmWrites: !!prefs.mcpConfirmWrites,
+    disabledTools: Array.isArray(prefs.mcpDisabledTools) ? prefs.mcpDisabledTools : [],
+    tools: McpService.toolClassification(),
+  };
+});
 
 // --- Auto-update IPC ---
 
@@ -514,6 +572,7 @@ ipcMain.handle('project:init', async (_event, folderPath, remoteUrl) => {
 
 ipcMain.handle('project:close', async () => {
   if (!projectService.projectPath) return;
+  rejectPendingConfirms();
   await mcpService?.stop();
   await gitService.flushPush(projectService.projectPath);
   projectService.projectPath = null;
