@@ -211,6 +211,8 @@ class McpService {
       case 'tools/call':           return this.handleToolsCall(params);
       case 'resources/list':       return this.handleResourcesList();
       case 'resources/read':       return this.handleResourcesRead(params);
+      case 'prompts/list':         return this.handlePromptsList();
+      case 'prompts/get':          return this.handlePromptsGet(params);
       default: {
         const err = new Error(`Method not found: ${method}`);
         err.rpcCode = RPC_METHOD_NOT_FOUND;
@@ -227,6 +229,7 @@ class McpService {
       capabilities: {
         tools: {},
         resources: {},
+        prompts: {},
       },
       serverInfo: {
         name: 'noteliner',
@@ -362,6 +365,40 @@ class McpService {
           additionalProperties: false,
         },
       },
+      {
+        name: 'list_tags',
+        description: 'List every distinct tag used across the project, with the count of notes carrying each tag.',
+        inputSchema: { type: 'object', properties: {}, additionalProperties: false },
+      },
+      {
+        name: 'add_attachment',
+        description: 'Attach a binary file to a note. Data must be base64-encoded. 30MB limit.',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            id:           { type: 'string' },
+            name:         { type: 'string' },
+            filename:     { type: 'string', description: 'Original filename (used to derive extension and MIME type).' },
+            dataBase64:   { type: 'string', description: 'Base64-encoded file contents.' },
+          },
+          required: ['filename', 'dataBase64'],
+          additionalProperties: false,
+        },
+      },
+      {
+        name: 'remove_attachment',
+        description: 'Remove an attachment from a note by its attachment id.',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            id:           { type: 'string', description: 'Note id (preferred).' },
+            name:         { type: 'string', description: 'Note name.' },
+            attachmentId: { type: 'string' },
+          },
+          required: ['attachmentId'],
+          additionalProperties: false,
+        },
+      },
     ];
   }
 
@@ -404,6 +441,9 @@ class McpService {
       case 'search':           return this.toolSearch(args);
       case 'get_backlinks':    return this.toolGetBacklinks(args);
       case 'list_attachments': return this.toolListAttachments(args);
+      case 'list_tags':        return this.toolListTags();
+      case 'add_attachment':   return this.toolAddAttachment(args);
+      case 'remove_attachment': return this.toolRemoveAttachment(args);
       default: throw new ToolError(`Unknown tool: ${name}`);
     }
   }
@@ -433,6 +473,22 @@ class McpService {
       return entry;
     }
     throw new ToolError('Provide either "id" or "name".');
+  }
+
+  // Prompts use a single `note` argument that may be either id or name. This
+  // helper tries id first (cheap, stable), then falls back to a case-insensitive
+  // name lookup. Unlike resolveEntry, the input is opaque — we don't know which
+  // shape the user supplied.
+  resolveByIdOrName(value) {
+    this.requireProject();
+    if (!value || typeof value !== 'string') throw new ToolError('Note reference required.');
+    const files = this.projectService.index.files;
+    const byId = files.find(f => f.id === value);
+    if (byId) return byId;
+    const target = value.toLowerCase();
+    const byName = files.find(f => f.name.toLowerCase() === target);
+    if (byName) return byName;
+    throw new ToolError(`No note matching "${value}".`);
   }
 
   textResult(text) {
@@ -563,6 +619,59 @@ class McpService {
     return this.jsonResult(entry.attachments || []);
   }
 
+  toolListTags() {
+    this.requireProject();
+    // Build a tag -> { count, noteIds } histogram. Tags are case-preserving
+    // (the user's casing wins) and de-duplicated case-sensitively so "Todo"
+    // and "todo" remain distinct — same convention as the renderer's TagsPane.
+    const histogram = new Map();
+    for (const file of this.projectService.index.files) {
+      for (const tag of file.tags || []) {
+        if (!histogram.has(tag)) histogram.set(tag, { tag, count: 0, noteIds: [] });
+        const entry = histogram.get(tag);
+        entry.count += 1;
+        entry.noteIds.push(file.id);
+      }
+    }
+    const tags = [...histogram.values()].sort((a, b) => b.count - a.count || a.tag.localeCompare(b.tag));
+    this.log(`[MCP] list_tags -> ${tags.length} tags`);
+    return this.jsonResult(tags);
+  }
+
+  async toolAddAttachment({ id, name, filename, dataBase64 }) {
+    if (!filename || typeof filename !== 'string') throw new ToolError('"filename" is required.');
+    if (!dataBase64 || typeof dataBase64 !== 'string') throw new ToolError('"dataBase64" is required.');
+    // Reject any path component in the original filename — ProjectService only
+    // uses it to derive an extension, but defense in depth never hurts.
+    if (filename.includes('/') || filename.includes('\\') || filename.includes('..')) {
+      throw new ToolError('Invalid filename — must not contain path separators.');
+    }
+    const entry = this.resolveEntry({ id, name });
+    let buffer;
+    try {
+      buffer = Buffer.from(dataBase64, 'base64');
+    } catch {
+      throw new ToolError('Invalid base64 in "dataBase64".');
+    }
+    // ProjectService.addAttachment enforces the 30MB cap and writes through
+    // the same auto-commit path as user-driven attachments. It accepts both
+    // ArrayBuffer (the renderer path via IPC structured clone) and Buffer
+    // (us) because it uses .byteLength + Buffer.from(...) on the value.
+    const attachment = await this.projectService.addAttachment(entry.id, buffer, filename);
+    this.log(`[MCP] add_attachment id=${entry.id} file="${filename}" bytes=${buffer.length}`);
+    return this.jsonResult(attachment);
+  }
+
+  async toolRemoveAttachment({ id, name, attachmentId }) {
+    if (!attachmentId || typeof attachmentId !== 'string') throw new ToolError('"attachmentId" is required.');
+    const entry = this.resolveEntry({ id, name });
+    const exists = (entry.attachments || []).some(a => a.id === attachmentId);
+    if (!exists) throw new ToolError(`No attachment "${attachmentId}" on note "${entry.name}".`);
+    await this.projectService.removeAttachment(entry.id, attachmentId);
+    this.log(`[MCP] remove_attachment id=${entry.id} attachment=${attachmentId}`);
+    return this.textResult(`Removed attachment ${attachmentId} from "${entry.name}".`);
+  }
+
   // --- Resources ---
 
   handleResourcesList() {
@@ -637,6 +746,161 @@ class McpService {
     }
 
     throw new ToolError(`Unknown resource URI: ${uri}`);
+  }
+
+  // --- Prompts ---
+  //
+  // Prompts are user-controlled templates (typically surfaced in the MCP
+  // client as slash commands). They return a `messages` array the model
+  // consumes. Prompts that embed project data (e.g. summarize_note) fetch
+  // server-side so the client doesn't have to chain tool calls first.
+
+  promptDefinitions() {
+    return [
+      {
+        name: 'daily_note',
+        description: 'Draft a daily journal note for today (or a given date).',
+        arguments: [
+          { name: 'date', description: 'ISO date like 2026-05-16. Defaults to today.', required: false },
+          { name: 'topic', description: 'Optional focus or theme for the day.', required: false },
+        ],
+      },
+      {
+        name: 'meeting_note',
+        description: 'Draft a meeting note with attendees, agenda, and action items.',
+        arguments: [
+          { name: 'topic', description: 'Meeting topic or title.', required: true },
+          { name: 'attendees', description: 'Comma-separated list of attendees.', required: false },
+        ],
+      },
+      {
+        name: 'summarize_note',
+        description: 'Summarize an existing note. Provide its id or name.',
+        arguments: [
+          { name: 'note', description: 'Note id or name (case-insensitive).', required: true },
+        ],
+      },
+      {
+        name: 'link_suggestions',
+        description: 'Suggest wikilink targets to add to a note, based on its content and the rest of the project.',
+        arguments: [
+          { name: 'note', description: 'Note id or name (case-insensitive).', required: true },
+        ],
+      },
+    ];
+  }
+
+  handlePromptsList() {
+    return { prompts: this.promptDefinitions() };
+  }
+
+  async handlePromptsGet(params) {
+    const { name, arguments: args = {} } = params || {};
+    const prompt = this.promptDefinitions().find(p => p.name === name);
+    if (!prompt) {
+      const err = new Error(`Unknown prompt: ${name}`);
+      err.rpcCode = RPC_INVALID_PARAMS;
+      throw err;
+    }
+
+    // Required-args validation — clients should send these but the spec
+    // doesn't enforce it, so we do.
+    for (const arg of prompt.arguments || []) {
+      if (arg.required && (args[arg.name] == null || args[arg.name] === '')) {
+        const err = new Error(`Prompt "${name}" requires argument "${arg.name}".`);
+        err.rpcCode = RPC_INVALID_PARAMS;
+        throw err;
+      }
+    }
+
+    const messages = await this.buildPromptMessages(name, args);
+    this.log(`[MCP] prompts/get name=${name}`);
+    return { description: prompt.description, messages };
+  }
+
+  async buildPromptMessages(name, args) {
+    switch (name) {
+      case 'daily_note': {
+        const date = (args.date && String(args.date)) || new Date().toISOString().slice(0, 10);
+        const topic = args.topic ? `\n\nFocus for the day: ${args.topic}` : '';
+        return [{
+          role: 'user',
+          content: {
+            type: 'text',
+            text:
+              `Draft a NoteLiner daily journal note for ${date}.\n\n` +
+              `Format the note as Markdown with an H1 title \`# Daily ${date}\`, then sections for ` +
+              `**Highlights**, **Did**, **Next**, and **Notes**. Keep prose terse — bullets, not paragraphs.${topic}\n\n` +
+              `When ready, call the \`create_note\` tool with name="Daily ${date}" and the drafted body.`,
+          },
+        }];
+      }
+
+      case 'meeting_note': {
+        const topic = String(args.topic);
+        const attendees = args.attendees ? `\n\nAttendees: ${args.attendees}` : '';
+        return [{
+          role: 'user',
+          content: {
+            type: 'text',
+            text:
+              `Draft a NoteLiner meeting note titled "${topic}".${attendees}\n\n` +
+              `Use this structure:\n` +
+              `# ${topic}\n` +
+              `**Date:** YYYY-MM-DD\n` +
+              `**Attendees:** ...\n\n` +
+              `## Agenda\n- ...\n\n## Discussion\n- ...\n\n## Decisions\n- ...\n\n## Action items\n- [ ] owner — task\n\n` +
+              `When ready, call the \`create_note\` tool with name="${topic}" and the drafted body, tagged with ["meeting"].`,
+          },
+        }];
+      }
+
+      case 'summarize_note': {
+        // Server-side fetch keeps the prompt self-contained — the client
+        // doesn't have to make a tools/call round-trip before sampling.
+        const entry = this.resolveByIdOrName(args.note);
+        const body = await this.projectService.readFile(entry.filename);
+        return [{
+          role: 'user',
+          content: {
+            type: 'text',
+            text:
+              `Summarize the NoteLiner note "${entry.name}" (id: ${entry.id}).\n\n` +
+              `Produce a 3-5 sentence summary, followed by a bullet list of the key entities, decisions, ` +
+              `or open questions mentioned.\n\n` +
+              `--- BEGIN NOTE BODY ---\n${body}\n--- END NOTE BODY ---`,
+          },
+        }];
+      }
+
+      case 'link_suggestions': {
+        const entry = this.resolveByIdOrName(args.note);
+        const body = await this.projectService.readFile(entry.filename);
+        const allNames = (this.projectService.index?.files || [])
+          .filter(f => f.id !== entry.id)
+          .map(f => f.name);
+        return [{
+          role: 'user',
+          content: {
+            type: 'text',
+            text:
+              `For the NoteLiner note "${entry.name}", suggest wikilinks ([[Other Note Name]]) that ` +
+              `would be useful to add to its body, drawn from the list of existing notes below.\n\n` +
+              `Return a short Markdown list. For each suggestion include: the existing note name, the ` +
+              `passage in the source that should link to it, and a one-sentence justification. Do not ` +
+              `invent notes that aren't on the list.\n\n` +
+              `--- EXISTING NOTES (${allNames.length}) ---\n${allNames.map(n => `- ${n}`).join('\n')}\n\n` +
+              `--- SOURCE NOTE BODY ---\n${body}`,
+          },
+        }];
+      }
+
+      default: {
+        const err = new Error(`Unknown prompt: ${name}`);
+        err.rpcCode = RPC_INVALID_PARAMS;
+        throw err;
+      }
+    }
   }
 }
 
